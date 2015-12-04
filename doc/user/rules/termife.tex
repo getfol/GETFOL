@@ -1,0 +1,49 @@
+\gfcommand{termife}{term conditional elimination}
+\index{termife}
+
+\gfsyntax{
+	termife \ARG{fact1} \ARG{fact2} \ARG{termif}; \\
+	termife \ARG{fact1} \ARG{fact2} \ARG{termif} \OPT{occ \ARG{n1} \ARG{n2}
+	\SEQ}; 
+}
+
+\gfdescription{
+	\renewcommand{\arraystretch}{0.5}
+	\[
+	\mbox{{\em tif}} \  E \ \ 
+	\fraz{A \ \ \ \ \ B(\mbox{{\em termif}} \ A \ \mbox{{\em then}} \ t_1 \
+	\mbox{{\em else}} \ t_2)} 
+	{B(t_1)}
+	\]
+	\renewcommand{\arraystretch}{1}
+
+	If \ARG{termif} is {\tt iftrm A then t1 else t2}, \ARG{fact1}'s wff is
+	{\tt W(iftrm A then t1 else t2)} and {\em fact}$_2$'s wff is {\tt A},  then
+	the rule deduces {\tt W(t1)}.
+	If {\em termif} is not a subexpression of \ARG{fact1}'s wff, then no
+	substitution is performed.
+	Individual occurrences can be substituted by specifying the optional 
+	\ARG{n1} \ARG{n2}, \SEQ, where \ARG{n1}, \ARG{n2}, \SEQ are the occurrences
+	to be substituted.
+	Without this option, all occurrences are substituted. 
+	The dependencies of the derived wff are the union of those of \ARG{fact1}
+	and \ARG{fact2}. 
+}
+
+\gfrecap{
+Term conditional elimination.
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   ***** declare predconst P 1;
+   ***** declare indpar a b;
+   ***** assume P(trmif A then a else b);
+   1   P(trmif A then a else b)     (1)
+   ***** assume A;
+   2   A     (2)
+   ***** termife 1 2 trmif A then a else b;
+   3   P(a)     (1 2)
++
+
+\gfnotes{}

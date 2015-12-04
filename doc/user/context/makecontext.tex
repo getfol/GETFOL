@@ -1,0 +1,31 @@
+\gfcommand{makecontext}{Multiple contexts' manipulation}
+\index{makecontext}
+
+\gfsyntax{
+  makecontext \ARG{ctx-name};
+}
+
+\gfdescription{
+  A new empty context  with name  \ARG{ctx-name} is created.
+}
+
+\gfrecap{
+  A new empty context  with name  `ctx-name' is created.
+}
+
+\gfexample+
+   ***** show whereami;
+   You are now using an unnamed context.
+   You are now using an unnamed proof.
+   ***** namecontext C1;
+   You have named the current context: C1
+   ***** show whereami;
+   You are now using context: C1
+   You are now using an unnamed proof.
+   ***** declare sentconst A;
+   ***** makecontext C2;
+   You have created the empty context: C2
+   ***** switchcontext C2;
+   You are now using context: C2
+   ***** declare indvar A;
++

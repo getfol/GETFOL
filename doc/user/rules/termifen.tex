@@ -1,0 +1,55 @@
+\gfcommand{termifen}{term conditional elimination (with negation)}
+\index{termifen}
+
+\gfsyntax{
+	termifen \ARG{fact1} \ARG{fact2} \ARG{termif}; \\
+	termifen \ARG{fact1} \ARG{fact2} \ARG{termif} \OPT{occ \ARG{n1} \ARG{n2}
+	\SEQ}; 
+}
+
+\gfdescription{
+	\renewcommand{\arraystretch}{0.5}
+	\[
+	\mbox{{\em tif}} \  E_{\neg} \ \ 
+	\fraz{\neg A \ \ \ \ \ B(\mbox{{\em termif}} \ A \ \mbox{{\em then}} \ t_1 \
+	\mbox{{\em else}} \ t_2)} 
+	{B(t_2)}
+	\]
+	\renewcommand{\arraystretch}{1}
+	
+	If {\em termif} is {\tt iftrm A then t1 else t2}, {\em fact}$_1$'s wff is
+	{\tt W(iftrm A then t1 else t2)} and \ARG{fact2}'s wff is {\tt not A},
+	then the rule deduces {\tt W(t2)}.
+	If \ARG{termif} is not a subexpression of \ARG{fact1}'s wff, then no
+	substitution is performed. 
+	Individual occurrences can be substituted by specifying the optional 
+	\ARG{n1}, \ARG{n2}, \SEQ, where \ARG{n1}, \ARG{n2}, \SEQ are the occurrences
+	to be substituted.
+	Without this option, all occurrences are substituted. 
+	The dependencies of the derived wff are the union of those of \ARG{fact1}
+	and \ARG{fact2}.
+}
+
+\gfrecap{
+Term conditional elimination (with negation).
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   ***** declare predconst P 1;
+   ***** declare indpar a b;
+   ***** assume P(trmif A then a else b);
+   1   P(trmif A then a else b)     (1)
+   ***** assume not A;
+   2   not A     (2)
+   ***** termifen 1 2 trmif A then a else b;
+   3   P(b)     (1 2)
+   \end{verbatim}
++
+
+\gfnotes{
+	\ARG{fact2}'s wff must be negation of \ARG{termif}'s condition and not
+	viceversa.
+	If \ARG{termif} = {\tt trmif not A then t1 else t2} and \ARG{fact2}'s wff =
+	{\tt A}, then the rule is not applicable. 
+}

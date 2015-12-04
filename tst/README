@@ -1,0 +1,54 @@
+                                   README
+
+This README file describes the contents of the *tst* directory of the GETFOL 
+distribution package. This directory has the following contents:
+
+  README        :  this file.
+  LONGTEST      :  file to be fetched in order to test the system.
+                   Fetching this file takes a long time.
+  TEST          :  file to be fetched in order to test the system.
+                   Fetching this file takes less time than the LONGTEST, but
+                   it does not perform tests on sorts.
+  LONGOUTPUT    :  output obtained by fetching in GETFOL the file LONGTEST.
+  OUTPUT        :  output obtained by fetching in GETFOL the file TEST.
+
+  decide        :  directory containing files to be fetched in order to test
+                   the DECIDE module.
+  eval          :  directory containing files to be fetched in order to test
+                   the EVAL module.
+  io            :  directory containing files to be fetched in order to test
+                   the I/O of the system.
+  lang          :  directory containing files to be fetched in order to test
+                   the LANGUAGE module. 
+  meta          :  directory containing files to be fetched in order to test 
+                   the META module.
+  nd            :  directory containing files to be fetched in order to test
+                   the Natural-Deduction module.
+  proof         :  directory containing files to be fetched in order to test 
+                   the PROOF module.
+  sort          :  directory containing files to be fetched in order to test
+                   the sorts.
+ 
+
+                         *** TESTING THE SYSTEM ***
+
+The testing procedure is the following: go in the <getfol-dir>/tst directory,
+and run the saved executable image making sure that the output can be saved to
+a file. For instance, run the test into an emacs buffer, or use the tee unix
+command to make a copy of the output on a file, e.g. 
+
+     % ../make/getfol | tee /tmp/output.tst
+     > (SYSBOOT)
+     ...
+
+Then fetch the file LONGTEST (TEST):
+
+     GETFOL:: fetch LONGTEST;
+     ...
+
+The system will load several test files, until it finishes (message "I am
+finished fetching LONGTEST") or until an error occurs (message "Error while
+fetching file XXX").
+
+If no error occurs the trace of the test should be the equal to the content of
+the file LONGOUTPUT (OUTPUT).

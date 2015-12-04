@@ -1,0 +1,41 @@
+\gfcommand{label}{naming proof lines}
+\index{label}
+
+\gfsyntax{
+   label fact \ARG{sym};\\
+   label fact \ARG{sym} = \ARG{label};
+}
+
+\gfdescription{
+   Allows us to ``name" proof lines with desired {\GF} symbols.
+   We will then be able to refer to the proof line with {\em sym} rather
+   than with its ``hook" ({\em label}). 
+   In the first form the next asserted proof line will get the name \ARG{sym}. 
+   In the second form the proof line whose label is {\em label} gets
+   the alternative name \ARG{sym}.
+}
+
+\gfrecap{
+Names a proof line with a GETFOL symbol.
+Named proof lines can be accessed through its name.
+In the first form the next asserted proof line will get the name `sym'.
+In the second form the proof line whose label is `label' gets the
+alternative name `sym'
+}
+
+
+\gfexample+
+   ***** declare sentconst A;
+   ..............
+   ***** show proof;
+   ..............
+   4   A or (not A) 
+   ***** label fact ExclMiddle = 4;
+   ***** ori ExclMiddle A;
+   5   (A or (not A)) or A  
+   ***** label fact AssumContr;
+   ***** assume A and not A;
+   6   A and (not A)     (6)
+   ***** ande AssumContr 1;
+   7   A     (6)
++

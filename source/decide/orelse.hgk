@@ -1,0 +1,60 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:29:03 MET 1993
+;;
+;; This GETFOL file (orelse.hgk) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*************************************************************
+;*                                                           *
+;*                 orelse.hgk                                * 
+;*                                                           *
+;*************************************************************
+;
+; this macro implements the orelse tactical.
+; It is used in nnf.fol and reduce.fol.
+
+(HGKM-DEF-MAC ? (T1 T2)
+ (LIST 'LET (LIST (LIST 'V1 T1))
+  (LIST 'IF (LIST 'FAIL? 'V1) T2 'V1)))
+

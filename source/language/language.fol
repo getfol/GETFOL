@@ -1,0 +1,403 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:52:30 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: lang.fol
+;; Date: Wed Oct 20 10:46:00 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*********************************************************************
+;*                                                                   *
+;*                                                                   *
+;*                       lang.fol                                    *
+;*                                                                   *
+;*                                                                   *
+;*    This file contains the routines used in the file cmdlang.fol.  *
+;*    These routines perform several consistency tests on the parsed *
+;*    declaration. If everything succedes then the suitable lower    *
+;*    level primitives, that is the "sym-declare" ones, "addfmap",   *
+;*    "mostgeneralsort-declare", "moregeneralsort-declare" or        *
+;*    "extension-declare" are called. These primitives are in        *
+;*    declsign.fol and in sort.fol.                                  *
+;*                                                                   *
+;*********************************************************************
+
+
+
+;******************************************************************
+;*                                                                *
+;*                 DECLARATION OF SENTSYMS                        *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM sentdecl-check&mak (TYP DECREAD)
+ (IF (IST (REPETITION-GET DECREAD))
+  (GERRM0 (REPETITION-GET DECREAD) " appears twice in the declaration")
+  (IF (IST (symlabel-get DECREAD))
+   (GERRM0 (symlabel-get DECREAD) " has already been declared")
+   (sentsyms-declare TYP DECREAD))))
+
+(DEFLAM sentsyms-declare (TYP L)
+ (IF (MTL? L) MTL
+  (LET ((LABEL (FIRST L)))
+   (LET ((SYM (sentsym-declare TYP LABEL (sentsym_sact-mak LABEL))))
+    (DECLARE-EPRINC3 (outnam SYM) " has been declared to be a " TYP)
+    (CONS SYM (sentsyms-declare TYP (REST L)))))))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                 DECLARATION OF INDSYMS                         *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+
+(DEFLAM inddecl-check&mak (TYP DECREAD)
+ (LET ((NAMELIST (FIRST DECREAD)))
+  (IF (IST (REPETITION-GET NAMELIST))
+   (GERRM0 (REPETITION-GET NAMELIST) " appears twice in the declaration")
+   (IF (IST (symlabel-get NAMELIST))
+    (GERRM0 (symlabel-get NAMELIST) " has already been declared")
+    (LET ((PSEUDOSORT (indsort-build (REST DECREAD))))
+     (IF (MEMBER PSEUDOSORT NAMELIST)
+      (GERRM0 PSEUDOSORT " appears twice in the declaration")
+      (LET ((SORT (pseudosort-declare PSEUDOSORT)))
+       (indsyms-declare TYP NAMELIST SORT))))))))
+
+(DEFLAM indsort-build (SORTINFO)
+ (IF (MTL? SORTINFO) Mostgeneral SORTINFO))
+
+(DEFLAM indsyms-declare (TYP L SORT)
+ (IF (MTL? L) MTL
+  (LET ((LABEL (FIRST L)))
+   (LET ((SYM (indsym-declare TYP LABEL SORT (indsym_sact-mak LABEL))))
+    (SEQ
+     (DECLARE-EPRINC3 (outnam SYM) " has been declared to be an " TYP)
+     (CONS SYM (indsyms-declare TYP (REST L) SORT)))))))
+
+
+
+
+;******************************************************************
+;*                                                                *
+;*                 DECLARATION OF FUNSYMS                         *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+; fundecl-check&mak
+;
+; The arity has to be equal to the length of the fmap
+; by construction.
+;
+; The information about parsed FMAPS is converted in the function
+; check&decl since it is common to all the declared symbols.
+; The generation of the sact is delayed because of the same reason.
+;
+(DEFLAM fundecl-check&mak (TYP DECREAD)
+ (LET ((NAMELIST (FIRST DECREAD))
+       (ARITY (SECOND DECREAD)))
+  (IF (IST (REPETITION-GET NAMELIST))
+   (GERRM0 (REPETITION-GET NAMELIST) " appears twice in the declaration")
+   (IF (IST (symlabel-get NAMELIST))
+    (GERRM0 (symlabel-get NAMELIST) " has already been declared")
+    (IFN (GE ARITY 1)
+     (FERRM0 "An arity must be a positive integer")
+     (LET ((PSEUDOSORTS (HGKM-NTH 3 DECREAD)))
+      (IFN (MTL? (INTERSECT NAMELIST PSEUDOSORTS))
+       (GERRM0
+        (FIRST (INTERSECT NAMELIST PSEUDOSORTS))
+        " appears twice in the declaration")
+       (LET ((BPINFO (HGKM-NTH 4 DECREAD)))
+        (IFN (CORRECT-BPINFO BPINFO ARITY)
+         (FERRM0 "Non-unary prefix or non-bynary infix")
+         (LET ((SORTS (pseudosorts-declare PSEUDOSORTS)))
+          (funsyms-declare TYP NAMELIST ARITY
+           (parsed_fmaps4funsym-build SORTS ARITY) BPINFO)))))))))))
+
+(DEFLAM CORRECT-BPINFO (BPINFO ARITY)
+ (IF (MTL? BPINFO) TRUE
+  (IF (ATOMIC? BPINFO)
+   (IF (EQ BPINFO 'PRE)
+    (INTEQ ARITY 1) (INTEQ ARITY 2))
+   (IF (EQ (FIRST BPINFO) 'PRE)
+    (INTEQ ARITY 1) (INTEQ ARITY 2)))))
+
+
+(DEFLAM parsed_fmaps4funsym-build (FMAPINFO ARITY)
+ (IF (MTL? FMAPINFO)
+  (fun-default_fmaps-build ARITY)
+  (LIST
+   (fun-default_fmap-build ARITY)
+   (fmap-mak (REST FMAPINFO) (FIRST FMAPINFO)))))
+
+
+(DEFLAM funsyms-declare (TYP L ARITY FMAPS BPINFO)
+ (IF (MTL? L) MTL
+  (LET ((LABEL (FIRST L)))
+   (LET ((SYM (funsym-declare TYP LABEL ARITY FMAPS
+               (funsym_sact-mak LABEL BPINFO))))
+    (SEQ
+     (DECLARE-EPRINC3 (outnam SYM) " has been declared to be a " TYP)
+     (CONS SYM (funsyms-declare TYP (REST L) ARITY FMAPS BPINFO)))))))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                 DECLARATION OF PREDSYMS                        *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM preddecl-check&mak (TYP DECREAD)
+ (LET ((NAMELIST (FIRST DECREAD))
+       (ARITY (SECOND DECREAD)))
+  (IF (IST (REPETITION-GET NAMELIST))
+   (GERRM0 (REPETITION-GET NAMELIST) " appears twice in the declaration")
+   (IF (IST (symlabel-get NAMELIST))
+    (GERRM0 (symlabel-get NAMELIST) " has already been declared")
+    (IFN (GE ARITY 1)
+     (FERRM0 "An arity must be a positive integer")
+     (LET ((BPINFO (HGKM-NTH 3 DECREAD)))
+      (IFN (CORRECT-BPINFO BPINFO ARITY)
+       (FERRM0 "Non-unary prefix or non-bynary infix")
+       (predsyms-declare TYP NAMELIST ARITY BPINFO))))))))
+
+
+(DEFLAM predsyms-declare (TYP L ARITY BPINFO)
+ (IF (MTL? L) (NOP)
+  (LET ((LABEL (FIRST L)))
+   (LET ((SYM (predsym-declare TYP LABEL ARITY
+               (predsym_sact-mak LABEL BPINFO))))
+    (SEQ
+     (DECLARE-EPRINC3 SYM " has been declared to be a " TYP)
+     (CONS SYM (predsyms-declare TYP (REST L) ARITY BPINFO)))))))
+
+
+
+;******************************************************************
+;*                                                                *
+;*           ADDING A NEW FMAP TO A FUNCTION SYMBOL               *
+;*                                                                *
+;* We point out here why it is meaningful to add a new fmap to a  *
+;* function symbol, and it is not to do it to predicate symbols.  *
+;*                                                                *
+;******************************************************************
+; fmapdecl-check&mak
+; The semantic routine for declaring other fmaps for
+; a fun-symbol that has already been declared.
+;
+; DECREAD IS THE LIST OF THE PSEUDOSORTS READ in
+; the format
+;	( RES ARG1 ... ARGn )
+;
+(DEFLAM fmapdecl-check&mak (SYM DECREAD)
+ (IFN (FUNSYM SYM)
+  (GERRM0 SYM " is not a funsym")
+  (LET ((ARITY (arity SYM)))
+   (IFN (INTEQ ARITY (SUB1 (LENGTH DECREAD)))
+    (GERRM0 "This fmap has not arity " ARITY)
+    (LET ((SORTS (pseudosorts-declare DECREAD)))
+     (addfmap SYM (fmap-mak (REST SORTS) (FIRST SORTS))))))))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                 DECLARATION OF SORTS                           *
+;*                                                                *
+;*  (pseudosort-declare SYM)                                      *
+;*    If SYM is a sort does nothing; if it is a unary predicate   *
+;*    calls unarypred2sort-declare; if it is undeclared calls     *
+;*    sort-declare.                                               *
+;*                                                                *
+;*  (sort-declare SYM)                                            *
+;*    Makes SYM into a unary predconst and applies                *
+;*    unarypred2sort-declare to it                                *
+;*                                                                *
+;*  (unarypred2sort-declare SYM)                                  *
+;*    Adds the suitable information to make a unary predicate     *
+;*    into a sort.                                                *
+;*                                                                *
+;******************************************************************
+
+; sortdecl-check&mak
+;
+(DEFLAM sortdecl-check&mak (DECREAD)
+ (IF (IST (REPETITION-GET DECREAD))
+  (GERRM0 (REPETITION-GET DECREAD) " appears twice in the declaration")
+  (pseudosorts-declare DECREAD)))
+
+; pseudosorts-declare
+; Declares all the pseudosorts in L to be sorts
+;
+(DEFLAM pseudosorts-declare (L)
+ (IF (MTL? L) MTL
+  (LET ((SYM (pseudosort-declare (FIRST L))))
+   (CONS SYM (pseudosorts-declare (REST L))))))
+
+(DEFLAM pseudosort-declare (PSEUDOSORT)
+ (IFN (FOL-SYMBOL PSEUDOSORT)
+  (LET ((SYM (ls-get-obj PSEUDOSORT (symbol-ls))))
+   (IF (IST SYM) SYM
+   (SEQ
+    (DECLARE-EPRINC2 PSEUDOSORT " has been declared to be a sort")
+    (sort-declare PSEUDOSORT))))
+  (IF (IS-SORT PSEUDOSORT)
+   (SEQ
+    (DECLARE-EPRINC2 PSEUDOSORT " is a sort")
+    PSEUDOSORT)
+   (SEQ
+    (DECLARE-EPRINC3 "The unary predconst " PSEUDOSORT
+     " has been declared to be a sort")
+    (unarypred2sort-declare PSEUDOSORT)))))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; * mostgdecl-check&mak                                           *
+; *                                                               *
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (mostgdecl-check&mak SYM)                                *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      Used to declare the most general sort.                   *
+; *      Note that if the default mostgeneral sort has to be      *
+; *      changed then the corresponding declaration must be the   *
+; *      first of the session. Otherwise an error occurs.         *
+; *                                                               *
+; *      This depends on the fact that any other declaration      *
+; *      involves an information related to the default           *
+; *      mostgeneral sort. Whithout this restriction the system   *
+; *      couldn't tell if a declaration is correct or not.        *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM mostgdecl-check&mak (PSEUDOSORT)
+ (LET ((SYM (pseudosort-declare PSEUDOSORT)))
+  (SEQ
+   (mgpair-add SYM Mostgeneral)
+   (DECLARE-EPRINC3 SYM " is now equivalent to " Mostgeneral)
+   SYM)))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *  moregdecl-check&mak                                          *
+; *                                                               *
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (moregdecl-check&mak MG LGLIST)                          *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      MG is a sort, LGLIST is a list of sorts. MG has to be    *
+; *      set more general than every sort in LGLIST.              *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM moregdecl-check&mak (MG LGLIST)
+ (IF (MEMBER MG LGLIST)
+  (GERRM0 MG " appears on both sides")
+  (IFN (MTL? (REPETITION-GET LGLIST))
+   (GERRM0 (REPETITION-GET LGLIST) " appears twice in the declaration")
+   (mgpairs-declare MG LGLIST))))
+
+(DEFLAM mgpairs-declare (MG LGLIST)
+ (IF (MTL? LGLIST)
+  (NOP)
+  (SEQ
+   (mgpair-declare MG (CAR LGLIST))
+   (mgpairs-declare MG (CDR LGLIST)))))
+
+(DEFLAM mgpair-declare (MG LG)
+ (IF (IS-MG MG LG)
+  (PRINTMES3 MG " is already moregeneral than " LG)
+  (SEQ
+   (IFN (IS-MG LG MG) (NOP)
+    (PRINTMES4 "You realise that this makes equivalent "  MG " and " LG))
+   (mgpair-add MG LG))))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *  extension-check&mak                                          *
+; *                                                               *
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (extension-check&mak SORT INDLIST)                       *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      SORT is a sort, INDLIST is a list of indconsts.          *
+; *      Set the extension of SORT to be INDLIST.                 *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM extension-check&mak (SORT INDLIST)
+ (IF (MTL? INDLIST)
+  (GERRM0 "You can't set an empty extension for " SORT)
+  (extension-declare SORT INDLIST)))
+
+(DEFLAM extension-declare (SORT INDLIST)
+ (SEQ
+  (extension-create SORT INDLIST)
+  (CRLF)
+  (HGKM-PRINC "Now the extension of ")
+  (HGKM-PRINC (outnam SORT))
+  (HGKM-PRINC " is fixed to be : ")
+  (PRINTLIST (syms-get-outnams INDLIST))))
+

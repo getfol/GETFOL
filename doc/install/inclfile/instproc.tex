@@ -1,0 +1,53 @@
+\section{The installation procedure}
+\label{instproc}
+In order to install a system the following steps are to be performed:
+\begin{enumerate}
+	\item
+		Go in the {\tt make} directory.
+	\item {\bf [optional]}
+		Edit the file {\tt host.lsp} and set the values of host-dependent
+		variables.
+	\item
+		Run the Common Lisp you are provided of.
+	\item
+		Load the file {\tt install.lsp}.
+	\item {\bf [optional]}
+		If you didn't edit the file {\tt host.lsp} (step 2), call the form:
+		%
+		\begin{itemize}
+			\item
+				{\tt (configure)}
+		\end{itemize}
+		%
+		to set the values of host-dependent variables.
+	\item 
+		At LISP prompt type one of the following three forms:
+		%
+      \begin{itemize}
+	      \item {\tt (MAKE-HGKM)}
+	      \item {\tt (MAKE-GETFOL)}
+			\item {\tt (MAKE-AGETFOL)}
+      \end{itemize}
+		%
+		if you want to install {\tt HGKM}, {\tt GETFOL} or {\tt AGETFOL}
+		respectively. 
+	\item
+		After all the files have been successfully loaded type at the LISP
+		prompt the following form:
+		%
+      \begin{itemize}
+	      \item {\tt (SYSTEM-SAVE {\it filename})}
+      \end{itemize}
+		%
+		This saves the {\it image} of the whole environment onto a file named
+		{\it filename}\footnote{
+			{\it filename} must be a string.
+		}: this allows you to recall the system simply by running the executable
+		file stored in {\it filename} without the need of reloading all the
+		object files into the Common Lisp environment.
+\end{enumerate}
+
+The configuration files for the {\tt HGKM}, {\tt GETFOL} and {\tt AGETFOL}
+systems are provided in a standard form.
+Before altering the configuration file of a system or a module
+we recommend that you read section~\ref{sysmod} of this manual carefully.

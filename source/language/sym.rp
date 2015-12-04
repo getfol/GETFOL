@@ -1,0 +1,295 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: sym.rp
+;; Date: Wed Oct 20 10:46:15 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*************************************************************
+;*                                                           *
+;*                                                           *
+;*                           sym.rp                          *
+;*                                                           *
+;*                                                           *
+;*                                                           *
+;*************************************************************
+
+
+
+;*************************************************************
+;*                                                           *
+;*    The Syntactic Types of the Symbols of the language     *
+;*                                                           *
+;*************************************************************
+
+; Every symbol of language belongs to one of the following
+; types, and every type is associated with a corresponding atom.
+; The user commands are filtered by the parsing routines in such
+; a way that the right internal symbol for type is generated
+; when needed. Here is a table showing the correspondence between
+; classes fo symbols and type identifiers.
+;
+;    Class of symbols                Type Identifier
+;
+; Sentential connectives		Sentconn
+; Quantifiers				Quant
+; Conditional terms constructors	Iftrm
+; Conditional wffs constructors		Ifwff
+;
+; Sentential constants			Sentcost
+; Sentential parameters			Sentpar
+; Individual constants			Indconst
+; Individual variables			Indvar
+; Individual parameters			Indpar
+; Functional constants			Funconst
+; Functional parameters			Funpar
+; Predicative constants			Predconst
+; Predicative parameters		Predpar
+
+
+
+
+;**************************************
+; Parsing routines for type identifiers
+;**************************************
+
+(DEFLAM SCANTYP@ (L) 
+ (LET ((X (HGKM-ASSOC (CAPITALIZE (CUR-TOKEN)) L)))
+  (IF (IST X) (NEXT-TOKEN (CDR X)) FVAL)))
+
+(DEFLAM SENTTYP@  ()  (SCANTYP@ '((SENTCONST . Sentconst)
+                                  (SENTPAR   . Sentpar))))
+(DEFLAM SENTCTYP@ ()  (SCANTYP@ '((SENTCONST . Sentconst))))
+(DEFLAM INDTYP@   ()  (SCANTYP@ '((INDCONST  . Indconst)
+                                  (INDPAR    . Indpar) 
+                                  (INDVAR    . Indvar))))
+(DEFLAM INDCTYP@  ()  (SCANTYP@ '((INDCONST  . Indconst))))
+(DEFLAM FUNTYP@   ()  (SCANTYP@ '((FUNCONST  . Funconst)
+                                  (FUNPAR    . Funpar))))
+(DEFLAM FUNCTYP@  ()  (SCANTYP@ '((FUNCONST  . Funconst))))
+(DEFLAM PREDTYP@  ()  (SCANTYP@ '((PREDCONST . Predconst)
+                                  (PREDPAR   . Predpar))))
+(DEFLAM PREDCTYP@ ()  (SCANTYP@ '((PREDCONST . Predconst))))
+
+
+
+;**************************************************************************
+;*                                                                        *
+;* Routines for parsing symbols of fixed syntactic type. These routines   *
+;* access the suitable label space using the primitives OBJ@, OBJ*@, OBJ?@*
+;* and OBJ*?@.                                                            *
+;* OBJ@ and OBJ*@ accesses a label space and a list of label spaces,      *
+;* respectively. They use the current token as a label. If a suitable     *
+;* entry is found the corresponding object is returned and the current    *
+;* token is parsed. OBJ?@ and OBJ*?@ return the same results but without  *
+;* parsing the current token.                                             *
+;*                                                                        *
+;**************************************************************************
+
+
+(DEFLAM SENTCONN@ () (OBJ@ (sentconn-ls)))
+(DEFLAM QUANT@ () (OBJ@ (quant-ls)))
+(DEFLAM IFTRM@ () (OBJ@ (iftrm-ls)))
+(DEFLAM IFWFF@ () (OBJ@ (ifwff-ls)))
+
+(DEFLAM SENTCONST@() (OBJ@ (sentconst-ls)))
+(DEFLAM SENTPAR@  () (OBJ@ (sentpar-ls)))
+
+(DEFLAM ALPHA-INDCONST@ ()
+ (IFN (ID_TKTYPE? (CUR-TOKENTYP)) FALSE
+  (OBJ@ (indconst-ls))))
+
+; WARNING: THIS FUNCTION MAY BE REDEFINED TO INTRODUCE THE
+; NUMERALS IN THE EVAL PART OF THE SYSTEM.
+;
+(DEFLAM INDCONST@ ()  (ALPHA-INDCONST@))
+(DEFLAM INDPAR@   () (OBJ@ (indpar-ls)))
+(DEFLAM INDVAR@   () (OBJ@ (indvar-ls)))
+
+(DEFLAM FUNCONST@ () (OBJ@ (funconst-ls)))
+(DEFLAM FUNPAR@   () (OBJ@ (funpar-ls)))
+
+(DEFLAM PREDCONST@() (OBJ@ (predconst-ls)))
+(DEFLAM PREDPAR@  () (OBJ@ (predpar-ls)))
+
+
+; DERIVED PARSING ROUTINES
+
+(DEFLAM SENTSYM@ () (OBJ*@ (LIST (sentconst-ls) (sentpar-ls))))
+
+(DEFLAM ALPHA-INDSYM@ ()
+ (IFN (ID_TKTYPE? (CUR-TOKENTYP)) FALSE
+  (OBJ*@ (LIST (indconst-ls) (indpar-ls) (indvar-ls)))))
+
+; WARNING: THIS FUNCTION MAY BE REDEFINED TO INTRODUCE THE
+; NUMERALS IN THE EVAL PART OF THE SYSTEM.
+;
+(DEFLAM INDSYM@ ()
+ (OBJ*@ (LIST (indconst-ls) (indpar-ls) (indvar-ls))))
+
+
+(DEFLAM FUNSYM@  () (OBJ*@ (LIST (funconst-ls) (funpar-ls))))
+(DEFLAM PREDSYM@ () (OBJ*@ (LIST (predconst-ls) (predpar-ls))))
+
+(DEFLAM SIMPSYM@ ()
+ (OBJ*@ (LIST (sentconst-ls) (sentpar-ls)
+             (indconst-ls)  (indpar-ls) (indvar-ls))))
+
+(DEFLAM APPLSYM@ ()
+ (OBJ*@ (LIST (sentconn-ls) (quant-ls) (ifwff-ls) (iftrm-ls)
+             (funconst-ls) (funpar-ls) (predconst-ls) (predpar-ls))))
+
+(DEFLAM DECSYM@ ()
+ (OBJ*@ (LIST (sentconst-ls) (sentpar-ls)
+             (indconst-ls) (indpar-ls)    (indvar-ls)
+             (sentconn-ls) (quant-ls) (ifwff-ls) (iftrm-ls)
+             (funconst-ls) (funpar-ls) (predconst-ls) (predpar-ls))))
+
+(DEFLAM VAR_OR_PAR@ () (OBJ*@ (LIST (indvar-ls) (indpar-ls))))
+(DEFLAM WTPAR@ () (OBJ*@ (LIST (predpar-ls) (sentpar-ls) (funpar-ls))))
+
+(DEFLAM SORT@ ()
+ (LET ((SYM (OBJ?@ (predconst-ls))))
+  (IFN (IST SYM) FALSE
+   (IF (IS-SORT SYM) (NEXT-TOKEN SYM) FVAL))))
+
+; A pseudosort is either a sort, a unary predconst or an alphanumerical
+; symbol which is not a label for a symbol.
+;
+(DEFLAM PSEUDOSORT@ ()
+ (IFN (ID_TKTYPE? (CUR-TOKENTYP)) FALSE
+  (LET ((SYM (OBJ?@ (predconst-ls))))
+   (IFN (IST SYM)
+    (IF (SYMLABEL? (CUR-TOKEN)) FALSE (TK-GET&NTK-PARSE))
+    (IF (AND (PREDCONST SYM) (UNARY SYM)) (NEXT-TOKEN SYM) FALSE)))))
+
+
+
+
+; OBLIGED PARSING, with error message
+
+(DEFLAM SENTCONN#  () (REQ# (QUOTE SENTCONN@)  "The parser" "a <sentconn>"))
+(DEFLAM QUANT#     () (REQ# (QUOTE QUANT@)     "The parser" "a <quant>"))
+
+(DEFLAM SENTCONST# () (REQ# (QUOTE SENTCONST@) "The parser" "a <sentconst>"))
+(DEFLAM SENTPAR#   () (REQ# (QUOTE SENTPAR@)   "The parser" "a <sentpar>"))
+(DEFLAM ALPHA-INDCONST#  ()
+ (REQ# (QUOTE ALPHA-INDCONST@)  "The parser" "an alphanumerical <indconst>"))
+(DEFLAM INDCONST#  () (REQ# (QUOTE INDCONST@)  "The parser" "an <indconst>"))
+(DEFLAM INDPAR#    () (REQ# (QUOTE INDPAR@)    "The parser" "an <indpar>"))
+(DEFLAM INDVAR#    () (REQ# (QUOTE INDVAR@)    "The parser" "an <indvar>"))
+(DEFLAM FUNCONST#  () (REQ# (QUOTE FUNCONST@)  "The parser" "a <funconst>"))
+(DEFLAM FUNPAR#    () (REQ# (QUOTE FUNPAR@)    "The parser" "a <funpar>"))
+(DEFLAM PREDCONST# () (REQ# (QUOTE PREDCONST@) "The parser" "a <predconst>"))
+(DEFLAM PREDPAR#   () (REQ# (QUOTE PREDPAR@)   "The parser" "a <predpar>"))
+
+(DEFLAM SORT#      () (REQ# (QUOTE SORT@)      "The parser" "a <sort>"))
+(DEFLAM PSEUDOSORT# ()
+ (REQ# (QUOTE PSEUDOSORT@) "The parser"
+  "a <sort>, a unary <predconst> or an unused label"))
+
+(DEFLAM SENTSYM#   () (REQ# (QUOTE SENTSYM@)   "The parser" "a <sentsym>"))
+(DEFLAM INDSYM#    () (REQ# (QUOTE INDSYM@)    "The parser" "an <indsym>"))
+(DEFLAM FUNSYM#    () (REQ# (QUOTE FUNSYM@)    "The parser" "a <funsym>"))
+(DEFLAM PREDSYM#   () (REQ# (QUOTE PREDSYM@)   "The parser" "a <predsym>"))
+
+(DEFLAM SIMPSYM#   () (REQ# (QUOTE SIMPSYM@)   "The parser" "a <simpsym>"))
+(DEFLAM APPLSYM#   () (REQ# (QUOTE APPLSYM@)   "The parser" "a <applsym>"))
+
+(DEFLAM DECSYM# ()
+ (REQ# 'DECSYM@ "The parser" "a symbol of the language"))
+
+(DEFLAM VAR_OR_PAR#()
+     (REQ# 'VAR_OR_PAR@ "The parser" "An <indvar> or <indpar>"))
+
+
+; These functions parse repetitions.
+;
+(DEFLAM SORTREP# () (LISTSCAN# 'SORT# 'SORT@ "A <sort>" "<sort>"))
+(DEFLAM PSEUDOSORTREP# () (LISTSCAN# 'PSEUDOSORT# 'PSEUDOSORT@
+"A <pseudosort>" "<pseudosort>"))
+(DEFLAM INDVARREP# ()
+   (LISTSCAN# 'INDVAR# 'INDVAR@ "An <indvar>" "<indvar>") )
+(DEFLAM INDCONSTREP# ()
+ (LISTSCAN# 'INDCONST# 'INDCONST@ "A <indconst>" "<indconst>"))
+
+
+
+;*******************************************************
+;
+; These primitives categorize and parse symbols
+; according to the information of the SACT block.
+;
+;*******************************************************
+
+(DEFLAM INFIX (X)   (IST (infnam X)))
+(DEFLAM INFLOG (X)  (IF (SENTCONN X) (IST (infnam X)) FALSE) )
+(DEFLAM INFFUN (X)  (IF (FUNSYM X)   (IST (infnam X)) FALSE) )
+(DEFLAM INFPRED (X) (IF (PREDSYM X)  (IST (infnam X)) FALSE) )
+
+(DEFLAM PREFIX (X)  (IST (prenam X)))
+(DEFLAM PRELOG (X)  (IF (SENTCONN X) (IST (prenam X)) FALSE) )
+(DEFLAM PREFUN (X)  (IF (FUNSYM X)   (IST (prenam X)) FALSE) )
+(DEFLAM PREPRED (X) (IF (PREDSYM X)  (IST (prenam X)) FALSE) )
+
+(DEFLAM INFLOG@ ()
+ (LET ((SYM (ls-get-obj (CUR-TOKEN) (sentconn-ls))))
+  (IFN (IST SYM) FALSE
+   (IF (INFIX SYM) (NEXT-TOKEN SYM) FALSE))))
+
+(DEFLAM PRELOG@ ()
+ (LET ((SYM (ls-get-obj (CUR-TOKEN) (sentconn-ls))))
+  (IFN (IST SYM) FALSE
+   (IF (PREFIX SYM) (NEXT-TOKEN SYM) FALSE))))
+
+(DEFLAM INFFUN@ ()
+ (LET ((SYM (ls-get-obj (CUR-TOKEN) (APPEND (funconst-ls) (funpar-ls)))))
+  (IFN (IST SYM) FALSE
+   (IF (INFIX SYM) (NEXT-TOKEN SYM) FALSE))))
+
+(DEFLAM INFPRED@ ()
+ (LET ((SYM (ls-get-obj (CUR-TOKEN) (APPEND (predconst-ls) (predpar-ls)))))
+  (IFN (IST SYM) FALSE
+   (IF (INFIX SYM) (NEXT-TOKEN SYM) FALSE))))
+
+

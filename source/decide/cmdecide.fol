@@ -1,0 +1,237 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 15:08:44 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdecide.fol
+;; Date: Wed Oct 20 16:39:14 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;*****************************************************************************
+;*                                                                           *
+;*  ; file cmdecide.fol                                                      *
+;*                                                                           *
+;*  This file contains all routines for performing proof steps               *
+;*  using decide command.                                                    *
+;*                                                                           *
+;*  DECIDE# is the main routine.                                             *
+;*                                                                           *
+;*  It parsifies the input, checking for syntax correctness,                 *
+;*  then it calls decide routines (file assert.fol)                          *
+;*                                                                           *
+;*  SYNTAX:                                                                  *
+;*   DECIDE <wff> OPT[ by { <fact> }] using <list-of-proc>                   *
+;*   <list-of-proc> ::= OPT[ { <rewriter> } ] <decider>                      *
+;*   <rewriter> ::= NNF | PHEXP | SKOLEMIZE | REDUCE | TAUTREN | TAUTEQREN   *
+;*   <decider>  ::= TAUT | TAUTEQ                                            *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM DECIDE# ()
+ (LET ((wff (WFF#))
+       (hypots (HYPOTS@))
+       (rewr-list&dec (LIST-OF-PROC#)))
+  (SEQ 
+   (ENDL)
+   (decide wff hypots (CAR rewr-list&dec) (CDR rewr-list&dec)))))
+
+(DEFLAM LIST-OF-PROC# ()
+ (SEQ (TKC# 'USING "USING")
+      (CONS (LIST-OF-REWR@)
+            (DECIDER#))))
+
+(DEFLAM LIST-OF-REWR@ ()
+ (LET ((rewr (REWRITER@)))
+  (IF (MTL? rewr) MTL
+   (SEQ  
+    (TK@ COMMA)
+    (CONS rewr (LIST-OF-REWR@))))))
+
+(DEFLAM REWRITER@ ()
+ (IF (TKC@ 'NNF) 'nnf
+  (IF (TKC@ 'SKOLEMIZE) 'skolemize
+   (IF (TKC@ 'PHEXP) 'phexp
+    (IF (TKC@ 'REDUCE) 'reduce
+     (IF (TKC@ 'TAUTREN) 'tautren
+      MTL))))))
+
+(DEFLAM DECIDER# ()
+ (IF (TKC@ 'PTAUT) 'ptaut
+  (IF (TKC@ 'PTAUTEQ) 'ptauteq
+   (REMSG1 "a decider"))))
+
+
+
+;*****************************************************************************
+;*                                                                           *
+;*  The commands are:                                                        *
+;*                                                                           *
+;*   PTAUT   --> ptaut;                                                      *
+;*   TAUT    --> tautren,ptaut;                                              *
+;*   TAUTEQ  --> tautren,ptauteq;                                            *
+;*   MONAD   --> nnf,reduce,skolemize,phexp,ptaut;                           *
+;*   MONADEQ --> nnf,reduce,skolemize,phexp,ptauteq;                         *
+;*                                                                           *
+;*  The SYNTAX for all of them is :                                          *
+;*                                                                           *
+;*   COMMAND <wff> by { <fact> }                                             *
+;*                                                                           *
+;*****************************************************************************
+
+
+(DEFLAM PTAUT# ()
+ (LET ((wff (WFF#))
+       (hypots (HYPOTS@)))
+  (SEQ
+   (ENDL)
+   (IF (ptaut (facts_imp_wff-mak wff hypots))
+    (proof-add-line wff
+                    (facts-union-dep hypots)
+                    (reason-mak 'PTAUT	(ras2-mak (wff_ra-mak wff)
+                                                  (facts_ra-mak hypots))))
+    (PTAUTMSG wff hypots)))))
+
+(DEFLAM PTAUTMSG (wff facts)
+ (IF (MTL? facts)
+   (mesexpmes-print "PTAUT couldn't prove that " 
+                     wff 
+                    "is a tautology.")
+   (mesexpmes-print "PTAUT couldn't prove that "
+                     wff
+                    "is a logical consequence of facts.")))
+
+(DEFLAM TAUT# ()
+ (LET ((wff (WFF#))
+       (hypots (HYPOTS@)))
+  (SEQ
+   (ENDL)
+   (IF (ptaut (tautren (facts_imp_wff-mak wff hypots)))
+    (proof-add-line wff
+                    (facts-union-dep hypots)
+                    (reason-mak 'TAUT (ras2-mak (wff_ra-mak wff)
+                                                (facts_ra-mak hypots))))
+    (TAUTMSG wff hypots)))))
+
+(DEFLAM TAUTMSG (wff facts)
+ (IF (MTL? facts)
+   (mesexpmes-print "TAUT couldn't prove that " 
+                     wff 
+                    "is a tautology.")
+   (mesexpmes-print "TAUT couldn't prove that "
+                     wff
+                    "is a logical consequence of facts.")))
+
+(DEFLAM TAUTEQ# ()
+ (LET ((wff (WFF#))
+       (hypots (HYPOTS@)))
+  (SEQ
+   (ENDL)
+   (IF (ptauteq (tautren (facts_imp_wff-mak wff hypots)))
+    (proof-add-line wff
+                    (facts-union-dep hypots)
+                    (reason-mak 'TAUTEQ (ras2-mak (wff_ra-mak wff)
+                                                  (facts_ra-mak hypots))))
+    (TAUTEQMSG wff hypots)))))
+
+(DEFLAM TAUTEQMSG (wff facts)
+ (IF (MTL? facts)
+   (mesexpmes-print "TAUTEQ couldn't prove that " 
+                     wff 
+                    "is a tautology.")
+   (mesexpmes-print "TAUTEQ couldn't prove that "
+                     wff
+                    "is a logical consequence of facts.")))
+
+
+(DEFLAM MONAD# ()
+ (LET ((wff (WFF#))
+       (hypots (HYPOTS@)))
+  (SEQ
+   (ENDL)
+   (IF (ptaut (phexp (skolemize (reduce (nnf (facts_imp_wff-mak wff hypots))))))
+    (proof-add-line wff
+                    (facts-union-dep hypots)
+                    (reason-mak 'MONAD (ras2-mak (wff_ra-mak wff)
+                                                 (facts_ra-mak hypots))))
+     (MONADMSG wff hypots)))))
+
+
+(DEFLAM MONADMSG (wff facts)
+ (IF (MTL? facts)
+   (mesexpmes-print "MONAD couldn't prove that " 
+                     wff 
+                    "is a tautology.")
+   (mesexpmes-print "MONAD couldn't prove that "
+                     wff
+                    "is a logical consequence of facts.")))
+
+
+(DEFLAM MONADEQ# ()
+ (LET ((wff (WFF#))
+       (hypots (HYPOTS@)))
+  (SEQ
+   (ENDL)
+   (IF (ptauteq (phexp (skolemize (reduce (nnf (facts_imp_wff-mak wff hypots))))))
+    (proof-add-line wff
+                    (facts-union-dep hypots)
+                    (reason-mak 'MONADEQ (ras2-mak (wff_ra-mak wff)
+                                                   (facts_ra-mak hypots))))
+    (MONADEQMSG wff hypots)))))
+
+
+(DEFLAM MONADEQMSG (wff facts)
+ (IF (MTL? facts)
+   (mesexpmes-print "MONADEQ couldn't prove that " 
+                     wff 
+                    "is a tautology.")
+   (mesexpmes-print "MONADEQ couldn't prove that "
+                     wff
+                    "is a logical consequence of facts.")))
+
+(DEFLAM HYPOTS@ () (IF (TK2@ 'BY 'by) (FACTREP#) MTL))

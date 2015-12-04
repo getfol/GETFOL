@@ -1,0 +1,172 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 15:08:48 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: ptaut.fol
+;; Date: Wed Oct 20 10:44:03 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR         ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKES     ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*****************************************************************
+;*                                                               *
+;* SYNTAX                                                        *
+;*                                                               *
+;*      (TAUTOLOGY? wff)                                         *
+;*                                                               *
+;* DESCRIPTION                                                   *
+;*                                                               *
+;*  Checks if wff is a tautology.                                *
+;*                                                               * 
+;*  To do this it accomplishes a statistical analysis on wff,    *
+;*  that is for each sentential constant and for each predappl   *
+;*  it verifies if it occurrs disjunctively                      *
+;*  at the top level, if positively and/or negatively and        *
+;*  finally it counts the number of times the pc occurs in wff.  *
+;*  From the statistical information a substitution is           *
+;*  built to perform in order to falsify the formula in input.   *
+;*                                                               *
+;*****************************************************************
+(DEFLAM ptaut (wff)
+ (SEQ  
+  (assgn-init)
+  (TAUTOLOGY? wff)))
+
+(DEFLAM TAUTOLOGY? (wff) (TAUTOLOGY1? wff MTL))
+
+(DEFLAM TAUTOLOGY1? (wff assgn)
+ (LET ((nwff (PEVAL wff assgn)))
+  (LET ((stats (stats-mak nwff)))
+   (LET ((subs (stats2subs stats)))
+    (IF (DTLDO? subs) TRUE
+     (IFN (UNDEF-SUBS? subs) (TAUTOLOGY1? nwff (APPEND subs assgn))
+      (IF (MTL? stats)
+       (IF (TRUTH (PEVAL nwff MTL)) TRUE
+        (SEQ (assgn-set assgn) FALSE))
+       (LET ((pc (pc2sub-get stats)))
+        (AND (TAUTOLOGY1? nwff (LCONS (sub-mak pc (mktruth)) assgn))
+             (TAUTOLOGY1? nwff (LCONS (sub-mak pc (mkfalsity)) assgn)))))))))))
+
+
+; We want to simplify first the pc with the great number of occurrences
+; in the formula is chosen.
+;
+(DEFLAM pc2sub-get (stats)
+ (pc2sub-get1 0 TRUE stats))
+
+(DEFLAM pc2sub-get1 (occ_num pc stats)
+ (LET ((stat (FIRST stats)))
+  (IF (MTL? stat) pc
+   (IF (GT (stat-get-occn stat) occ_num) 
+    (pc2sub-get1 (stat-get-occn stat) 
+                   (stat-get-pc  stat)
+                   (REST stats))
+    (pc2sub-get1 occ_num pc (REST stats))))))
+
+
+(DEFLAM stats-mak (wff)
+ (SEQ
+  (stats-init)
+  (stats-mak1 wff (POSPOL-mak) TRUE)
+  (stats-get)))
+
+(DEFLAM stats-mak1 (wff POL TLDOFLAG)
+ (IF (OR (SENTSYM wff) (PREDAPPL wff))
+  (IF (OR (TRUTH wff) (FALSITY wff )) (NOP)
+   (stats-update-info wff POL TLDOFLAG)) 
+  (IF (NEG wff) (stats-mak1 (body wff) (POL-switch POL) TLDOFLAG)
+   (IF (DISJ wff)
+    (SEQ
+     (stats-mak1 (rtor wff) POL (AND TLDOFLAG (POSPOL POL)))
+     (stats-mak1 (lfor wff) POL (AND TLDOFLAG (POSPOL POL))))
+    (IF (CONJ wff)
+     (SEQ
+      (stats-mak1 (rtand wff) POL (AND TLDOFLAG (NEGPOL POL)))
+      (stats-mak1 (lfand wff) POL (AND TLDOFLAG (NEGPOL POL))))
+     (IF (IMP wff)
+      (SEQ
+       (stats-mak1 (concl wff) POL (AND TLDOFLAG (POSPOL POL)))
+       (stats-mak1 (hypot wff) (POL-switch POL) (AND TLDOFLAG (POSPOL POL))))
+      (IF (IFF wff)
+       (SEQ
+        (stats-mak1 (rtiff wff) (BOTHPOL-mak) FALSE)
+        (stats-mak1 (lfiff wff) (BOTHPOL-mak) FALSE))
+       (IF (WFFIF wff)
+        (SEQ
+         (stats-mak1 (elseof wff) POL FALSE)
+         (stats-mak1 (thenof wff) POL FALSE)
+         (stats-mak1 (ifof wff) (BOTHPOL-mak) FALSE))
+        (REMSG1 "stats-mak1 <wff> with unknown syntax. Fatal error !!!")))))))))
+
+
+(DEFLAM stats-update-info (PC POL TLDOFLAG)
+ (LET ((info (stats-get-stat PC)))
+  (IF (MTL? info)
+   (stats-add-stat (stat-mak&get PC POL TLDOFLAG))
+   (stats-update-stat info POL TLDOFLAG))))
+
+; It takes in input the statistical report and returns the list
+; of sub made to falsify the formula.
+; If a pc (pc = PREDAPPL or SENTCONST) occurs only negatively then his 
+; sub is (pc . True). If it occurs only positively then
+; the sub is (pc . False). If it is a dismatching TLDO
+; then sub is (pc . DTLDO).
+;
+(DEFLAM stats2subs (STATS) (stats2subs1 STATS MTL))
+(DEFLAM stats2subs1 (STATS SUBSTS)
+ (IF (MTL? STATS) SUBSTS
+  (LET ((stat (FIRST STATS)))
+   (LET ((TLDO (stat-get-tldo stat))
+         (POL (stat-get-gpol stat)))
+    (IF (DISMTLDO TLDO) (DISMTLDO-mak)
+     (LET ((val (IF (OR (POSPOL TLDO) (POSPOL POL)) (mkfalsity)
+                 (IF (OR (NEGPOL TLDO) (NEGPOL POL)) (mktruth)
+                  %UNDEF%))))
+      (IFN (EQ val %UNDEF%)
+       (stats2subs1 (REST STATS)
+        (LCONS (sub-mak (stat-get-pc stat) val) SUBSTS))
+       (stats2subs1 (REST STATS) SUBSTS))))))))

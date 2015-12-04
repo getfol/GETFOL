@@ -1,0 +1,748 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdnd.fol
+;; Date: Wed Oct 20 10:46:52 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; *****************************************************************
+; *                                                               *
+; * This file contains all the scanning and parsing routines for  *
+; * natural deduction and related proof theoretic FOL commands.   *
+; *                                                               *
+; *****************************************************************
+;
+;; documentation for ASSUME command
+; *****************************************************************
+; *                                                               *
+; *   ASSUME  <wff> REP [ OPT [,] <wff> ]                         *
+; *                                                               *
+; *     The ASSUME command makes an assumption on a new line of   *
+; *     the the current proof for each <wff> in the command       *
+; *                                                               *
+; *   *****ASSUME P(x);                                           *
+; *   *****ASSUME P(x),Q(y);                                      *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ASSUME# ()
+ (LET ((wffs (WFFREP#) ))
+   (SEQ
+    (ENDL)
+    (assume wffs) )) )
+
+
+; AND introduction and elimination
+;
+;;And introduction
+; *****************************************************************
+; *                                                               *
+; *  ALT [AI | ANDI ] <and_of_facts> OPT [ , ] <and_of_facts>     *
+; *                                                               *
+; *  where: <and_of_facts> ::= ALT [<fact> | ( <and_of_facts> )]  *
+; *                            cj                                 *
+; *                            ALT [<fact> | ( <and_of_facts> )]  *
+; *    AND (and) introduction rule                                * 
+; *                                                               *
+; *    The argument for this command is any parenthesized         *
+; *    conjunctive expression in which all conjuncts are <vl>s.   *
+; *    If no parentheses appear the association is to the right.  *
+; *    Thus #&(#&#&#)&# means #&((#&(#&#))&#).                    *
+; *    The facts are conjuncted toghether by the "and"            *
+; *    metatheoric "cj". It has been preferred to "and" because   *
+; *    the different meaning from the "and" introduced by the     *
+; *    inference rule.                                            *
+; *    And is always a binary connective. The  dependencies of    *
+; *    the new line are the union of those of the <vl>s mentioned *
+; *                                                               *
+; *    NOTE: the syntax of this command has been slightly modified*
+; *          in order to make it easy to the user to build long   *
+; *          <and>s of formulas.                                  *
+; *                                                               *
+; *    ****ANDI (1 cj 2) cj 3, 2;                                 *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ANDI# ()
+ (LET ((and_of_facts1 (AND_OF_FACTS#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((and_of_facts2 (AND_OF_FACTS#) ))
+     (SEQ
+      (ENDL)
+      (andi and_of_facts1 and_of_facts2) )) )) )
+
+(DEFLAM AND_OF_FACTS# ()
+ (LET ((facts (FACTS#) ))
+ (IFN (IST (TK4@ 'cj 'CJ 'conj 'CONJ)) facts (factand-mak facts (AND_OF_FACTS#)) )) )
+
+(DEFLAM FACTS# ()
+  (IFN (IST (TK@ LPAR)) (FACT#)
+  (LET ((facts (AND_OF_FACTS#) ))
+  (SEQ (TK# RPAR "The open parenthesis" "a closed parenthesis")
+       facts))) )
+
+;;;and elimination
+; *****************************************************************
+; *                                                               *
+; *  ALT [ ANDE | AE ] <vl> OPT [ , ] <seq_of_natnums>            *
+; *                                                               *
+; *  where <seq_of_natnums> is a sequence of 1's and 2's          *
+; *        separated with optional commas.                        *
+; *                                                               *
+; *    AND (and) elimination rule                                 *
+; *                                                               *
+; *   This command allows the user to pick up an arbitrary        *
+; *   subpart of the <wff> as long as it is a conjunction.        *
+; *   1 picks out the first conjunct, 2 picks out the second      *
+; *   conjunct. Any other number gives error. The dependencies of *
+; *   the result are the same as those of <vl>.                   *
+; *                                                               *
+; *    NOTE: the syntax of this command has been slightly         *
+; *          modified in order to make it easy to the user to     *
+; *          build long <and>s of formulas.                       *
+; *                                                               *
+; *   ****ANDE 1,2 2, 1 2;                                        *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ANDE# ()
+  (LET ((fact (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+     (LET ((LIST_OF_NAT (NATNUMREP#) ))
+      (SEQ
+        (ENDL)
+        (ande fact LIST_OF_NAT) )) )) )
+
+; OR introduction and elimination
+;
+;;OR introduction
+; *****************************************************************
+; *                                                               *
+; *  ALT [ ORI | OI ] <fact> OPT [ , ] <or_of_wffs&facts>         *
+; *                          OPT [ RL | LR ]                      *
+; *                                                               *
+; *  where: <or_of_wffs&facts> is a sequence of <wff>s and <fact>s*
+; *  separated by  "dj".                                          *
+; *                                                               *
+; *  OR introduction rule                                         * 
+; *                                                               *
+; *    ORs may be parenthesized just like ANDs, but the first     *
+; *    disjunct must be a FACT. That is (as in ANDI) the          * 
+; *    argument for this command is any parenthesized             *
+; *    disjunctive expression in which all disjuncts are <vl>s or *
+; *    <wff>s. If no parentheses appear the association is to the *
+; *    right. Or is always a binary connective.                   *
+; *                                                               *
+; *    The user has to be a little careful when using this command*
+; *    in very complicated combinations of <fact>s and <wff>s.    *
+; *    Infact you can build a formula intermixing <wff>s and      *
+; *    <fact>s. They must be separeted by "dj", that indicates    *
+; *    the disjunctive metatheoric or, as "cj" in ANDI.           *
+; *    								  *
+; *    The "rl" option indicates the order of the disjunction is  *
+; *    the second argument and then the first                     *
+; *                                                               *
+; *    EXAMPLE                                                    *
+; *                                                               *
+; *       a                                    (1)                *
+; *                                                               *
+; *    FOL:: ORI 1, a dj b and not a dj 1;                        *
+; *                                                               *
+; *       a or (((a or b) and (not a)) or a)   (1)                *
+; *                                                               *
+; *                                                               *
+; *    NOTE: the syntax of this command has been slightly         *
+; *          in order to make it easy to the user to build long   *
+; *          <or>s of formulas.                                   *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ORI# ()
+ (LET ((fact (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((wff (OR_OF_WFFS&FACTS#) ))
+     (SEQ
+      (TK@ COMMA)
+      (LET ((left_right (TK4@ 'lr 'LR 'rl 'RL)))
+       (SEQ
+        (ENDL)
+        (ori fact wff left_right) )) )) )) )
+
+(DEFLAM OR_OF_WFFS&FACTS# ()
+ (LET ((wff (WFFS&FACTS#) ))
+   (IFN (IST (TK4@ 'dj 'DJ 'disj 'DISJ)) 
+     wff 
+     (mkor wff (OR_OF_WFFS&FACTS#)) )) )
+
+(DEFLAM WFFS&FACTS# ()
+  (IFN (IST (TK@ LPAR)) (WFF_OR_FACT#)
+    (LET ((wffdj (OR_OF_WFFS&FACTS#) ))
+     (SEQ
+      (TK# RPAR "The open parenthesis" "a closed parenthesis")
+       wffdj) )) )
+
+;;;or elimination
+; *****************************************************************
+; *                                                               *
+; *  ALT [ ORE | OE ] <fact> OPT[,] <fact>1 OPT[,] <fact>2        *
+; *                                                               *
+; *  OR elimination rule                                          *
+; *                                                               *
+; *  <fact> is the <fact> on which a disjunction "A or B" appears * 
+; *  <fact>1 and <fact>2 are both <fact>s such that <fact>1 and   *
+; *  <fact>2 have both the same <wff> C.                          *
+; *  The conclusion is  the <wff> C.                              *
+; *  The dependencies of the conclusion are those of <fact>       *
+; *  along with those of <fact>1 which are not equal to A and     *
+; *  those of <fact>2 not equal to B.                             *
+; *                                                               *
+; *  ****ORE 1,4,8;                                               *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ORE# ()
+  (LET ((fact1 (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((fact2 (FACT#) ))
+      (SEQ
+       (TK@ COMMA)
+       (LET ((fact3 (FACT#) ))
+         (SEQ
+           (ENDL)
+           (ore fact1 fact2 fact3) )) )) )) )
+
+; False introduction and insertion
+;
+;; FALSEI : false introduction
+; ***********************************************************************
+; *                                                                     *
+; *  ALT [ FALSEI | FI ] <fact>1 OPT [ , ] <fact>2                      *
+; *                                                                     *
+; *    FALSE introduction rule                                          *
+; *                                                                     *
+; *    If <fact>1 is of the form A, then <fact>2 must be of the         *
+; *    form not A (or the other way around).  The conclusion is the     *
+; *    WFF "FALSE".  Its dependencies are the union of the              *
+; *    the dependencies of <fact>1 and <fact>2.                         *
+; *                                                                     *
+; *    *****FALSEI 1,2;                                                 *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM FALSEI# ()
+ (LET ((fact1 (FACT#) ))
+  (SEQ
+   (TK@ COMMA) 
+   (LET ((fact2 (FACT#) ))
+    (SEQ
+     (ENDL)
+     (falsei fact1 fact2) )) )) )
+
+;;;  documentation for FALSEE command
+; *****************************************************************
+; *                                                               *
+; *  ALT [ FALSEE | FE ] <vl> OPT [ , ] ALT[ <vl>1 | <wff> ]      *
+; *                                                               *
+; *   FALSE elimination rule                                      *
+; *                                                               *
+; *   The <wff> of <vl> must be "FALSE".  A new line is created   *
+; *   with either vl>1 or the WFF specified by the alternative.   *
+; *   This rule says that anything follows from a contradiction.  *
+; *   The dependencies (there had better be some or your theory   *
+; *   is inconsistant) are just those of <vl>.                    *
+; *                                                               *
+; *   ****FALSEE 1, P(x);                                         *
+; *                                                               *
+; *****************************************************************
+;	
+(DEFLAM FALSEE# ()
+  (LET ((fact (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((wff (WFF_OR_FACT#) ))
+     (SEQ
+      (ENDL)
+      (falsee fact wff) )) )) )
+
+;NOT introduction and elimination.
+;
+;;; not elimination
+; *****************************************************************
+; *                                                               *
+; * ALT[ NOTE | NE ] <vl> OPT [ , ] ALT[ <vl>1 | <wff> ]          *
+; *                                                               *
+; *   NOT elimination rule                                        *
+; *                                                               *
+; *   The <wff> of <vl> must be "FALSE". <vl>1 or <wff> must have *
+; *   "not " as main symbol. That is they must have the form      *
+; *   "not A". The conclusion is A. The dependencies are those of *
+; *   <vl>, minus any equal to not A.                             *
+; *                                                               *
+; *   This ND system is a variation of Prawitz' one. If this rule *
+; *   is omitted (or simply not used) and only the False          *
+; *   introduction and elimination rules are used the proof is    *
+; *   intuitionistically valid.                                   *
+; *                                                               *
+; *   ****NOTE 1,4;                                               *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM NOTE# ()
+ (LET ((fact (FACT#) ))
+  (SEQ
+   (TK@ COMMA)
+   (LET ((wff (WFF_OR_FACT#) ))
+     (SEQ
+       (ENDL)
+       (note fact wff) )) )) )
+
+;;; not introduction
+; *****************************************************************
+; *                                                               *
+; * ALT [ NOTI | NI ] <vl> OPT [ , ] ALT[ <vl>1 | <wff> ]         *
+; *                                                               *
+; *   NOT introduction rule                                       *
+; *                                                               *
+; *   The wff of <vl> must be "FALSE". The conclusion of the rule *
+; *   is the negation of <vl>1 or the <wff>. The dependencies of  *
+; *   the conclusion are those of <vl> minus the ones (eventually)*
+; *   equal to <vl>1 or <wff>. Note that (as for NOTE) if <vl1>   *
+; *   or wff are not in the deplist this command actually works   *
+; *   as FALSEE.                                                  *
+; *                                                               *
+; *   *****NOTI 1, not P;                                         *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM NOTI# ()
+ (LET ((fact (FACT#) ))
+  (SEQ
+   (TK@ COMMA)
+   (LET ((wff (WFF_OR_FACT#) ))
+    (SEQ
+     (ENDL)
+     (noti fact wff) )) )) )
+
+; Implication introduction and elimination
+;
+;;; imp elimination
+; *****************************************************************
+; *                                                               *
+; * ALT [ IMPE | MP ] <vl> OPT [ , ] <vl>                         *
+; *                                                               *
+; *  IMPLICATION (imp) ELIMINATION RULE                           *
+; *                                                               *
+; *  The order in which the arguments are specified is irrelevant.*
+; *  This is the classical modus ponens. The dependencies of the  *
+; *  conclusion are the union of the dependencies of both <vl>s.  *
+; *                                                               *
+; *  *****IMPE 1,2;                                               *
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (IMPE#)                                                  *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM IMPE# ()
+ (LET ((fact1 (FACT#) ))
+  (SEQ
+   (TK@ COMMA)
+   (LET ((fact2 (FACT#) ))
+    (SEQ
+     (ENDL)
+     (impe fact1 fact2)  )) )) )
+
+
+;;; implication introduction
+; *****************************************************************
+; *                                                               *
+; * ALT [IMPI | DED] ALT[<wff> | <fact>] OPT[ALT [imp | ,]] <fact>*
+; *                                                               *
+; *	IMPLICATION INTRODUCTION                                  *
+; *	The difference between "<wff> imp <factnam>" and          *
+; *     "<factnam> imp <factnam>" is that in the latter case      *
+; *     dependencies of the conclusion which are the same as the  *
+; *     hypothesis are deleted.                                   *
+; *                                                               *
+; *	*****IMPI P(x) imp 1;                                     *
+; *	*****IMPI 1 , 2;                                          *
+; *                                                               *
+; *	IMPI may be written as DED, which stands for              *
+; *     "deduction rule".                                         *
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (IMPI#)                                                  *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM IMPI# ()
+  (LET ((wff (WFF_OR_FACT#) ))
+   (SEQ
+    (TK3@ 'imp 'IMP COMMA)
+    (LET ((fact (FACT#) ))
+     (SEQ
+      (ENDL)
+      (impi wff fact))))) )
+
+
+;;; iff introduction and elimination
+;
+; iff introduction
+; *****************************************************************
+; *                                                               *
+; *   ALT [ IFFI | II ] <vl>1 OPT [ , ] <vl>2                     *
+; *                                                               *
+; *     Equivalence (iff) introduction rule                       *
+; *                                                               *
+; *     <vl>1 is of the form A imp B and <vl>2 is of the form     *
+; *      B imp A. The conclusion is A iff B. The dependencies are *
+; *      the union of the dependencies of <vl>1 and <vl>2.        *
+; *                                                               *
+; *      ****IFFI 4, 5;                                           *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM IFFI# ()
+  (LET ((fact1 (FACT#) ))
+    (SEQ
+     (TK@ COMMA)
+     (LET ((fact2 (FACT#) ))
+      (SEQ
+       (ENDL)
+       (iffi fact1 fact2) )) )) )
+
+; iff elimination
+; *****************************************************************
+; *                                                               *
+; *  ALT [ IFFE | EI ] <vl> OPT [ , ] ALT[ 1 | 2 ]                *
+; *                                                               *
+; *     Equivalence (iff) elimination rule                        *
+; *                                                               *
+; *     If <vl> is of the form A iff B then the first alternative *
+; *     produces A imp B, the second B imp A.  The dependencies   *
+; *     are those of <vl>.                                        *
+; *                                                               *
+; *     ****IFFE 1, 1;                                            *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM IFFE# ()
+ (LET ((fact (FACT#) ))
+ (SEQ 
+  (TK@ COMMA)
+  (LET ((NATNUM (NATNUM# "Iff elimination") ))
+   (SEQ
+     (ENDL)
+     (iffe fact NATNUM) )) )) )     
+
+
+;;; all introducton and elimination
+;
+;all introduction
+; *****************************************************************
+; *                                                               *
+; * ALT [ALLI | UG] <fact>                                        *
+; *     REP1[ OPT [ OPT[,] ALT [<indvar>|<indpar>] : ] <indvar> ] *
+; *                                                               *
+; *   ALL (forall) introduction rule                              *
+; *                                                               *
+; *   Several simultaneous universal generalizations on <fact>    *
+; *   can be carried out with this command. For each element of   *
+; *   the list (either x or a:x) a new universal quantifier       *
+; *   (forall x) is put at the front of <fact>.                   *
+; *                                                               *
+; *   ****ALLI 9, a:x;                                            *
+; *                                                               *
+; * NOTE                                                          *
+; * Remember there is the usual restriction from ND theory        *
+; * on the application of this rule, namely the variable/parameter*
+; * being replaced must not appear free in any of the assumptions *
+; * of which <fact> is a dependency.                              *
+; *                                                               *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ALLI# ()
+ (LET ((fact (FACT#) ))
+  (SEQ
+   (TK@ COMMA)
+   (LET ((SUBSTLIST (ALLI_SUBSTREP#) ))
+    (SEQ 
+     (ENDL)
+     (alli fact SUBSTLIST) )) )) )
+
+(DEFLAM ALLI_SUBSTREP# ()
+    (LISTSCAN# 'ALLI_SUBST# 'ALLI_SUBST@ "A <substitution>" "<substitution>"))
+
+(DEFLAM ALLI_SUBST# ()
+  (LET ((ALLI_SUBST_PAIR (ALLI_SUBST@) ))
+  (IF (IST ALLI_SUBST_PAIR) ALLI_SUBST_PAIR
+  (REMSG1 "All introduction requires a list of substitution <var>s") )) )
+
+(DEFLAM ALLI_SUBST@ ()
+ (LET ((var_or_par (VAR_OR_PAR@) ))
+ (IFN (IST var_or_par) FVAL
+ (IFN (IST (TK@ COLON)) 
+     (alli_subst_pair-mak var_or_par var_or_par)
+     (alli_subst_pair-mak var_or_par (INDVAR#)) ))) )
+
+
+;;;all elimination
+; *****************************************************************
+; *                                                               *
+; * ALT [ ALLE | US ] <fact> , <termlist>                         *
+; *                                                               *
+; *   ALL (forall) elimination rule                               *
+; *                                                               *
+; *   Universal specialization uses the terms in the <termlist>   *
+; *   to instantiate the universal quantifiers in the order in    *
+; *   which they appear.                                          *
+; *                                                               *
+; *   ****ALLE 3,a b;                                             *
+; *                                                               *
+; * NOTE                                                          *
+; *   If a particular term is not free for the variable to be     *
+; *   instantiated a bound variable change is made and then the   *
+; *   substitution is made. The variable created is declared to   *
+; *   be an INDVAR of the correct SORT.                           *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ALLE# ()
+ (LET ((fact (FACT#) ))
+ (SEQ 
+  (TK@ COMMA)
+  (LET ((TERMLIST (TERMREP#) ))
+   (SEQ
+    (ENDL) 
+    (alle fact TERMLIST) )) )) )
+
+
+;;; exists introduction and elimination
+;
+;exists introduction
+; *****************************************************************
+; *                                                               *
+; * ALT [ EXISTI | EG ] <fact>,                                   *
+; *     REP1[ OPT [,] OPT[ <term> :] <indvar> OPT[<occlist>]      *
+; *                                                               *
+; * where: <occlist> :=  OCC  <natnumlist>                        *
+; *        any occurence in <occlist> is substituted by <indvar>  *
+; *                                                               *
+; *     EXISTS (exists) introduction rule                         *
+; *                                                               *
+; *   The list following <fact> tells which TERMs are to be       *
+; *   existentialized. If the optional <term> is present, it is   *
+; *   replaced by <indvar> at each occurrence mentioned in the    *
+; *   <occlist> and then  existentialized. If <term> is not       *
+; *   all the occurences of <indvar> are put under the scope of   *
+; *   existential quantifier.                                     *
+; *                                                               *
+; *   ****EXISTI 1,x:y OCC 2;                                     *
+; *                                                               *
+; * NOTE                                                          *
+; *   Notice that no use can be made of an <occlist> if there is  *
+; *   no TERM present. The machine will give error in this case.  *
+; *   The dependencies of the conclusion are just those of the    *  
+; *   <fact>.                                                     *
+; *                                                               *
+; * NOTES ABOUT THE IMPLEMENTATION                                *
+; *   In (EXISTI_SUBST@) note the trick in parsing first an       *
+; *   <indvar> (which is itself a <term>), in order to take care  *
+; *   of when you have to parse <occlist>.                        *
+; *   (OCCLIST#!) parses for the list of the occurences to be     *
+; *   substituted in the exists introduction.                     *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM EXISTI# ()
+  (LET ((fact (FACT#) ))
+   (SEQ 
+    (TK@ COMMA)
+    (LET ((TERMLIST (EXISTI_SUBSTREP#)))
+     (SEQ 
+      (TK@ COMMA)
+      (ENDL)
+      (existi fact TERMLIST) )) )) )
+
+(DEFLAM EXISTI_SUBSTREP# ()
+    (LISTSCAN# 
+        'EXISTI_SUBST# 'EXISTI_SUBST@ "A <substitution>" "<substitution>")) 
+
+(DEFLAM EXISTI_SUBST# ()
+  (LET ((EXISTI_SUBST_PAIR (EXISTI_SUBST@) ))
+  (IF (IST EXISTI_SUBST_PAIR) EXISTI_SUBST_PAIR
+  (REMSG1 "Exists introduction requires a list of substitution <var>s") )) )
+
+(DEFLAM EXISTI_SUBST@ ()
+  (LET ((indvar (INDVAR@) ))
+  (IF (IST indvar)
+   (IF (IST (TK@ COLON))        
+     (existi_subst_pair-mak indvar (INDVAR#) (OCCLIST#!))
+     (existi_subst_pair-mak indvar indvar 'ALL) ) 
+   (LET ((term (TERM@) ))
+   (IFN (IST term) FVAL
+    (SEQ 
+     (TK# COLON "Exists introduction" "a COLON")
+     (existi_subst_pair-mak 
+         term (INDVAR#) (OCCLIST#!)) ))) )) )
+
+(DEFLAM OCCLIST#! () 
+         (IF (IST (TK2@ 'OCC 'occ)) (ORDER (NATNUMREP#)) 'ALL) )
+
+;exists elimination
+; *****************************************************************
+; *                                                               *
+; * ALT[ EXISTE | ES ] <fact> REP1[ OPT[,] ALT[<indvar>|<indpar>]]*
+; *                                                               *
+; *   EXISTS (exists) elimination rule                            *
+; *                                                               *
+; *   "Exists eliminaion" rule has been implemented in slightly   *
+; *   different way from what the theory says (see manual and     *
+; *   Prawitz' book). The machine implementation makes the correct*
+; *   assumption for you, remembers it and it automatically       *
+; *   removes it at the first legitimate opportunity. Several     *
+; *   eliminations can be done at once.                           *
+; *                                                               *
+; *   ****EXISTE 4 b;                                             *
+; *                                                               *
+; *****************************************************************
+;   
+(DEFLAM EXISTE# ()
+ (LET ((fact (FACT#) ))
+  (SEQ 
+   (TK@ COMMA)
+   (LET ((VARORPARLIST (VAR_OR_PARREP#) ))
+    (SEQ 
+     (ENDL)
+     (existe fact VARORPARLIST) )) )) )
+
+(DEFLAM VAR_OR_PARREP# ()
+   (LISTSCAN# 
+     'VAR_OR_PAR# 'VAR_OR_PAR@ "This command" "<indvar> or <indpar>") )
+
+
+; substitution command
+; *****************************************************************
+; *                                                               *
+; *      subst <fact1> OPT[with] <fact2>			  *
+; *            OPT[occ <integerlist>]			          *
+; *            OPT[ALT[right,left]];				  *
+; *								  *
+; *    where fact2 must be the equality "t1 = t2" and fact1       *
+; *    may contain one or more not ground occurrences of t1.      *
+; *								  *
+; *    <fact1> is the fact in which occurrencies of a ground term *
+; *            are substituted					  *
+; *    <fact2> is the ground equality that indicates the          *
+; *            substitution					  *
+; *    <integerlist> is the list of integers indicating the       *
+; *                  occurrences  				  *
+; *                  in which the substitution is performed.      *
+; *                  If no <integerlist> is specified all the     *
+; *                  occurrences are replaced.                    *
+; *    right: indicates the left hand of the equality to be       *
+; *           substituted with the right hand.                    *
+; *    left: indicates the right hand of the equality to be       *
+; *          substituted with the left hand.                      *
+; *                                                               *
+; * EXAMPLES:							  *
+; *							          *
+; *  (1 P(x,y) imp Q(y,x) (1))					  *
+; *  (2 x = f(x) (2))						  *
+; *  GETFOL:: subst 1 with 2;					  *
+; *  (3 P(f(x),y) imp Q(y,f(x)) 1 2)				  *
+; *  GETFOL:: subst 1 with 2 occ 2;				  *
+; *  (3 P(x,y) imp Q(y,f(x)) 1 2)				  *
+; *  assume forall x. P(x,y);					  *
+; *  (4 forall x. P(x,y) (4))					  *
+; *  GETFOL:: subst 4 with 2;					  *
+; *  (5 forall x. P(x,y) (2 4))					  *
+; *  GETFOL:: subst 3 with 2 right;				  *
+; *  (6 P(x,y) imp Q(y,f(x)) (2 3)				  *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SUBST# ()
+  (LET ((fact1 (FACT#)))
+   (SEQ
+    (TK2@ 'WITH 'with)
+    (LET ((fact2 (FACT#)))
+    (SEQ 
+     (LET ((intlist (IF (TK2@ 'OCC 'occ) (NATNUMREP#))))
+     (LET ((left_right (TK4@ 'RIGHT 'right 'LEFT 'left)))
+      (SEQ
+       (ENDL)
+       (subst fact1 fact2 intlist left_right)))))))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

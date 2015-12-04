@@ -1,0 +1,52 @@
+                                    README
+
+This README file describes the contents of the *axiom* directory of the GETFOL
+distribution package. This directory has the following contents:
+
+  diag.hgk    :   HGKM code for the "Diagonalisation Lemma".
+  diag.tst    :   Proof of the "Diagonalisation Lemma" in GETFOL, by Alex
+                  Simpson.
+
+  hilbert     :   Proof presented at CADE 5, by Richard Weyhrauch.
+
+  newrft.tst  :   Simple example for the test of the reflection principle:
+                  any term is equal to itself.
+
+  nml.hgk     :   HGKM code for the "Non monotonic logic" example.
+  nml.tst     :   "Non monotonic logic example", by Fausto Giunchigia and
+                  Richard Weyhrauch.
+
+  pthcons.tst :   "forall w c.(PTHEOREM(w, c) iff not Pconsist(mknot(w), c))"
+                  by Fausto Giunchiglia and Richard Weyhrauch.
+
+  rft.tst     :   "Reflecting x = x" by Fausto Giunchiglia.
+
+  selfrft.tst :   "An example of SELF REFLECTION of META into itself", by
+                  Richard Weyhrauch
+
+  tprola.tst  :   "Peano/Robinson arithmetic", by Richard Weyhrauch.
+
+  tprolass.tst:   "Peano/Robinson arithmetic (with SS)", by Richard
+                  Weyhrauch.
+
+  tprolb.tst  :   "S-expressions", by Richard Weyhrauch.
+
+  tprolf.tst  :   "Example of App. F of the Prolegomena"
+
+  zf.tst      :   "Axioms for Zermelo-Fraenkel Set Theory", by Richard
+                  Weyhrauch.
+
+
+                                  *IMPORTANT*
+
+To run test <filename>, enter GETFOL and fetch the file:
+
+      $ GETFOL
+      ...
+      > (SYSBOOT)
+      ...
+      GETFOL:: fetch <filename>;
+
+If you have any problem running any of the problems, please send e-mail to:
+
+                getfol@frege.mrg.dist.unige.it (GETFOL manager)

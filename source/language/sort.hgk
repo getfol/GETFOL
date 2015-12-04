@@ -1,0 +1,245 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:52:34 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: sort.hgk
+;; Date: Wed Oct 20 10:46:10 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                            sort.hgk                            *
+;*                                                                *
+;* This file contains the low level primitives to handle sorts.   *
+;*                                                                *
+;* In the first part there are the primitives to store the basic  *
+;* information, that is the sort flag and part of the weak partial*
+;* order (see sort.fol).                                          *
+;*                                                                *
+;* Part two is concerned with the data structure devoted to the   *
+;* storage of declared sorts, and of indsyms belonging to that    *
+;* sort.                                                          *
+;*                                                                *
+;* Part three contains the code that implements the relations     *
+;* between sorts.                                                 *
+;*                                                                *
+;* In the final part there are the primitives to store the        *
+;* information  of the sort extension.                            *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+
+;*****************************************************************
+;*                                                               *
+;*                                                               *
+;* PART I: The basic data structures for sorts.                  *
+;*                                                               *
+;*       SORTBIT                                                 *
+;*       SORTBIT is used to keep the information on              *
+;*       whether a symbol is a sort or not.                      *
+;*                                                               *
+;*       MOREGEN                                                 *
+;*       MOREGEN is used to keep the information on              *
+;*       which sorts are more general than a given sort.         *
+;*                                                               *
+;*                                                               *
+;*       LESSGEN                                                 *
+;*       LESSGEN is used to keep the information on              *
+;*       which sorts are less general than a given sort.         *
+;*                                                               *
+;*****************************************************************
+
+(DEFLAM issort    (SYM)   (GETPROP SYM 'SORTBIT))
+(DEFLAM iniissort (SYM)   (SETPROP SYM FALSE 'SORTBIT))
+(DEFLAM setissort (SYM)   (SETPROP SYM TRUE 'SORTBIT))
+(DEFLAM remsortbt (SYM)   (REMPROP SYM 'SORTBIT))
+
+(DEFLAM mg        (SYM)     (GETPROP SYM 'MOREGEN))
+(DEFLAM inimg     (SYM)     (SETPROP SYM MTL 'MOREGEN))
+(DEFLAM setmg     (SYM MGS) (SETPROP SYM MGS 'MOREGEN))
+(DEFLAM remmg     (SYM)     (REMPROP SYM 'MOREGEN))
+(DEFLAM mgsorts-add (S MGSORTS)
+ (setmg S (UNION (mg S) MGSORTS)))
+
+(DEFLAM lg        (SYM)     (GETPROP SYM 'LESSGEN))
+(DEFLAM inilg     (SYM)     (SETPROP SYM MTL 'LESSGEN))
+(DEFLAM setlg     (SYM LGS) (SETPROP SYM LGS 'LESSGEN))
+(DEFLAM remlg     (SYM)     (REMPROP SYM 'LESSGEN))
+(DEFLAM lgsorts-add (S LGSORTS)
+ (setlg S (UNION (lg S) LGSORTS)))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; * PART II: The list of sorts and related indsyms.               *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB sorts () (syms-get-sorts (ls-get-all_objs (predconst-ls))))
+(DEFLAM syms-get-sorts (SYMLIST)
+ (IF (MTL? SYMLIST) MTL
+  (IF (IS-SORT (FIRST SYMLIST))
+   (CONS (FIRST SYMLIST) (syms-get-sorts (REST SYMLIST)))
+   (syms-get-sorts (REST SYMLIST)))))
+
+(DEFLAM indsyms-of-sort (SORT)
+ (indsyms-of-sort-in SORT (ls-get-all_objs (indsym-ls))))
+(DEFLAM indsyms-of-sort-in (SORT SYMLIST)
+ (IF (MTL? SYMLIST) MTL
+  (IF (EQ (sort (FIRST SYMLIST)) SORT)
+   (CONS (FIRST SYMLIST) (indsyms-of-sort-in SORT (REST SYMLIST)))
+   (indsyms-of-sort-in SORT (REST SYMLIST)))))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;* PART III: Relations between sort.                              *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+
+;  This part contains the primitives used to describe the
+;  relations holding between the sorts. We define the following
+;  five binary relations:
+;       mg (weakly more general),
+;       lg (weakly less general),
+;       smg (strictly more general),
+;       slg (strictly less general),
+;       eqg (equally general).
+;
+;
+; mg is implicitly defined by these axioms:
+; Refl: s mg s;
+; Trans: s1 mg s2 & s2 mg s3 => s1 mg s3;
+; Endpoint: exists u. forall s. u mg s;
+;
+;
+; lg is defined on the base of mg as follows:
+; s1 lg s2 <=> s2 mg s1
+;
+;
+; eqg is defined on the base of mg as follows:
+; s1 eqg s2 <=> s1 mg s2 & s2 mg s1
+;
+;
+; smg is defined on the base of mg and eqg as follows:
+; s1 smg s2 <=> s1 mg s2 & not s1 eqg s2
+;
+;
+; slg is defined on the base of lg and eqg as follows:
+; s1 slg s2 <=> s1 lg s2 & not s1 eqg s2
+;
+; If we see these definitions in terms of sets, we obtain the
+; explicit equations which specify the code implementing
+; them.
+; The basic relations and data structures describe the
+; weak relations (as we have already seen).
+; The other are obtained as derived ones.
+;
+
+(DEFLAM eqg (S) (INTERSECT (mg S) (lg S)))
+(DEFLAM smg (S) (SUBTRACT (mg S) (lg S)))
+(DEFLAM slg (S) (SUBTRACT (lg S) (mg S)))
+
+(DEFLAM IS-SORT (SYM) (issort SYM))
+
+(DEFLAM IS-MG (S1 S2) (HGKM-MEMBER S1 (mg S2)))
+(DEFLAM IS-LG (S1 S2) (HGKM-MEMBER S1 (lg S2)))
+(DEFLAM IS-SMG (S1 S2) (HGKM-MEMBER S1 (smg S2)))
+(DEFLAM IS-SLG (S1 S2) (HGKM-MEMBER S1 (slg S2)))
+(DEFLAM SAME-SORT (S1 S2) (AND (IS-MG S1 S2) (IS-LG S1 S2)))
+
+; Generalized sort comparison: the first argument may be either a
+; SysMostgeneral (in which case IS-MG-INS returns true), or a declared
+; sort (in which case IS-MG is called).
+; This is done to allow sharing of symbols between different contexts.
+;
+(DEFLAM IS-MG-INS (S1 S2)
+ (IF (EQ S1 SysMostgeneral) TRUE
+  (IS-MG S1 S2)))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; * PART IV: The data structure for the sort extension            *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+; *****************************************************************
+; *                                                               *
+; *       EXTENSION                                               *
+; *       EXTENSION is used to keep the information  on whether   *
+; *       a sort has a fixed extension.                           *
+; *                                                               *
+; *      (ext     SYM)                                            *
+; *      (iniext  SYM)                                            *
+; *      (setext  SYM EXT)                                        *
+; *      (remext  SYM)                                            *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM ext    (SYM)   (GETPROP SYM 'EXTENSION))
+(DEFLAM iniext (SYM)   (SETPROP SYM MTL 'EXTENSION))
+(DEFLAM setext (SYM EXT)   (SETPROP SYM EXT 'EXTENSION))
+(DEFLAM remext (SYM)   (REMPROP SYM 'EXTENSION))
+
+; The predicate to test if a sort has a fixed extension.
+
+(DEFLAM EXTENSION-HAS (SYM)
+ (IF (IST (ext SYM)) TRUE
+  FALSE))

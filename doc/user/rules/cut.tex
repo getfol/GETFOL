@@ -1,0 +1,52 @@
+\gfcommand{cut}{cut rule}
+\index{cut}
+
+\gfsyntax{
+	cut \ARG{fact1} \ARG{fact2};\\
+	cut \ARG{fact1} \ARG{fact2} \OPT{keep \ARG{assumption1} \SEQ
+	\ARG{assumptionN}};
+}
+
+\gfdescription{
+	This command generates a new proof line obtained from \ARG{fact2} 
+	by eliminating dependencies of all facts whose wff is equal to \ARG{fact1}'s
+	wff, and then adding the dependencies of \ARG{fact1}.
+	In the second form, every \ARG{assumptionI} in the list of dependencies
+	is kept. 
+	Every \ARG{assumptionI} must occur in the list of dependencies of
+	\ARG{fact2} . 
+}
+
+\gfrecap{
+This command generates a new proof line obtained from `fact2'
+by eliminating dependencies of all facts whose wff is equal to `fact1''s
+wff, and then adding the dependencies of `fact1'.
+In the second form, every `assumptionI' in the list of dependencies is kept. 
+Every `assumptionI' must occur in the list of dependencies of `fact2'. 
+}
+
+
+\gfexample+
+   ***** declare sentconst A B C;
+   ***** axiom AAA : A;
+   AAA : A
+   ***** assume A A A A B C;
+   1   A     (1)
+   2   A     (2)
+   3   A     (3)
+   4   A     (4)
+   5   B     (5)
+   6   C     (6)
+   ***** wk 5 by 1 2 3 4;
+   7   B     (1 2 3 4 5)
+   ***** wk AAA by 6;
+   8   A     (6)
+   ***** cut 8 7;
+   9   B     (5 6)
+   ***** wk 7 by 6;
+   10   B     (1 2 3 4 5 6)
+   ***** cut AAA 10;
+   11   B     (5 6)
+   ***** cut 8 7 keep 3 2;
+   12   B     (2 3 5 6)
++

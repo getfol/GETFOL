@@ -1,0 +1,168 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: mattach.fol
+;; Date: Wed Oct 20 10:46:32 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; **************************************************************
+; *                                                            *
+; *                   mattach.fol                              *
+; *                                                            *
+; *                                                            *
+; * THIE FILE COONTAINS ALL THE CODE FOR THE MATTACH COMMAND   *
+; * AND THE CODE TO RUN THE diaglemma1 EXAMPLE. NO PART OF     *
+; * GETFOL DEPENDS ON IT.                                      *
+; *                                                            *
+; **************************************************************
+
+
+;;;MATTACH
+;
+; **************************************************************
+; *                                                            *
+; * COMMAND: MATTACH <indconst> ALT [ DAR |dar ]               *
+; *                  [cname]:[pname]:sort:<something_to_parse> *
+; *                                                            *
+; * SYNTAX                                                     *
+; *   (MATTACH#)                                               *
+; *   (FOLOB#)                                                 *
+; *                                                            *
+; * DESCRIPTION                                                *
+; *   It allows the user to make attachments among theories    *
+; *   FOLOB# is built in such a way that in MATTACH any of the *
+; *   context name and of the proof name may not appear. In    *
+; *   this case the default is to work in the current structure*
+; *                                                            *
+; **************************************************************
+;
+(DEFLAM  MATTACH# ()
+ (LET ((INDCONST (ALPHA-INDCONST#)))
+  (IF (IST (TKC@ 'DAR))
+   (LET ((PARSEDREP (INDREPINFO@)))
+    (LET ((FOLOBJECT (FOLOB#)))
+     (SEQ
+      (ENDL)
+      (LET ((REP (parsedrep&sort-get-rep PARSEDREP
+                  (folobject-get-sort FOLOBJECT))))
+       (ind-int&prefnam-check&mak INDCONST REP
+        (folobject-get-object FOLOBJECT))))))
+   (SEQ
+    (TKC# 'TO "TO or DAR")
+    (LET ((PARSEDREP (INDREPINFO@)))
+     (LET ((FOLOBJECT (FOLOB#)))
+      (SEQ
+       (ENDL)
+       (LET ((REP (parsedrep&sort-get-rep PARSEDREP
+                   (folobject-get-sort FOLOBJECT))))
+        (ind-int-check&mak INDCONST REP
+         (folobject-get-object FOLOBJECT))))))))))
+
+(DEFLAM INDREPINFO@()
+ (IF (IST (TK@ LSQB))
+  (LET ((repnam (REPNAM#)))
+   (SEQ
+    (TKC# RSQB "A rightsquare bracket")
+    repnam))
+  FALSE))
+
+(DEFLAM parsedrep&sort-get-rep (PARSEDREP SORT)
+ (IF (IST PARSEDREP) PARSEDREP
+  (IF (IST (getdefrep SORT)) (getdefrep SORT)
+   %DEFDEFREP%)))
+
+
+
+(DEFLAM FOLOB# ()
+ (LET ((ERRFLAG FVAL)
+       OBJECT)
+  (LET ((OLDCTEXT (ectext2ctext))
+        (OLDCNAME (curcname-get))
+        (CNAME (CNAME@)))
+   (SEQ
+    (IF (OR (ISF CNAME) (EQ CNAME OLDCNAME)) (NOP)
+     (probed-ctext-get (clist-get-ctext CNAME)))
+    (IF (ERROR-OCCURRED? (TRAP (TK# COLON "MATTACH" " <:>")))
+     (SETQ ERRFLAG TVAL)
+     (LET ((PNAME (PNAME@))
+           (OLDPROOF (eproof2proof))
+           (OLDPNAME (curpname-get)))
+      (SEQ
+       (IF (OR (ISF PNAME) (EQ PNAME OLDPNAME)) (NOP)
+        (probed-proof-get (plist-get-proof PNAME)))
+       (IF (ERROR-OCCURRED? (TRAP
+        (SEQ
+         (TK# COLON "MATTACH" " <:>")
+         (LET ((MSORT (TK-GET&NTK-PARSE))) ; The sort should be in the MT.
+          (SEQ
+           (TK# COLON "MATTACH" " <:>")
+           (SETQ OBJECT (FOLOBJECT-OBJ# MSORT)))))))
+        (SETQ ERRFLAG TVAL) (NOP))
+       (IF (EQ OLDPNAME (curpname-get)) (NOP)
+        (probed-proof-get OLDPROOF)))))
+    (IF (EQ OLDCNAME (curcname-get)) (NOP)
+     (probed-ctext-get OLDCTEXT))
+    (IF (IST ERRFLAG) (ENDM) OBJECT)))))
+
+(DEFLAM FOLOBJECT-OBJ# (SORT)
+ (LET ((SCANFUN (sort2fun-get SORT)))
+  (IF (MTL? SCANFUN)
+   (REMSG1 "A suitable sort")
+   (folobject-mak (curcname-get) (curpname-get) SORT
+    (HGKM-APPLY (GET-FUN SCANFUN) MTL)))))
+
+
+
+; *****************************************************************
+; *                                                               *
+; * Constructors and destructors for FOLOBJECTs                   *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM folobject-mak (CNAME PNAME SORT OBJECT)
+ (LIST CNAME PNAME SORT OBJECT))
+(DEFLAM folobject-get-cname  (FOLOBJECT) (CAR FOLOBJECT) )
+(DEFLAM folobject-get-pname  (FOLOBJECT) (CADR FOLOBJECT) )
+(DEFLAM folobject-get-sort   (FOLOBJECT) (CADDR FOLOBJECT) )
+(DEFLAM folobject-get-object (FOLOBJECT) (CADDDR FOLOBJECT) )
+

@@ -1,0 +1,35 @@
+\gfcommand{decrep}{representation declaration}
+\index{decrep}
+
+\gfsyntax{
+  decrep \ARG{replabel1} \OPT{\SEQ \ARG{replabelN}};
+}
+
+\gfdescription{
+  It declares \ARG{replabelI} to be representation functions.\\
+  The only builtin representation functions are {\tt NATNUMREP}, {\tt TRUTHREP}
+  and {\tt UNIVERSALREP}, the representation functions for natural numbers, for 
+  truth values and for default representation respectively.
+  Numerals have a builtin attachment to {\HG} numbers in the representation 
+  function {\tt NUMERALREP}.
+}
+
+\gfrecap{
+It declares `replabelI' to be representation functions.
+The only builtin representation functions are `NATNUMREP', `TRUTHREP'
+and `UNIVERSALREP', the representation functions for natural numbers, for 
+truth values and for default representation respectively.
+Numerals have a builtin attachment to HGKM numbers in the representation 
+function `NUMERALREP'.
+}
+
+\gfexample+
+   ***** decrep rep1 rep2;
++
+
+\gfnotes{
+  Since the intended model itself appears nowhere in the {{\GF}} system, there
+  is no need for the user to give any detailed information about the nature of 
+  the representation maps which he has in mind.
+  {\tt NATNUMREP} is known by {\GF} only after typing {\tt know natnums}.
+}

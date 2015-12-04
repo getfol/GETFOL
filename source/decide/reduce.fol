@@ -1,0 +1,488 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:29:12 MET 1993
+;;
+;; This GETFOL file (reduce.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;**********************************************************************
+;*                                                                    *
+;*                  reduce.fol                                        *
+;*                                                                    *
+;**********************************************************************
+
+;**********************************************************************
+;*                  Theoretical concepts                              *
+;*                                                                    *
+;* A formula wff is said in UE-form if any universal quantifier does  *
+;* not contain free occurences of existentially bounded variable in   *
+;* its scope.                                                         *
+;* Many formulae not in UE-form can be reduced to UE-formulae by      *
+;* finitely many applications of rewriting rules expressing the       *
+;* properties of associativity, commutativity and distributivity of   *
+;* the propositional connectives and the distributivity of quantifiers*
+;* through propositional connectives.                                 *
+;* The transformations applied are truthful preserving, hence the     * 
+;* final formula is logically equivalent to the starting one.         *
+;* The strategy used in the reduction process is to try to reduce     *
+;* the scope of universal quantifiers till they no longer contain     *
+;* free occurrences of existentially bounded variables.               *
+;* reduce procedure exploits the following theoretical concepts:      *
+;*                                                                    *
+;*   - minimality                                                     * 
+;*   - normalization                                                  *
+;*   - top normalizable                                               *
+;*                                                                    *
+;* The process ends when the formula is minimal, normalized and not   *
+;* top normalizable.                                                  * 
+;*                                                                    *
+;* Notation:                                                          *
+;*                                                                    *
+;* alpha(x) denotes a formula in which there is at least one free     *
+;* occurrence of the variable x.                                      *
+;* alpha[x] denotes a formula in which there is no free occurrences   *
+;* of x.                                                              *
+;* Q and Q' stand either for forall or for exists.                    *
+;* If Q = forall, then o = and & + = or.                              *
+;* If Q = exists, then o = or & + = and.                              *
+;* and is said to be forall-compatible and exists-incompatible,       *
+;* or is said to be exists-compatible and forall-incompatible.        *
+;*                                                                    *
+;**********************************************************************
+
+;**********************************************************************
+;*                Minimality                                          *
+;*                                                                    *
+;* A formula alpha is minimal wrt <Q,x> if and only if satisfies      *
+;* one of the following clauses:                                      *
+;* - is a literal in which x is free,                                 *
+;* - is Q'y.gamma where gamma is minimal wrt <Q',y> and               *
+;*   x is free in gamma,                                              *
+;* - alpha = (beta+gamma) with beta, gamma minimal wrt <Q,x>,         *
+;*   Moreover a formula alpha is minimal if and only if each          *
+;*   subformula Qx.beta of alpha is such that beta is                 *
+;*   minimal wrt <Q,y>.                                               *
+;*                                                                    *
+;*                Normalization                                       *
+;*                                                                    *
+;* A formula alpha is normalized wrt <Q,x> if and only if             *
+;* each subformula beta of alpha not in the scope of a quantifier,    *
+;* satisfies one of the following clauses:                            *
+;* - does not contain free occurrences of x,                          *
+;* - is a literal,                                                    *
+;* - beta = (gamma o delta) with gamma, delta normalized wrt <Q,x>,   *
+;* - beta = gamma[x] + delta) with gamma, delta normalized wrt <Q,x>, *
+;* - is minimal wrt <Q,x>.                                            *
+;*   Moreover a formula alpha is normalized if and only if each       *
+;*   subformula Qx.beta of alpha is such that beta is                 *
+;*   normalized wrt <Q,x>.                                            *
+;*                                                                    *
+;*                Top Normalizable           	                      * 
+;*                                                                    *
+;* A formula gamma is top normalizable wrt <Q,x> if and only if:      *
+;* - gamma = (alpha(x) + beta) where alpha and beta are               *
+;*   normalized wrt <Q,x>,                                            *
+;* - gamma is not normalized wrt <Q,x>.                               *
+;*   Moreover, given a formula gamma, alpha is a formula top          *
+;*   normalizable occurring in gamma if and only if <Q,x> such that   *
+;*   alpha is a formula top normalizable wrt <Q,x> and descending     *
+;*   the tree of formula gamma, <Q,x> are the last quantifier and     *
+;*   the last variable not free that the process meets before alpha.  *
+;*                                                                    * 
+;**********************************************************************
+
+;**********************************************************************
+;*                 Set of rules                                       *
+;*                                                                    *
+;* The rewriting rules used by reduce are:                            *
+;* (1)  Qx.alpha[x] --> alpha                                         *                       
+;* (2)  Qx.(alpha o beta)(x) --> (Qx.alpha o Qx.beta)                 *
+;* (3)  Qx.(alpha[x] + beta(x)) --> (alpha[x] + Qx.beta(x))           *
+;* (4)  (alpha(x) + beta[x]) --> (beta[x] + alpha(x))                 *
+;* (5)  ((alpha[x] + beta(x)) + gamma(x)) -->                         *
+;*      (alpha[x] + (beta(x) + gamma(x)))                             *
+;* (6)  ((alpha o beta)(x) + gamma(x)) -->                            * 
+;*      ((alpha + gamma(x)) o (beta + gamma(x)))                      *
+;* (7)  (alpha(x) + (beta[x] + gamma(x))) -->                         *
+;*      (beta[x] + (alpha(x) + gamma(x)))                             *
+;* (8)  ((alpha(x) + (beta o gamma)(x))) -->                          *
+;*      ((alpha(x) + beta) o (alpha(x) + gamma))                      *
+;*                                                                    *
+;*  Restrictions:                                                     *
+;*  - In rules {(4)-(8)} the left hand side must be a top             *
+;*    normalizable formula.                                           *
+;*  - In rules {(7),(8)} alpha must be minimal wrt <Q,x>.             *
+;*                                                                    *
+;* NOTICE : Rules are mutually exclusive.                             *
+;*                                                                    *
+;* In the following we will refer to the sets of rules {(1)-(8)},     *
+;* {(1)-(3)} and {(4)-(8)} by S, S1 and S2 respectively.              *
+;* Notice that no rule in S is applicable to a minimal formula and    *
+;* that no rule in S2 is applicable to a normalized formula.          *
+;*                                                                    *
+;* The application of the rules in S has the effect to reduce the     *
+;* input formulae in minimal form.                                    *
+;* An effective way to accomplish such reduction process is to        *
+;* recursively descend the formula tree and then apply the rewriting  *
+;* rules in a bottom up fashion (see procedure S-normalize)           *
+;* exploiting the following facts:                                    *
+;* - literals, conjunctions and disjunctions of minimal formulae are  *
+;*   minimal,                                                         *
+;* - a minimal formula occurring in the scope of ``Qx'' can be        *
+;*   rewritten into a formula normalized wrt <Q,x> by applying        *
+;*   the rules in S2 (procedure S2-normalize),                        *
+;* - A normalized formula (wrt <Q,x> can be turned into minimal form  *
+;*   by application of the rules in S1 (procedure S1-normalize).      *
+;*                                                                    *
+;* Notice the following result:                                       *
+;* The classes of                                                     *
+;* - monadic formulae,                                                *	
+;* - formulae in which predicates contains at most one bound variable,*
+;* - formulae in which each predicates either contains                *
+;* - no existentially bound variables or, if it contains one,         * 
+;*   it is the only bound variable it contains, are S-reducible to    *
+;*   UE-form.a	                                                     *
+;* However there are formulae which are S-reducible and are not in    *
+;* the class specified in list.                                       *
+;*                                                                    *
+;**********************************************************************
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX :                                                           *
+;*                                                                    *
+;* (S-normalize wff)                                                  * 
+;* (S1-normalize wff)                                                 *
+;* (S2-normalize wff bvar quant)                                      *
+;*                                                                    *
+;* DESCRIPTION :                                                      *
+;* wff is the formula that must be reduced,                           *
+;* bvar and quant are the parameters that must be considered          *
+;* for reducing process wrt <quant,bvar> as definition.               *
+;* The routine S-normalize descends the formula wff, and tries to     *
+;* apply the rules of the set S, in a top-down fashion.               *
+;* If a minimal subformula does not occur in the scope of a           *
+;* quantifier, it is analyzed only.                                   *
+;* Otherwise the procedures S1-normalize and S2-normalize are         * 
+;* called recursively to apply one rule from the set S1 or S2.        *
+;* The recursion ends when a literal is met.                          *
+;*                                                                    *
+;* The procedure S1-normalize tries to turn the formula wff into      * 
+;* minimal form. It analyses the formula and ends if a literal        *
+;* is met, otherwise if wff is a quantified formula:                  *
+;* - if wff is a existential, the routine exists-rewrite is called.   *
+;* - if wff is a universal, the routine forall-rewrite is called.     *
+;* If wff is not minimal, only one rule of the set S1 is applied.     *
+;* The process ends when the formula resulting by applications of     *
+;* rewriting rules is minimal wrt <quant,bvar>.                       *
+;*                                                                    *
+;* The procedure S2-normalize tries to turn the formula wff in to     *
+;* normalized form.                                                   *
+;* The steps performing the normalizing process are:                  *
+;*                                                                    *
+;* 1) If wff is a literal, quantified, or negated formula, or does    *
+;*    not contain bvar, it S2-normalize returns wff.                  *
+;*    otherwise,                                                      *
+;* 2) The compatibility with quantifier quant is tested.              *
+;*    If it succeds then it will normalizes only subformulae          *
+;*    (see COMPATIBLE? routine)                                       *
+;*    otherwise,                                                      *
+;* 3) If bvar is not free in left side of wff, only right side will   *
+;*    be normalized wrt <quant,bvar>                                  *
+;*    otherwise,                                                      *
+;* 4) If wff is minimal wrt <quant,bvar>, the process ends,           *
+;*    (see MINIMAL? routine)                                          *
+;*    otherwise                                                       * 
+;*    the routine cona-rewrite is called to apply one rule of set S2. *
+;*    Obviously the formula resulting by rewrinting rule, is given in *
+;*    input to S2-normalize again.                                    *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM reduce (wff) (S-normalize wff))
+
+(DEFLAM S-normalize (wff)
+ (IF (LITERAL wff) wff
+  (IF (CONJ wff) (mkand (S-normalize (lfand wff)) (S-normalize (rtand wff))) 
+   (IF (DISJ wff) (mkor (S-normalize (lfor wff)) (S-normalize (rtor wff)))
+    (IF (QUANTWFF wff)
+     (S1-normalize (mkquant (quantof wff) (bvarof wff)
+      (S2-normalize (S-normalize (matrix wff)) (bvarof wff) (quantof wff))))
+     (IF (CONNAPPL wff) (error-trap 'NOTNNF 'REDUCE)
+      (REMSG1 "<wff> with unknown syntax. Fatal error !!")))))))
+
+(DEFLAM S1-normalize (wff)
+ (IF (LITERAL wff) wff
+  (IF (CONJ wff) (mkand (S1-normalize (lfand wff)) (S1-normalize (rtand wff)))
+   (IF (DISJ wff) (mkor (S1-normalize (lfor wff)) (S1-normalize (rtor wff)))
+    (IF (FORALL wff)
+     (LET ((wff-result (forall-rewrite wff)))
+      (IF (FAIL? wff-result) wff (S1-normalize wff-result)))
+     (IF (EXISTS wff)
+      (LET ((wff-result (exists-rewrite wff)))
+       (IF (FAIL? wff-result) wff (S1-normalize wff-result)))
+       (REMSG1 "<wff> with unknown syntax. Fatal error !!")))))))
+
+(DEFLAM forall-rewrite (wff)
+ (? (forall-pred-rewrite wff)
+ (? (forall-conj-rewrite wff)
+         (forall-disj-rewrite wff))))
+
+(DEFLAM exists-rewrite (wff)
+ (? (exists-pred-rewrite wff)
+ (? (exists-conj-rewrite wff)
+         (exists-disj-rewrite wff))))
+
+(DEFLAM S2-normalize (wff bvar quant)
+ (IF (OR (AWFF wff)
+         (OR (QUANTWFF wff) 
+             (OR (NEG wff) (NOT (IS-FREE bvar wff))))) wff
+  (IF (COMPATIBLE? wff quant)
+   (connappl2-mak (connappl-get-conn wff)
+                  (S2-normalize (connappl2-get-lf wff) bvar quant)
+                  (S2-normalize (connappl2-get-rt wff) bvar quant))
+   (IFN (IS-FREE bvar (connappl2-get-lf wff)) 
+    (connappl2-mak (connappl-get-conn wff)
+                   (connappl2-get-lf wff)
+                   (S2-normalize (connappl2-get-rt wff) bvar quant))
+    (IF (MINIMAL? wff bvar quant) wff
+     (S2-normalize
+      (cona-rewrite
+       (connappl2-mak (connappl-get-conn wff)
+                      (S2-normalize (connappl2-get-lf wff) bvar quant)
+                      (S2-normalize (connappl2-get-rt wff) bvar quant))
+       bvar quant)
+      bvar quant))))))
+
+(DEFLAM cona-rewrite (wff bvar quant)
+ (? (cona-rt-rewrite wff bvar quant)
+ (? (cona-connlf-rewrite wff bvar quant) 
+ (? (cona-conalf-rewrite wff bvar quant)
+ (? (cona-connrt-rewrite wff bvar quant)
+ (? (cona-conart-rewrite wff bvar quant) wff))))))
+
+; this routine verifies if a formula wff is compatible wrt
+; quantifier.
+ 
+(DEFLAM COMPATIBLE? (wff quant)
+ (OR (AND (UNIQUANT? quant) (CONJ wff)) (AND (EXIQUANT? quant) (DISJ wff))))
+
+; this routine verifies if a formula wff is minimal wrt <quant,bvar>.
+; (see definition)
+
+(DEFLAM MINIMAL? (wff bvar quant)
+ (OR (AND (OR (AWFF wff) (NEG wff)) (IS-FREE bvar wff))
+     (OR (AND (QUANTWFF wff)
+              (AND (IS-FREE bvar (matrix wff))
+                   (MINIMAL? (matrix wff) (bvarof wff) (quantof wff))))
+         (AND (CONNAPPL wff)
+              (AND (NOT (COMPATIBLE? wff quant))
+                   (AND (MINIMAL? (connappl2-get-lf wff) bvar quant)
+                        (MINIMAL? (connappl2-get-rt wff) bvar quant)))))))
+
+
+;**********************************************************************
+;*                                                                    *
+;*             S1 REWRITING RULES                                     *
+;*                                                                    *
+;* SYNTAX:                                                            *
+;*                                                                    *
+;* (name-rule wff)                                                    *
+;*                                                                    *
+;* The rules of the set S1, return the formula wff in minimal         * 
+;* form  if it is possible, otherwise they return fail.               *
+;* Only one rule can be applied.                                      *
+;* Every rule contains two test.                                      *
+;* 1 - if conditions on structure of the wff is not satisfied then    *
+;*     it fails,                                                      *
+;*     otherwise                                                      *
+;* 2 - if conditions on vars is not not satisfied then it fails,      *
+;*     otherwise they return a new formula rewritten in minimal form. *
+;*                                                                    *
+;**********************************************************************
+
+; rule (1)
+(DEFLAM forall-pred-rewrite (wff)
+ (IF (FORALL wff)
+  (IFN (IS-FREE (bvarof wff) (matrix wff)) (matrix wff) (mk-fail))
+  (mk-fail)))
+
+; rule (2)
+(DEFLAM forall-conj-rewrite (wff)
+ (IF (AND (FORALL wff) (CONJ (matrix wff)))
+  (IFN (IS-FREE (bvarof wff) (matrix wff)) (mk-fail)
+   (mkand (mkforall (bvarof wff) (lfand (matrix wff)))
+          (mkforall (bvarof wff) (rtand (matrix wff)))))
+  (mk-fail)))
+
+; rule (3)
+(DEFLAM forall-disj-rewrite (wff)
+ (IF (AND (FORALL wff) (DISJ (matrix wff)))
+  (IFN (AND (NOT (IS-FREE (bvarof wff) (lfor (matrix wff))))
+            (IS-FREE (bvarof wff) (rtor (matrix wff)))) (mk-fail)
+   (mkor (lfor (matrix wff)) (mkforall (bvarof wff) (rtor (matrix wff)))))
+  (mk-fail)))
+
+; rule (1)
+(DEFLAM exists-pred-rewrite (wff)
+ (IF (EXISTS wff)
+  (IFN (IS-FREE (bvarof wff) (matrix wff)) (matrix wff) (mk-fail))
+  (mk-fail)))
+
+; rule (3)
+(DEFLAM exists-conj-rewrite (wff)
+ (IF (AND (EXISTS wff) (CONJ (matrix wff)))
+  (IFN (AND (NOT (IS-FREE (bvarof wff) (lfand (matrix wff))))
+            (IS-FREE (bvarof wff) (rtand (matrix wff)))) (mk-fail)
+   (mkand (lfand (matrix wff)) (mkexists (bvarof wff) (rtand (matrix wff)))))
+  (mk-fail)))
+
+; rule (2)
+(DEFLAM exists-disj-rewrite (wff)
+ (IF (AND (EXISTS wff) (DISJ (matrix wff)))
+  (IFN (IS-FREE (bvarof wff) (matrix wff)) (mk-fail)
+   (mkor (mkexists (bvarof wff) (lfor (matrix wff)))
+         (mkexists (bvarof wff) (rtor (matrix wff)))))
+  (mk-fail)))
+
+
+;**********************************************************************
+;*                                                                    *
+;*             S2 REWRITING RULES                                     *
+;*                                                                    *
+;* SYNTAX:                                                            *
+;*                                                                    *
+;* (name-rule wff bvar quant)                                         *
+;* where wff is formula that must be normalized,                      *
+;* bvar and quant are the parameters for the normalizing process      *
+;* The rules of the set S2, return the formula wff in normalized      *
+;* wrt<quant,bvar> form if it is possible, otherwise they return fail.*
+;* Only one rule can be applied.                                      *
+;* Every rule contains two test.                                      *
+;* 1 - if conditions on structure of the wff and on the quantifier    *
+;*     quant is not satisfied then it fails,                          * 
+;*     otherwise                                                      *
+;* 2 - if conditions on bvar is not not satisfied then it fails,      *
+;*     otherwise they return a new formula rewritten in minimal form. *
+;*                                                                    *
+;**********************************************************************
+
+; rule (4)
+(DEFLAM cona-rt-rewrite (wff bvar quant)
+ (IF (AND (EXIQUANT? quant) (CONJ wff))
+  (IFN (AND (NOT (IS-FREE bvar (rtand wff)))
+            (IS-FREE bvar (lfand wff))) (mk-fail)
+   (mkand (rtand wff) (lfand wff)))
+  (IF (AND (UNIQUANT? quant) (DISJ wff))
+   (IFN (AND (NOT (IS-FREE bvar (rtor wff)))
+             (IS-FREE bvar (lfor wff))) (mk-fail)
+    (mkor (rtor wff) (lfor wff)))
+   (mk-fail))))
+
+; rule (5)
+(DEFLAM cona-connlf-rewrite (wff bvar quant)
+ (IF (AND (EXIQUANT? quant) (AND (CONJ wff) (CONJ (lfand wff))))
+  (IFN (AND (NOT (IS-FREE bvar (lfand (lfand wff))))
+            (AND (IS-FREE bvar (rtand (lfand wff)))
+                 (AND (IS-FREE bvar (rtand wff))))) (mk-fail)
+   (mkand (lfand (lfand wff)) (mkand (rtand (lfand wff)) (rtand wff))))
+  (IF (AND (UNIQUANT? quant) (AND (DISJ wff) (DISJ (lfor wff))))
+   (IFN (AND (NOT (IS-FREE bvar (lfor (lfor wff))))
+             (AND (IS-FREE bvar (rtor (lfor wff)))
+                  (AND (IS-FREE bvar (rtor wff))))) (mk-fail)
+    (mkor (lfor (lfor wff)) (mkor (rtor (lfor wff)) (rtor wff))))
+   (mk-fail))))
+
+; rule (6)
+(DEFLAM cona-conalf-rewrite (wff bvar quant)
+ (IF (AND (EXIQUANT? quant) (AND (CONJ wff) (DISJ (lfand wff))))
+  (IFN (AND (IS-FREE bvar (lfand wff)) (IS-FREE bvar (rtand wff))) (mk-fail)
+   (mkor (mkand (lfor (lfand wff)) (rtand wff))
+         (mkand (rtor (lfand wff)) (rtand wff))))
+  (IF (AND (UNIQUANT? quant) (AND (DISJ wff) (CONJ (lfor wff))))
+   (IFN (AND (IS-FREE bvar (lfor wff)) (IS-FREE bvar (rtor wff))) (mk-fail)
+    (mkand (mkor (lfand (lfor wff)) (rtor wff))
+           (mkor (rtand (lfor wff)) (rtor wff))))
+   (mk-fail))))
+
+
+; rule (7)
+(DEFLAM cona-connrt-rewrite (wff bvar quant)
+ (IF (AND (EXIQUANT? quant) (AND (CONJ wff) (CONJ (rtand wff))))
+  (IFN (AND (NOT (IS-FREE bvar (lfand (rtand wff))))
+            (AND (IS-FREE bvar (lfand wff))
+                 (AND (IS-FREE bvar (rtand (rtand wff)))))) (mk-fail)
+   (mkand (lfand (rtand wff)) (mkand (lfand wff) (rtand (rtand wff)))))
+  (IF (AND (UNIQUANT? quant) (AND (DISJ wff) (DISJ (rtor wff))))
+   (IFN (AND (NOT (IS-FREE bvar (lfor (rtor wff))))
+             (AND (IS-FREE bvar (lfor wff))
+                  (AND (IS-FREE bvar (rtor (rtor wff)))))) (mk-fail)
+    (mkor (lfor (rtor wff)) (mkor (lfor wff) (rtor (rtor wff)))))
+   (mk-fail))))
+
+; rule (8)
+(DEFLAM cona-conart-rewrite (wff bvar quant)
+ (IF (AND (EXIQUANT? quant) (AND (CONJ wff) (DISJ (rtand wff))))
+  (IFN (AND (IS-FREE bvar (lfand wff)) (IS-FREE bvar (rtand wff))) (mk-fail)
+   (mkor (mkand (lfand wff) (lfor (rtand wff)))
+         (mkand (lfand wff) (rtor (rtand wff)))))
+  (IF (AND (UNIQUANT? quant) (AND (DISJ wff) (CONJ (rtor wff))))
+   (IFN (AND (IS-FREE bvar (lfor wff)) (IS-FREE bvar (rtor wff))) (mk-fail)
+    (mkand (mkor (lfor wff) (lfand (rtor wff)))
+           (mkor (lfor wff) (rtand (rtor wff)))))
+   (mk-fail))))
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+

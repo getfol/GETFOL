@@ -1,0 +1,582 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:29:05 MET 1993
+;;
+;; This GETFOL file (phexp.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;***********************************************************************
+;*                                                                     *
+;*                 phexp.fol                                           *
+;*                                                                     *
+;***********************************************************************
+;***********************************************************************
+;*                                                                     *
+;* This file contains the routines implementing the following basic    *
+;* steps :                                                             *
+;*                                                                     *
+;* - building the sorted proper universe (puniverse)                   *
+;* - building the sorted universe                                      *
+;* - computing partitioned herbrand's sorted expansion                 *
+;*                                                                     *
+;***********************************************************************
+
+;***********************************************************************
+;*                                                                     *
+;*                 Building the sorted proper universes                *
+;*                                                                     *
+;* Given a formula wff the sorted proper universe for a sort Si is the *
+;* set of the ground terms of wff that belong only that particular Si. *
+;*                                                                     *
+;* The data structure of sorted puniverse is an alist whose elements   *
+;* have the following structure :                                      *
+;*                                                                     * 
+;* ( < key_sort > . (< witness> . < puniverse elems > ))               *
+;*                                                                     *
+;* where key_sort is the rapresentative of a class of equivalent sorts,*
+;* that share the same puniverse and hence the same universe.          *
+;* i.e. if S1 and S2 have the same extension (e.g. S1 lg S2, S2 lg S1) *
+;* we might assume that S1 is the key for S2. The choice falls on the  *
+;* first sort symbol met.                                              *
+;* Hence the approach is to work on key of sort, and not on the list   *
+;* of sorts.                                                           *
+;* witness is an indconst created by puniverse-new-wit.                *  
+;* It is created if an existential var is met and if no ground terms   *
+;* belonging to the same key_sort have been met before.                *
+;* The witness will be used in the building of the sorted universe.    *
+;*                                                                     *
+;***********************************************************************
+
+(DEFLAM phexp (wff)
+ (LET ((puniverse (CAR (wff-get-puniverse wff MTL))))
+  (LET ((universe
+   (make-universe MTL puniverse (slg-sorts-get* puniverse puniverse MTL))))
+   (expand wff universe))))
+
+;***********************************************************************
+;*                                                                     *
+;* SYNTAX :                                                            *
+;*                                                                     *
+;* (wff-get-puniverse wff puniverse&xlist)                             *
+;* where wff is a formula that must be analysed puniverse,             *
+;* puniverse&xlist is a pair:                                          *
+;*                                                                     * 
+;*     ( < puniverse > . < xlist > )                                   *
+;*                                                                     * 
+;* where xlist is an alist of existential vars met.                    *
+;*                                                                     * 
+;* DESCRIPTION :                                                       *
+;* This routine searches existential vars and predicates.              *
+;* If an existentially quantified formula is found, and its bound var  *
+;* does not belong to the alist already, it adds a new element in      *
+;* puniverse.                                                          *
+;* Furthermore it adds the bound var in xlist.                         *
+;* If a predsym is found it will call the puniverse-add-term routine   *
+;* that modifies the alist puniverse with new eventual elements        *
+;* existing inside.                                                    *
+;* The indvar and the functions containing indvar are not put in the   *
+;* puniverse.                                                          *
+;* If in wff implications, iff, wfiff exist or there are universal     *
+;* quantifiers, or there are free vars, it returns an error message    *
+;* (see error-trap).                                                   *
+;*                                                                     * 
+;***********************************************************************
+
+(DEFLAM wff-get-puniverse (wff puniverse&xlist)
+ (IF (SENTSYM wff) puniverse&xlist
+  (IF (PREDAPPL wff)
+    (CONS (terms-get-puniverse (predappl-get-args wff)
+                               (CAR puniverse&xlist)
+                               (CDR puniverse&xlist))
+          (CDR puniverse&xlist))
+   (IF (NEG wff) 
+    (IF (OR (SENTSYM (body wff)) (PREDAPPL (body wff)))
+     (wff-get-puniverse (body wff) puniverse&xlist)
+     (error-trap 'NOTNNF 'PHEXP)) 
+    (IF (OR (CONJ wff) (DISJ wff))
+     (wff-get-puniverse (connappl2-get-rt wff)
+      (CONS (CAR (wff-get-puniverse (connappl2-get-lf wff) puniverse&xlist))
+            (CDR puniverse&xlist)))
+     (IF (EXISTS wff)
+      (IF (MTL? (search_eq_sort (sort (bvarof wff))
+                                (CAR puniverse&xlist)))
+       (wff-get-puniverse (matrix wff)
+        (CONS (puniverse-add (puniverse-new-wit (sort (bvarof wff)))
+                             (CAR puniverse&xlist))
+              (LCONS (bvarof wff) (CDR puniverse&xlist))))
+       (wff-get-puniverse (matrix wff)
+        (CONS (CAR puniverse&xlist)
+              (LCONS (bvarof wff) (CDR puniverse&xlist)))))
+      (IF (CONNAPPL wff) (error-trap 'NOTNNF 'PHEXP)
+       (IF (FORALL wff) (error-trap 'NOTEX 'PHEXP)
+        (REMSG1 "<wff> with unknown syntax. Fatal error !!!")))))))))
+
+
+;***********************************************************************
+;*                                                                     * 
+;* SINTAX :                                                            *
+;*                                                                     *
+;* (terms-get-puniverse termlist puniverse xlist)                      *
+;* (terms-collect-puniverse termlist puniverse xlist)                  *
+;* (term-collect-puniverse term puniverse xlist)                       *
+;*                                                                     *
+;* DESCRIPTION :                                                       *
+;* termlist is the list of arguments existing in predicates.           *
+;* puniverse is the alist of sorted puniverse that will be updated.    * 
+;* xlist is the list of existential vars met.                          *
+;*                                                                     *
+;* These routines search inside termlist if there are new elements that* 
+;* must be added. The searching process is done recursiverly to search *
+;* inside function terms.                                              *
+;* terms-get-puniverse routine returns the updated puniverse alist     *
+;* term-collect-puniverse, for every term in input, checks if term is  *
+;* indvar or a possible new element for puniverse.                     *
+;* If term is a function term, its list of arguments will be compute   *
+;* recursiverly by terms-collect-puniverse.                            *
+;* If the function term contains only const terms, then it will be     *
+;* inserted in a sorted puniverse together with its subterms.          *
+;* i.e.                                                                *
+;*    exists x.P(x,g(x),f(a)) -->  (a , f(a))                          *
+;*                                                                     * 
+;* They will be put in puniverse by puniverse-add-term routine.        *
+;* At the end of recursion, terms-get-puniverse returns the pair       *
+;*  < puniverse . flag >  where puniverse is the updated sorted        *
+;* puniverse list, and flag is a truth value.                          *
+;* If an existential var is met then the flag is set to false.         *
+;* The function term will be inserted only if the check on flag        *
+;* succeds.                                                            *
+;*                                                                     * 
+;* If a free var (not an indpar) or a termif are found, an error       *
+;* message is returned (see error-trap routine).                       *
+;*                                                                     * 
+;***********************************************************************
+
+(DEFLAM terms-get-puniverse (termlist puniverse xlist)
+ (CAR (terms-collect-puniverse termlist puniverse xlist)))
+
+(DEFLAM terms-collect-puniverse (termlist puniverse xlist)
+ (IF (MTL? (REST termlist))
+  (term-collect-puniverse (FIRST termlist) puniverse xlist)
+  (LET ((puniverse&flag_term
+   (term-collect-puniverse (FIRST termlist) puniverse xlist)))
+   (LET ((puniverse&flag_terms
+    (terms-collect-puniverse (REST termlist) (CAR puniverse&flag_term) xlist)))
+    (CONS (CAR puniverse&flag_terms)
+          (AND (CDR puniverse&flag_term) (CDR puniverse&flag_terms))))))) 
+
+(DEFLAM term-collect-puniverse (term puniverse xlist)
+ (IF (SIMPLE term)
+  (IF (AND (INDVAR term) (HGKM-MEMBER term xlist)) (CONS puniverse FVAL)
+   (IF (OR (INDPAR term) (INDCONST term))
+    (CONS (puniverse-add-term term puniverse) TVAL)
+    (error-trap 'NOTEX 'PHEXP)))
+  (IF (TERMIF term) (error-trap 'NOTNNF 'PHEXP)
+   (IF (FUNAPPL term)
+    (LET ((puniverse_terms
+     (terms-collect-puniverse (funappl-get-args term) puniverse xlist)))
+      (IF (IST (CDR puniverse_terms))
+       (CONS (puniverse-add-term term (CAR puniverse_terms)) TVAL)
+        puniverse_terms))
+   (REMSG1 "term-collect-puniverse: <wff> with unknown syntax. Fatal error !!!")))))
+
+;************************************************************************
+;*                                                                      *
+;* SYNTAX :                                                             *
+;*                                                                      *
+;* puniverse-add-term (term puniverse)                                  *
+;* puniverse-add-fun_term (fmaps fun_term puniverse)                    *
+;*                                                                      * 
+;* DESCRIPTION :                                                        *
+;* term is the term that must be added,                                 *
+;* puniverse is the alist that must be updated,                         *
+;* puniverse-add-term distinguishes between indconst, indvar, and       *
+;* function terms.                                                      *
+;* If a simple is found, it is put in its sorted puniverse.             *
+;* If it does not exist a new sorted puniverse is created.              *
+;* If a function is found, we first of all need to check its fmaps.     *
+;* The puniverse-add-fun_term routine puts the function term in every   *
+;* sorted puniverse corresponding to each fmap (see sym.hgk).           *
+;* For checking the existence of a sorted puniverse search_eq_sort is   *
+;* called.                                                              *
+;* A new puniverse is added by puniverse-add routine, that calls        *
+;* puniverse-update for creating or for updating a pair of puniverse    *
+;*                                                                      * 
+;* puniverse-add-fun_term receives in input the funconst term and its   *
+;* fmaps.                                                               *
+;*                                                                      * 
+;************************************************************************
+
+(DEFLAM puniverse-add-term (term puniverse)
+ (IF (SIMPLE term)
+  (LET ((sort_simple (sort term)))
+   (LET ((same_sort (search_eq_sort sort_simple puniverse))) 
+    (IF (MTL? same_sort)
+     (puniverse-add (puniverse-update sort_simple 'NULL term MTL) puniverse)
+     (puniverse-add
+      (puniverse-update (sort-get same_sort)
+                        (wit-sort-get same_sort)
+                        term
+                        (puniverse-sort-get same_sort))
+      (HGKM-DELETE same_sort puniverse)))))
+  (IF (FUNAPPL term)
+   (puniverse-add-fun_term (fmaps (funappl-get-fun term)) term puniverse))))
+
+(DEFLAM puniverse-add-fun_term (fmaps fun_term puniverse)
+ (IF (MTL? fmaps) puniverse
+  (LET ((sort_fun_term (fmap-get-out (FIRST fmaps))))
+   (LET ((same_sort (search_eq_sort sort_fun_term puniverse)))
+    (IF (MTL? same_sort)
+     (puniverse-add-fun_term (REST fmaps) fun_term
+      (puniverse-add
+       (puniverse-update sort_fun_term 'NULL fun_term MTL)
+       puniverse))
+     (puniverse-add-fun_term (REST fmaps) fun_term
+      (puniverse-add
+       (puniverse-update (sort-get same_sort)
+                         (wit-sort-get same_sort)
+                         fun_term
+                         (puniverse-sort-get same_sort))
+       (HGKM-DELETE same_sort puniverse))))))))
+
+; this routine creates or updates an element of puniverse of a particular
+; sort. 
+
+(DEFLAM puniverse-update (sort witness indsym puniverse)
+ (CONS sort (CONS witness
+  (IF (MTL? indsym) puniverse
+   (IF (HGKM-MEMBER indsym puniverse) puniverse
+    (LCONS indsym puniverse))))))
+
+; this routine creates a new element of puniverse if existential wff is met.
+
+(DEFLAM puniverse-new-wit (witness-sort)
+ (CONS witness-sort (CONS (indconst-create witness-sort) MTL)))
+
+;************************************************************************
+;*                                                                      *
+;*             Building the sorted universe                             *
+;*                                                                      *
+;* Given a set of sorts S, the partial order on the sorts, the set of   *
+;* the puniverses of sorts S, and let:                                  *
+;* U the set union operator,                                            *
+;* universe_Sj the set of the universes of the sorts Sj less general    *
+;* than Si,                                                             *
+;* the universe of sort Si is:                                          *
+;*                                                                      *
+;* - puniverse U ( U universe_Sj) if and only if                        *
+;*   puniverse U ( U universe_Sj) is not an empty set                   *
+;*   otherwise,                                                         *
+;* - witness of puniverse of sort Si.                                   *
+;*                                                                      *
+;*   EXAMPLE:                                                           *
+;*                                                                      *
+;*   Given the following graph of the sorts:                            *
+;*                                                                      *
+;*            S1    S2      where      Si  puniverse                    *
+;*           /  \  /                   S1   {a,b}                       *
+;*          S3   S4                    S2   { }                         *
+;*         /  \                        S3   { }                         *
+;*        /    \                       S4   {d e}                       *
+;*       S5     S6                     S5   {c}                         *
+;*                                     S6   { }                         *
+;*   the universes of the sorts are:                                    *
+;*                                                                      * 
+;*   Si  universe                                                       *
+;*   S1   {a b C1 c}                                                    *
+;*   S2   {d e}                                                         *
+;*   S3   {C1 c}                                                        *
+;*   S4   {d e}                                                         *
+;*   S5   {c}                                                           *
+;*   S6   {C1}                                                          *
+;*                                                                      *
+;*   where C1 is the witness for the sort S6.                           *
+;*                                                                      * 
+;************************************************************************
+
+
+;************************************************************************
+;*                                                                      * 
+;* SYNTAX :                                                             *
+;*                                                                      *
+;* make-universe (uni puni slg-sorts*)                                  *
+;* sort-make-universe (first uni puni slg-sorts*)                       *
+;* sorts-make-universe (sorts_list uni puni slg-sorts*)                 *
+;*                                                                      * 
+;* DESCRIPTION :                                                        *
+;*                                                                      * 
+;* uni is the sorted universe list,                                     * 
+;* puni is the sorted puniverse list,                                   *
+;* sorts_list is a list of sorts,                                       *
+;* slg-sorts* is a list of following elements:                          *
+;*                                                                      * 
+;*   ( < key_sort > . < slg_sorts > )                                   *
+;*                                                                      *
+;* where slg_sort are the sorts strictly less general than key_sort.    *
+;* It is created by slg-sorts-get* at beginning of process              *
+;* (see phexp routine in assert.fol file).                              *
+;* The data structure of the key sorts is an acyclic graph, i.e.        *
+;* only strictly relation between sorts exist.                          *
+;*                                                                      * 
+;* These routines build the universe, where the data structure is an    *
+;* alist of following pairs:                                            * 
+;*                                                                      *
+;*   ( < key_sort > . < universe of key_sort   > )                      *
+;*                                                                      *
+;* The main routine is make-universe that calls recursively             *
+;* sort-make-universe and sorts-make-universe.                          *
+;*                                                                      *
+;* Every time a new sorted universe is computed, the corrisponding      *
+;* sorted puniverse is deleted from sorted puniverse list puni.         * 
+;* The adding-deleting process is performed by ADD-DEL routine.         *
+;* The recursion ends when the list of puniverse is empty and all       *
+;* sorted universe have been computed.                                  *
+;*                                                                      *
+;* Notice: sort-make-universe and sorts-make-universe                   *
+;*         perform a mutual recursion.                                  *
+;*                                                                      *
+;* sort-make-universe, through a depth first search on the sorted       *
+;* graph, searches sorted universes to compute and calls                *
+;* sorts-make-universe with sons of current key_sort.                   *
+;* sorts-make-universe performs a breadh first searching on the graph,  *
+;* computing the sorted universes of every son key_sort, calling        *
+;* sort-make-universe.                                                  *
+;*                                                                      * 
+;* At the end of every recursion two steps are performed.               *
+;* - sort-make-universe creates a new sorted universe of sort Si for    *
+;*   key_sort Si.                                                       *
+;* - sorts-make-universe deletes every sorted puniverse involved        *
+;*   in creating process of the sorted universe of sort Si and adds     *
+;*   the universe of sort Si to sorted universe list.                   *
+;*                                                                      * 
+;* The creation of the single sorted universe is performed by           *
+;* universe-create routine.                                             *
+;* If the sort Si inherits sorted universes by sons, then its sorted    *
+;* universe is the union of their sorted universes and its sorted       *
+;* puniverse. Otherwise its sorted universe consists of its witness.    *
+;*                                                                      * 
+;************************************************************************
+
+(DEFLAM make-universe (uni puni slg-sorts*)
+ (IF (MTL? puni) uni
+  (LET ((uni-sorts
+   (sort-make-universe (sort-get (FIRST puni)) uni puni slg-sorts*)))
+    (LET ((uni&puni (ADD-DEL uni-sorts uni puni)))
+     (make-universe (CAR uni&puni) (CDR uni&puni) slg-sorts*)))))
+
+(DEFLAM sort-make-universe (first uni puni slg-sorts*)
+ (LET ((pair (search_eq_sort first uni)))
+  (IFN (MTL? pair) (LCONS pair MTL)
+   (LET ((sons (sons-sort-get first slg-sorts*)))
+    (LET ((univ (sorts-make-universe sons uni puni slg-sorts*)))
+     (universe-create first univ puni))))))
+
+(DEFLAM sorts-make-universe (sorts_list uni puni slg-sorts*)
+ (IF (MTL? sorts_list) MTL
+  (LET ((univ (sort-make-universe (FIRST sorts_list) uni puni slg-sorts*)))
+   (LET ((uni&puni (ADD-DEL univ uni puni)))
+    (LCONS (FIRST univ)
+           (sorts-make-universe (REST sorts_list)
+                                (CAR uni&puni)
+                                (CDR uni&puni)
+                                slg-sorts*))))))
+
+; this routine searches the sons of key_sort sort in slg-sorts* 
+(DEFLAM sons-sort-get (sort slg-sorts*) (CDR (search_eq_sort sort slg-sorts*))) 
+
+(DEFLAM universe-create (sort univ puni)
+ (IF (MTL? univ) 
+  (LET ((pair (search_eq_sort sort puni)))
+   (uni_list-add sort (son_universe-get pair) MTL)) 
+  (LET ((universe (union-universe univ MTL)))
+   (uni_list-add sort (father_universe-get universe sort puni) univ))))
+
+; this routine performs the union of puniverse belonging to the father sort
+; and the universe belonging to its sons list.
+(DEFLAM father_universe-get (sons_universe sort puni)
+ (UNION sons_universe (puniverse-sort-get (search_eq_sort sort puni))))
+
+; this routine given a pair  (< key_sort > . < puniverse >) returns the
+; universe of a sort. 
+(DEFLAM son_universe-get (pair) 
+ (puniverse-sort (wit-sort-get pair) (puniverse-sort-get pair)))
+
+; this routine returns the universe resulting by union of all
+; universes of list univ.
+; univ is an alist composed by pair:  (< key_sort > . < universe >).
+
+(DEFLAM union-universe (univ universe)
+ (IF (MTL? univ) universe 
+  (UNION (CDR (FIRST univ)) (union-universe (REST univ) universe))))
+ 
+
+; it returns the list of pair having the following form :
+; (< key_sort > . < slg_key_sorts >) where slg_key_sorts is the
+; the list of strictly less general sorts than key_sort. 
+
+(DEFLAM slg-sorts-get* (puniverse puniverse2 uni_list)
+ (IF (MTL? puniverse) uni_list
+  (LET ((first_puniverse (FIRST puniverse))
+        (rest_puniverse (REST puniverse)))
+  (LET ((slg_list (slg-sorts-get (sort-get first_puniverse) puniverse2 MTL)))
+   (slg-sorts-get* rest_puniverse puniverse2
+    (LCONS (CONS (sort-get first_puniverse) slg_list) uni_list)))))) 
+
+
+; this routine given a particular sort Si  and the list of puniverse,
+; returns the list of slg sorts than Si.
+; This routine computes only the list of sorts existing in current
+; formula, and not all the sorts declared in the system.
+
+(DEFLAM slg-sorts-get (sort_var puniverse less_list)
+ (IF (MTL? puniverse) less_list
+  (IF (IS-SLG (sort-get (FIRST puniverse)) sort_var)
+   (slg-sorts-get sort_var (REST puniverse)
+    (LCONS (sort-get (FIRST puniverse)) less_list))
+   (slg-sorts-get sort_var (REST puniverse) less_list))))
+
+; this routine performs the deleting of a pair from puniverses list
+; and the adding of a pair in universe list.
+; It is called by make-universe and sorts-make-universe. 
+ 
+(DEFLAM ADD-DEL (elems uni puni)
+ (IF (MTL? elems) (CONS uni puni)
+  (LET ((pair (search_eq_sort (CAR (FIRST elems)) puni)))
+   (IF (MTL? pair)
+    (IF (MTL? (search_eq_sort (CAR (FIRST elems)) uni))
+     (ADD-DEL (REST elems) (LCONS (FIRST elems) uni) puni)
+     (ADD-DEL (REST elems) uni puni))
+    (ADD-DEL (REST elems) (LCONS (FIRST elems) uni) (HGKM-DELETE pair puni))))))
+
+; this routine adds a pair (< key_sort > . < universe >) to the universe list.
+
+(DEFLAM uni_list-add (sort uni_sort uni_list)
+ (LCONS (CONS sort uni_sort) uni_list))
+
+
+;************************************************************************
+;*                                                                      * 
+;*                SORTED PARTITIONED HERBRAND'S EXPANSION               *
+;*                                                                      * 
+;* The following routines compute the partitioned Herbrand' s           *
+;* expansion.                                                           *
+;* This process includes the information about sorts.                   *
+;* The extension to sorts, added to partitioned technique, decreases    * 
+;* the number of disjunctions that we need to compute for evaluation    *
+;* trought tautological deciders, because given an existential var of   *
+;* sort S, only the elements of universe of sort S are involved in      *
+;* expansion.                                                           *
+;*                                                                      * 
+;* NOTICE:                                                              *
+;* The formula must be in negative normal form and the only             *
+;* existentially bound vars can exists.                                 *
+;*                                                                      * 
+;************************************************************************
+
+;************************************************************************
+;*                                                                      * 
+;* SYNTAX :                                                             *
+;*                                                                      * 
+;* (expand wff universe*)                                               *
+;* (expand1 wff x-var universe)                                         *
+;*                                                                      * 
+;* DESCRIPTION :                                                        *
+;* universe* is the alist of sorted universes created by                *
+;* the make-universe routine,                                           *
+;* x-var is an existential var,                                         *
+;* universe is the set of the ground terms having the same sort of      *
+;* x-var.                                                               *
+;* expand routine searches in the formula wff the existential vars.     *
+;* The sort of x-var is sent to search-universe routine that searches   *
+;* the corresponding universe in universe* alist.                       *
+;* expand1 implements the expansion of the existentially quantified     *
+;* matrix. A new disjunction is created for every element existing      *
+;* in the universe.                                                     *
+;*                                                                      * 
+;************************************************************************
+
+(DEFLAM expand (wff universe*)
+ (LET ((EXW (oldexpand wff universe*)))
+  (SEQ
+   (printexp EXW)
+   EXW)))
+
+(DEFLAM oldexpand (wff universe*)
+ (IF (AWFF wff) wff
+  (IF (NEG wff)
+   (IF (AWFF (body wff)) wff (error-trap 'NOTNNF 'PHEXP)) 
+   (IF (EXISTS wff)
+    (expand1 (oldexpand (matrix wff) universe*) (bvarof wff)
+             (search-universe (sort (bvarof wff)) universe*))
+    (IF (FORALL wff) (error-trap 'NOTEX 'PHEXP)
+     (IF (CONJ wff)
+      (mkand (oldexpand (lfand wff) universe*)
+             (oldexpand (rtand wff) universe*))
+      (IF (DISJ wff)
+       (mkor (oldexpand (lfor wff) universe*)
+             (oldexpand (rtor wff) universe*))
+       (error-trap 'NOTNNF 'PHEXP))))))))
+
+(DEFLAM expand1 (wff x-var universe)
+ (IF (MTL? (REST universe)) (SUBST (FIRST universe) x-var wff)
+  (mkor
+   (SUBST (FIRST universe) x-var wff)
+   (expand1 wff x-var (REST universe)))))
+
+; this routine returns the universe of a sort.
+(DEFLAM search-universe (sort_var universe*)
+ (CDR (search_eq_sort sort_var universe*)))
+
+; this routine returns the elements belonged to the same sort.
+; It can be used for extracting the puniverse or the universe of 
+; a particular sort.
+; puni-or-uni is an alist of pair such that:
+;             (< sort > . < puniverse or universe >) 
+; It is called also by ADD-DEL routine.
+
+(DEFLAM search_eq_sort (sort puni-or-uni)
+ (IF (MTL? puni-or-uni) MTL
+  (IF (SAME-SORT sort (CAR (FIRST puni-or-uni)))
+   (FIRST puni-or-uni) 
+   (search_eq_sort sort (REST puni-or-uni)))))
+
+

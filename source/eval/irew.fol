@@ -1,0 +1,193 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:36:04 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: irew.fol
+;; Date: Wed Oct 20 10:45:07 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ************************************************************
+; *                                                          *
+; * This file contains the initializations of FOL's rewrite  *
+; *                                                          *
+; ************************************************************
+
+(mknewcommand (QUOTE SETBASICSIMP)   (QUOTE FOL) 
+              (QUOTE EVAL)           (QUOTE SETBASICSIMP#)    FALSE)
+(mknewcommand (QUOTE SETCOMPSIMP)    (QUOTE FOL)
+              (QUOTE EVAL)           (QUOTE SETCOMPSIMP#)     FALSE)
+(mknewcommand (QUOTE ASSERTSIMP)     (QUOTE FOL)
+              (QUOTE EVAL)           (QUOTE ASSERTSIMP#)      FALSE)
+(mknewcommand (QUOTE REWRITE)        (QUOTE FOL)
+              (QUOTE EVAL)           (QUOTE REWRITE#)         FALSE)
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;* SETTING PROBES FOR SIMPSET, REWRITE                            *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(probes-add-probe (QUOTE SIMPSET) TRUE)
+(probes-add-probe (QUOTE REWRITE) TRUE)
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;* SETTING SHOW TOKENS FOR SIMPSETS                               *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(mknewshowtoken (QUOTE SIMPSET) (QUOTE SHOWSIMPSET#) (QUOTE EVAL))
+
+;;;
+;;; Initialization of the data structure of simpsets and the interface 
+;;; between the simpset world and GETFOL's logic
+;;;
+
+(simps-ini)
+;;; creation of EVALSS (used to do reflection)
+(simps-add (simp-mak (QUOTE EVALSS) (amf-mak-empty) MTL MTL))
+
+(simpsinterface-ini)
+
+
+;;;
+;;; BUILTIN SIMPSETS
+;;;
+
+(bnsimps-ini)
+
+; These symbols are not declared but only created. This
+; means that they are common to all the contexts.
+
+(LET ((A (sentsym-create 'Sentpar '&A (simpsym_sact-mak '&A)))
+      (B (sentsym-create 'Sentpar '&B (simpsym_sact-mak '&B)))
+      (X (indsym-create 'Indvar '&X SysMostgeneral (simpsym_sact-mak '&X)))
+      (Y (indsym-create 'Indvar '&Y SysMostgeneral (simpsym_sact-mak '&Y))))
+
+; Creation of LPROPTREE
+
+(LET ((wffs (LIST
+(mkiff (mknot (mknot A)) A)
+(mkiff (mknot True) False)
+(mkiff (mknot False) True)
+(mkiff (mkand A False) False)
+(mkiff (mkand False A) False)
+(mkiff (mkand A True) A)
+(mkiff (mkand True A) A)
+(mkiff (mkand (mknot A) A) False)
+(mkiff (mkand A (mknot A)) False)
+(mkiff (mkand A A) A)
+(mkiff (mkor A False) A)
+(mkiff (mkor False A) A)
+(mkiff (mkor A True) True)
+(mkiff (mkor True A) True)
+(mkiff (mkor (mknot A) A) True)
+(mkiff (mkor A (mknot A)) True)
+(mkiff (mkor A A) A)
+(mkiff (mkimp A False) (mknot A))
+(mkiff (mkimp False A) True)
+(mkiff (mkimp A True) True)
+(mkiff (mkimp True A) A)
+(mkiff (mkimp (mknot A) A) A)
+(mkiff (mkimp A (mknot A)) (mknot A))
+(mkiff (mkimp A A) True)
+(mkiff (mkiff A False) (mknot A))
+(mkiff (mkiff False A) (mknot A))
+(mkiff (mkiff A True) A)
+(mkiff (mkiff True A) A)
+(mkiff (mkiff A (mknot A)) False)
+(mkiff (mkiff (mknot A) A) False)
+(mkiff (mkiff A A) True))))
+(bnsimps-add (simp-mak 
+              (QUOTE LPROPTREE) 
+              (wffs2amf wffs (QUOTE LPROPTREE))
+              (LIST (QUOTE LPROPTREE))
+              (QUOTE BUILTINSIMPSET))))
+
+
+
+; Creation of LQUANTREE
+
+(LET ((wffs (LIST
+(mkiff (mkforall X True) True)
+(mkiff (mkforall X False) False)
+(mkiff (mkexists X True) True)
+(mkiff (mkexists X False) False))))
+(bnsimps-add (simp-mak 
+              (QUOTE LQUANTREE) 
+              (wffs2amf wffs (QUOTE LQUANTREE))
+              (LIST (QUOTE LQUANTREE)) 
+              (QUOTE BUILTINSIMPSET))))
+
+; Creation of LARGIFTREE
+
+(LET ((wffs (LIST
+(mkforall X (mkforall Y (mkequ (mktrmif False X Y) Y)))
+(mkforall X (mkforall Y (mkequ (mktrmif True X Y) X)))
+(mkforall X (mkequ (mktrmif A X X) X))
+(mkiff (mkwffif False A B) B)
+(mkiff (mkwffif True A B) A)
+(mkiff (mkwffif A B B) B))))
+(bnsimps-add (simp-mak 
+              (QUOTE LARGIFTREE) 
+              (wffs2amf wffs (QUOTE LARGIFTREE)) 
+              (LIST (QUOTE LARGIFTREE))
+              (QUOTE BUILTINSIMPSET))))
+)
+
+(bnsimps-add (simp-mak 
+              (QUOTE LOGICTREE) 
+              (simplabs2amf 
+               (LIST (QUOTE LPROPTREE)(QUOTE LQUANTREE)(QUOTE LARGIFTREE)))
+              (LIST (QUOTE LPROPTREE)(QUOTE LQUANTREE)(QUOTE LARGIFTREE))
+              (QUOTE BUILTINSIMPSET)))

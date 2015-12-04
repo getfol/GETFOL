@@ -1,0 +1,233 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:44:43 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: msgs.fol
+;; Date: Wed Oct 20 10:48:11 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;
+; *****************************************************************
+; *                                                               *
+; *  This file contains all and only the error printing routines  *
+; *  to be used in writing the FOL code.                          *
+; *                                                               *
+; *  They are so subdivided:                                      *
+; *                                                               *
+; *     1. FSERRP, SPACES: used by upper level routines. Never to *
+; *        used directly by the user.                             *
+; *                                                               *
+; *     2. The others: divided in classes corresponding to        *
+; *        different functionalities. There are two main          *
+; *        functionalities:                                       *
+; *             A. message and then go ahead with computation     *
+; *		B. message and then abort (use of ENDM)                  *
+; *                                                               *
+; *****************************************************************
+
+
+;;;;scanner routines
+;*****************************************************************************
+;*                                                                           *
+;*   SYNTAX                                                                  *
+;*        (SCANNED_LINE-PRINT)                                               *
+;*        (FSERRP <num>)                                                     *
+;*        (SPACES <num>)                                                     *
+;*                                                                           *
+;*   DESCRIPTION                                                             *
+;*        SCANNED_LINE-PRINT prints the last line scanned. The               *
+;*        scanner function FLUSH deletes the contents of the buffer          *
+;*        used by this function.                                             *
+;*        FSERRP is the lowest level error handling                          *
+;*        function.  It prints all of the users input since                  *
+;*        the last FLUSH.  Then it prints 0, 1 arrows depending              *
+;*        on NUM.  The arrow points to the first character of the            *
+;*        current token. It uses SCANNED_LINE-PRINT.                         *
+;*        SPACES prints <num> spaces.                                        *
+;*                                                                           *
+;*   NOTE:To understand these routines you must first understand             *
+;*        how the scanner works.                                             *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM SCANNED_LINE-PRINT-NOCRLF ()
+ (SCANNED_LINE-PRINT (IGNORE-CRLF 1)))
+
+(DEFLAM IGNORE-CRLF (N)
+ (IF (OR (INTEQ (GETTUP %SCANBUFFER% N) CR)
+         (INTEQ (GETTUP %SCANBUFFER% N) LF))
+  (IGNORE-CRLF (ADD1 N))
+  N))
+
+(DEFLAM SCANNED_LINE-PRINT (N)
+ (IF (GT N (SCANBUF-GET-TOP_POS)) (NOP)
+   (SEQ
+   (HGKM-PRINC (ASCII (GETTUP %SCANBUFFER% N)))
+   (SCANNED_LINE-PRINT (ADD1 N)))))
+
+(DEFLAM FSERRP (N)
+ (SEQ
+  (SCANBUF-FILL)
+  (LET ((pos_err_tk (tk_info-get-pos (GETTUP %TOKENARRAY% %CURR_TOP_TKARRAY%))))
+   (SEQ
+    (IF (INTEQ (SCANBUF-GET-TOP) LF) (NOP) (CRLF))
+    (SCANNED_LINE-PRINT 1)
+    (CRLF)
+    (IF (LE N 0) (CRLF)
+     (SEQ
+      (SPACES pos_err_tk)
+      (HGKM-PRINC UPARROW)
+      (CRLF)))))))
+               
+(DEFLAM SPACES (N)  
+ (IF (LE N 0) (NOP)
+  (SEQ
+   (HGKM-PRINC " ")
+   (SPACES (SUB1 N)))))
+		
+
+;;
+; *****************************************************************
+; *                                                               *
+; *          BASIC PRINTING ROTINES (NO ABORT)                    *
+; *                                                               *
+; * PRINTMES[1-8]: Print the composite message and then a         *
+; *                carriage return.                               *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM PRINTMES (MSG)  (SEQ (HGKM-PRINC MSG) (CRLF)) )
+
+(DEFLAM PRINTMES2 (MSG1 MSG2)  
+   (SEQ (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) (CRLF)) )
+
+(DEFLAM PRINTMES3 (MSG1 MSG2 MSG3)  
+   (SEQ (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) (HGKM-PRINC MSG3) (CRLF)) )
+
+(DEFLAM PRINTMES4 (MSG1 MSG2 MSG3 MSG4)  
+   (SEQ (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) 
+        (HGKM-PRINC MSG3) (HGKM-PRINC MSG4) (CRLF)) )
+
+(DEFLAM PRINTMES5 (MSG1 MSG2 MSG3 MSG4 MSG5) 
+ (SEQ (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) 
+      (HGKM-PRINC MSG3) (HGKM-PRINC MSG4) 
+      (HGKM-PRINC MSG5) (CRLF)) )
+
+(DEFLAM PRINTMES6 (MSG1 MSG2 MSG3 MSG4 MSG5 MSG6) 
+ (SEQ (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) 
+      (HGKM-PRINC MSG3) (HGKM-PRINC MSG4) 
+      (HGKM-PRINC MSG5) (HGKM-PRINC MSG6) (CRLF)) )
+
+(DEFLAM PRINTMES7 (MSG1 MSG2 MSG3 MSG4 MSG5 MSG6 MSG7) 
+ (SEQ (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) 
+      (HGKM-PRINC MSG3) (HGKM-PRINC MSG4) 
+      (HGKM-PRINC MSG5) (HGKM-PRINC MSG6)
+      (HGKM-PRINC MSG7) (CRLF)) )
+
+(DEFLAM PRINTMES8 (MSG1 MSG2 MSG3 MSG4 MSG5 MSG6 MSG7 MSG8) 
+ (SEQ (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) 
+      (HGKM-PRINC MSG3) (HGKM-PRINC MSG4) 
+      (HGKM-PRINC MSG5) (HGKM-PRINC MSG6)
+      (HGKM-PRINC MSG7) (HGKM-PRINC MSG8) (CRLF)) )
+
+
+;;;
+; *****************************************************************
+; *                                                               *
+; *          ENDM AND ABORT ERROR ROUTINES                        *
+; *                                                               *
+; * ENDM:       Aborts                                            *
+; * ERRMESS[1-4]: It prints messages (using PRINTMES*) and then   *
+; *             aborts.                                           *
+; * REMSG1:     It prints the last line parsed. It prints `MSG    *    
+; *             is required here'. It prints a carriage return.   *
+; *             It aborts.                                        *
+; * REMSG2:     It prints the last line parsed. It prints `MSG1   *    
+; *             requires MSG2 here'. It prints a carriage return. *
+; *             It aborts.                                        *
+; * FERRM[0-1]: It prints the last line parsed. It prints NUM     *
+; *             (0/1) up-arrows. It prints MSG and carriage       *
+; *             return. It aborts.                                *
+; * GERRM[0-1]: It prints the last line parsed. It prints NUM     *
+; *             (0/1) up-arrows. It prints MSG1, then MSG2 and    *
+; *             carriage return. It aborts.                       *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM ENDM () (HGKM-ABORT (QUOTE LINE)) )
+
+
+(DEFLAM ERRMESS  (MSG)            (SEQ (PRINTMES MSG) (ENDM)) )
+(DEFLAM ERRMESS2 (MSG1 MSG2)      (SEQ (PRINTMES2 MSG1 MSG2) (ENDM)) )
+(DEFLAM ERRMESS3 (MSG1 MSG2 MSG3) (SEQ (PRINTMES3 MSG1 MSG2 MSG3) (ENDM)) )
+(DEFLAM ERRMESS4 (MSG1 MSG2 MSG3 MSG4) 
+  (SEQ (PRINTMES4 MSG1 MSG2 MSG3 MSG4) (ENDM)) )
+
+
+(DEFLAM REMSG1 (MSG)
+  (SEQ (FSERRP 1) (HGKM-PRINC MSG) (HGKM-PRINC (QUOTE " is required here."))
+       (CRLF) (ENDM) ) )
+
+(DEFLAM REMSG2 (MSG1 MSG2)
+  (SEQ (FSERRP 1) (HGKM-PRINC MSG1) (HGKM-PRINC (QUOTE " requires ")) 
+       (HGKM-PRINC MSG2) (HGKM-PRINC (QUOTE " here")) (CRLF) (ENDM) ))
+
+
+(DEFLAM FERRM (NUM MSG) (SEQ (FSERRP NUM) (HGKM-PRINC MSG) (CRLF) (ENDM) ) )
+(DEFLAM FERRM0 (MSG) (FERRM 0 MSG))
+(DEFLAM FERRM1 (MSG) (FERRM 1 MSG))
+
+
+(DEFLAM GERRM (NUM MSG1 MSG2) 
+    (SEQ (FSERRP NUM) (HGKM-PRINC MSG1) (HGKM-PRINC MSG2) (CRLF) (ENDM)) )
+(DEFLAM GERRM0 (MSG1 MSG2) (GERRM 0 MSG1 MSG2) )
+(DEFLAM GERRM1 (MSG1 MSG2) (GERRM 1 MSG1 MSG2) )
+
+

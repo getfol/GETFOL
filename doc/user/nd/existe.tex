@@ -1,0 +1,152 @@
+\gfcommand{existe}{existential quantification elimination rule}
+\index{existe}\index{es}
+
+\gfsyntax{
+   existe \ALT es \ARG{fact}  \OPT{,} \ARG{indvar1} \ALT \ARG{indpar1}
+                  \OPT{,} \ARG{indvar2} \ALT \ARG{indpar2} \SEQ;
+}
+
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \\ \\ \\ \\
+      \exists E 
+   \end{array}
+   \ \ 
+   \begin{array}{cc}
+      \\ \\
+      &{[A^{x}_{a}]}\\
+      &\vdots\\
+      \exists x A & B\\
+      \hline\\
+      B
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   The implementation of this rule is the most radically different
+   from the formal statement given in Prawitz's ND. This rule corresponds, in
+   informal reasoning, to the following kind of argument:
+   suppose we have shown that something exists with some particular
+   property, e.g. $\exists y P(a,y)$. Then we say ``call this thing $b$''.
+   This is like saying assume $P(a,b)$. Then we can reason about $b$.
+   As soon as we have a sentence, however, that no longer mentions $b$,
+   it does not depend on what we called ``$y$'',
+   but only on the dependencies of the existential statement we started
+   with. Thus we can discharge $P(a,b)$ from the dependencies
+   and replace them with those of $\exists y P(a,y)$. {\GF} thus makes the 
+   correct assumption for you, remembers it and automatically removes it at
+   the first legitimate opportunity.
+
+   The only difference with sorts is the following:
+   the existentially quantified variable must be substituted by a variable
+   or a parameter of weakly more general sort.
+
+   In the example below, an existential elimination is done creating step 
+   {\tt 6}.
+   This fact actually has as {\tt reason}  (see
+   subsection~\ref{sec-proofline}) that it was assumed.
+   Fact {\tt 8} thus depends on {\tt 6}. When the existential generalization
+   is done on the next fact, {\tt b} no longer appears and so fact {\tt 6}
+   is removed from the dependencies of fact {\tt 9}. The user should
+   convince himself that the {\GF} logic is equivalent to the ND definition
+   given at the beginning of the section.
+}
+
+\gfrecap{
+The implementation of this rule is the most radically different
+from the formal statement given in Prawitz's ND.
+This rule corresponds, in informal reasoning, to the following kind of 
+argument: suppose we have shown that something exists with some particular
+property, eg. `exists y P(a,y)'.
+Then we say ``call this thing `b''': this is like saying assume `P(a,b)'.
+Then we can reason about `b'.
+As soon as we have a sentence, however, that no longer mentions `b',
+it does not depend on what we called `y', but only on the dependencies of the
+existential statement we started with.
+Thus we can discharge `P(a,b)' from the dependencies and replace them with 
+those of `exists y P(a,y)'.
+GETFOL thus makes the correct assumption for you, remembers it and 
+automatically removes it at the first legitimate opportunity.
+The only difference with sorts is the following: the existentially quantified
+variable must be substituted by a variable or a parameter of weakly more
+general sort.
+}
+
+\gfexample+
+   ***** comment ! Sorted example !
+     
+   ***** declare indvar x y;
+   ***** declare indpar a b;
+   ***** declare predconst P 2;
+   [...]
+
+   ***** assume forall x.exists y.P(x y) and forall x y.(P(x y) imp P(y x));
+   1   forall x.exists y.P(x,y) and forall x y.(P(x,y) imp P(y,x))     (1)
+
+   ***** ande 1 1;
+   2   forall x.exists y.P(x,y)     (1)
+
+   ***** ande 1 2;
+   3   forall x y.(P(x,y) imp P(y,x))     (1)
+
+   ***** alle 2 a;
+   4   exists y.P(a,y)     (1)
+
+   ***** alle 3 a b;
+   5   P(a,b) imp P(b,a))     (1)
+
+   ***** existe 4 b;
+   6   P(a,b)     (6)
+
+   ***** impe 6 5;
+   7   P(b,a)     (1 6)
+
+   ***** andi 6 7;
+   8   P(a,b) and  P(b,a)     (1 6)
+
+   ***** existi 8 b:y;
+   9   exists y.(P(a,y) and P(y,a)     (1)
+
+   ***** alli 9 a:x;
+   10   forall x.exists y.(P(x,y) and P(x,x)     (1)
+
+   ***** impi 1 10;
+   11   forall x.exists y.P(x,y) and 
+        forall x y.(P(x,y) imp P(y,x)) imp 
+        forall x.exists y.(P(x,y) and P(x,y)
+    
+       
+   ***** comment ! Sorted example !
+    
+   ***** reset;
+   [...]
+
+   ***** declare indvar x [Sx];
+   ***** declare indpar p [S];
+   ***** declare predconst A 1;
+   ***** declare sentconst B;
+   [...]
+
+   ***** axiom ONE: exists x.A(x);
+   ***** axiom TWO: A(p) imp B;
+   ONE : exists x. A(x)
+   TWO : A(p) imp B
+
+   ***** existe ONE p;
+   A <var> must be replaced by one with more general sort;
+
+   ***** moregeneral S < Sx >;
+
+   ***** existe ONE p;
+   1   A(p)     (1)
+
+   ***** impe TWO 1;
+   2   B
++
+
+\gfnotes{
+   The rule is often called ``existential instantiation".
+}

@@ -1,0 +1,672 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:09:56 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: context.hgk
+;; Date: Wed Oct 20 10:43:09 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +                                                               +
+; + This file is supposed to contain all the code necessary to    +
+; + elementary management of contexts.                            +
+; + In particular it contains all the code related to the non     +
+; + elementary view of contexts and all the routines that         +
+; + allow to build the non elementary structure of contexts and   +
+; + parts of contexts.                                            +
+; +                                                               +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;
+;
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +                                                               +
+; +  Here is the code for ctext (context) switching               +
+; +                                                               +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+;;;Data structure of ctexts
+; *****************************************************************
+; *                                                               *
+; *      Each <ctext> contains two parts                          *
+; *                                                               *
+; *      <ctext>         CNAME . <context>                        *
+; *                                                               *
+; *        CNAME	 the name of the context                        *
+; *                                                               *
+; *        CNAME's are <symbols>                                  *
+; *                                                               *
+; *****************************************************************
+;
+;;;      the constructor and selectors of <ctext>'s
+; *****************************************************************
+; *                                                               *
+; *   (ctext-mak   CNAME CONTEXT)  - makes a ctext.               *
+; *   (ctext-get-cname    CTEXT)   - gets the cname from CTEXT.   *
+; *   (ctext-get-context CTEXT)    - gets the context from CTEXT. *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB ctext-mak (CNAME CONTEXT) (LIST CNAME CONTEXT))
+(DEFSUB ctext-get-cname  (CTEXT) (CAR CTEXT))
+(DEFSUB ctext-get-context (CTEXT) (CADR CTEXT))
+
+
+
+;;;  data structure of %CLIST%
+;
+; *****************************************************************
+; *                                                               *
+; *      %CLIST% is a list of ctexts.                             *
+; *                                                               *
+; *****************************************************************
+;
+; initialization of %CLIST%
+; *****************************************************************
+; *                                                               *
+; *      (clist-ini) - initialize the global variable CLIST.      *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB clist-ini () (SETQ %CLIST% MTL))
+
+
+;; constructor and selectors for %CLIST%
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (clist-get-ctext CNAME)                                  *
+; *      (clist-set-ctext CTEXT)                                  *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      (clist-get-ctext CNAME) gets the ctext of cname CNAME    *
+; *      from %CLIST%.                                            *
+; *                                                               *
+; *      (clist-set-ctext CTEXT) puts CTEXT in %CLIST%.           *
+; *      If %CLIST% contains a ctext of the same cname as         *
+; *      the cname of CTEXT, then                                 *
+; *      (clist-set-ctext CTEXT) replaces the ctext by CTEXT.     *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB clist-get-ctext (CNAME) (HGKM-ASSOC CNAME %CLIST%))
+
+(DEFSUB clist-set-ctext (CTEXT) 
+  (SETQ %CLIST%
+   (HGKM-REPLACE
+    (ctext-get-cname CTEXT)
+    (LIST (ctext-get-context CTEXT)) %CLIST%)))
+
+
+;; functions necessary in order to make the context switch code
+;; indipendent of the data structures
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (curcname-set CNAME)                                     *
+; *      (curcname-get)                                           *
+; *      (curcname-del)                                           *
+; *      (curcname-ini)                                           *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB curcname-set (CNAME) (SETQ %CURCNAME% CNAME))
+(DEFSUB curcname-get    ()   %CURCNAME%) 
+(DEFSUB curcname-del    ()   (SETQ %CURCNAME% 'NOTNAMED&) )
+(DEFSUB curcname-ini    ()   (SETQ %CURCNAME% 'NOTNAMED&) )
+
+
+;; Context
+; *****************************************************************
+; *                                                               *
+; * Any context is a triple:                                      *
+; *  < <lex> . <sim. struct's> . <facts> >                        *
+; *                                                               *
+; *                                                               *
+; * The constructor and selectors of <context>'s                  *
+; *                                                               *
+; *      (context-mak           SYMLS SIMSTRUCT FACTS)            *
+; *      (context-get-lex       CONTEXT)                          *
+; *      (context-get-simstruct CONTEXT)                          *
+; *      (context-get-facts     CONTEXT)                          *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFSUB context-mak (SYMLS SIMSTRUCT FACTS) (LIST SYMLS SIMSTRUCT FACTS)) 
+(DEFSUB context-get-lex           (CONTEXT) (FIRST CONTEXT))
+(DEFSUB context-get-simstruct     (CONTEXT) (SECOND CONTEXT))
+(DEFSUB context-get-facts         (CONTEXT) (HGKM-NTH 3 CONTEXT))
+
+
+;;;    LEX
+;
+; *****************************************************************
+; *                                                               *
+; * The structure of Lexicon is so defined:                       *
+; *      <lex> = ( <symls> . <symphis> )                          *
+; *                                                               *
+; * <symls> is the symls containing the symbols of the current    *
+; * context. <symphis> contains the phisics for the lexicon,      *
+; * that is the most general sort of the context.                 *
+; *                                                               *
+; *****************************************************************
+;
+; constructor and selectors of lexicon's
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (lex-mak SYMLS SYMPHISICS)                               *
+; *      (lex-get-symls    LEX)                                   *
+; *      (lex-get-symphis  LEX)                                   *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFSUB lex-mak (SYMLS SYMPHISICS) (CONS SYMLS SYMPHISICS))
+(DEFSUB lex-get-symls   (LEX) (CAR LEX))
+(DEFSUB lex-get-symphis (LEX) (CDR LEX))
+
+
+;;;  Simulation structures
+;
+; **************************************************************************
+; *                                                                        *
+; *                                                                        *
+; *   Any <sim. stuct's> is a couple:                                      *
+; *   <sim.struct> = < <repsinfo> <intsinfo><desfuns><defrepinfo> >        *
+; *                                                                        *
+; **************************************************************************
+;
+; constructor and selectors os Simulation Structure's
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (simstruct-mak REPSINFO INTSINFO DESFUNSINFO DEFREPSINFO)*
+; *      (simstruct-get-repsinfo SIMSTRUCT)                       *
+; *      (simstruct-get-intsinfo SIMSTRUCT)                       *
+; *      (simstruct-get-desfunsinfo SIMSTRUCT)                    *
+; *      (simstruct-get-defrepsinfo SIMSTRUCT)                    *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB simstruct-mak (REPSINFO INTSINFO DESFUNSINFO DEFREPSINFO) 
+ (LIST REPSINFO INTSINFO DESFUNSINFO DEFREPSINFO))
+
+(DEFSUB simstruct-get-repsinfo (SIMSTRUCT) (FIRST SIMSTRUCT))
+
+(DEFSUB simstruct-get-intsinfo (SIMSTRUCT) (SECOND SIMSTRUCT))
+
+(DEFSUB simstruct-get-desfunsinfo (SIMSTRUCT) (HGKM-NTH 3 SIMSTRUCT))
+
+(DEFSUB simstruct-get-defrepsinfo (SIMSTRUCT) (HGKM-NTH 4 SIMSTRUCT))
+
+
+;;; Representation information INTSINFO
+
+; **************************************************************
+; *                                                            *
+; * Any representation information is couple:                  *
+; *     < <int's> INTSYMS >                                    *
+; * where:                                                     *
+; *     <int's> is the list (of not fixed length) of all the   *
+; *     symbols and related attachments                        *
+; *     INTSYMS is the list of all the symbols which           *
+; *     have attachments.                                      *
+; *                                                            *
+; **************************************************************
+;
+; constructor and selectors of the representation information
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (intsinfo-mak INTS INTERPRETATIONS)                          *
+; *  (intsinfo-get-ints INTSINFO)                                 *
+; *  (intsinfo-get-attlist INTSINFO)                              *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB intsinfo-mak (INTS INTERPRETATIONS) (LIST INTS INTERPRETATIONS))
+(DEFSUB intsinfo-get-ints    (INTSINFO)     (FIRST INTSINFO) )
+(DEFSUB intsinfo-get-intsyms (INTSINFO)     (SECOND INTSINFO) )
+
+
+;;INT structure manipulation
+;
+; **************************************************************
+; *                                                            *
+; * Any INT is a structure so defined:                         *
+; *  INT = < <name INT> <list of elements> >                   *
+; *                                                            *
+; **************************************************************
+;
+; constructors and selectors of INT
+;
+; **************************************************************
+; *                                                            *
+; *  SYNTAX                                                    *
+; *   (iint-mak INT)                                           *
+; *   (int-get-intname INT)                                    *
+; *   (int-get-symbols INT)                                    *
+; *                                                            *
+; *                                                            *
+; **************************************************************
+;
+(DEFSUB iint-mak (INT SYMBOLS) (LIST INT SYMBOLS) )
+(DEFSUB int-get-intname (INT) (FIRST INT))
+(DEFSUB int-get-symbols (INT) (SECOND INT))
+
+
+;;; Representation information REPSINFO
+
+; **************************************************************
+; *                                                            *
+; * Any representation information is couple:                  *
+; *     < <rep's> REPRESENTATIONS>                             *
+; * where:                                                     *
+; *     <rep's> is the list (of not fixed length) of all the   *
+; *     representations and related desfun functions           *
+; *     REPRESENTATIONS is the list of all the representations *
+; *                                                            *
+; **************************************************************
+;
+; constructor and selectors of the representation information
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (repsinfo-mak REPS LABELEDREPS)                              *
+; *  (repsinfo-get-desfuns REPSINFO)                              *
+; *  (repsinfo-get-representations REPSINFO)                      *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFSUB repsinfo-mak (REPS LABELEDREPS)   (LIST REPS LABELEDREPS))
+(DEFSUB repsinfo-get-repdesfuns       (REPSINFO)  (FIRST REPSINFO) )
+(DEFSUB repsinfo-get-representations (REPSINFO) (SECOND REPSINFO) )
+
+
+;;REP structure manipulation
+;
+; **************************************************************
+; *                                                            *
+; * Any REP is a structure so defined:                         *
+; *  REP = < <name REP> <( sexpr . indconst )>                 *
+; *                                                            *
+; **************************************************************
+;
+; constructors and selectors of REP
+; **************************************************************
+; *                                                            *
+; *  SYNTAX                                                    *
+; *   (rrep-mak LABEL REP)                                     *
+; *   (rep-get-repname REP)                                    *
+; *   (rep-get-desfun REP)                                     *
+; *                                                            *
+; **************************************************************
+
+(DEFSUB rrep-mak (REP SYMBOLS) (LIST REP SYMBOLS) )
+(DEFSUB rep-get-repname (REP) (FIRST REP))
+(DEFSUB rep-get-desfun (REP) (SECOND REP))
+
+
+;;; Default representation information DEFREPSINFO
+; **************************************************************
+; *                                                            *
+; * Any default representation information is couple:          *
+; *     < <DEFREPS> DEFREPSORTS>                               *
+; * where:                                                     *
+; *     <DEFREPS> is the list (of not fixed length) of all the *
+; *     sorts and related default representation               *
+; *     DEFREPSORTS is the list of all the sorts that have a   *
+; *     default representation                                 *
+; *                                                            *
+; **************************************************************
+;
+; constructor and selectors of the default representation information
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (defrepsinfo-mak DEFREPS SORTS)                              *
+; *  (defrepsinfo-get-defreps DEFREPSINFO)                        *
+; *  (defrepsinfo-get-sorts DEFREPSINFO)                          *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB defrepsinfo-mak        (DEFREPS SORTS) (LIST DEFREPS SORTS))
+(DEFSUB defrepsinfo-get-defreps(DEFREPSINFO)   (FIRST DEFREPSINFO) )
+(DEFSUB defrepsinfo-get-sorts  (DEFREPSINFO)   (SECOND DEFREPSINFO) )
+
+
+;;default representation structure manipulation
+; **************************************************************
+; *                                                            *
+; * Any DEFREP is a structure so defined:                      *
+; *  DEFREP = <(sort . reprentation) >                         *
+; *                                                            *
+; **************************************************************
+; constructors and selectors of DEFREP
+
+(DEFSUB defrep-mak (sort rep) (LIST sort rep) )
+(DEFSUB defrep-get-sort (defrep) (FIRST defrep))
+(DEFSUB defrep-get-rep (defrep) (SECOND defrep))
+
+
+;;;; FACTS
+; *****************************************************************
+; *                                                               *
+; *     Each <facts> contains five parts                          *
+; *                                                               *
+; *     <facts>                                                   *
+; *      <PROOFS CURALIST THEORYLIST DEFNLIST SIMPSETSINFO>       *
+; *                                                               *
+; *  AXIOMS and THEOREMS are memorized in CURALIST                *
+; *  Theories are memorized in THEORYLIST                         *
+; *  Definitions are recorded in DEFNLIST                         *
+; *                                                               *
+; *  CURALIST THEORYLIST DEFNLIST are global                      *
+; *                                                               *
+; *****************************************************************
+;
+; facts constructor and selectors
+;
+; *****************************************************************
+; *                                                               *
+; *  SYNTAX                                                       *
+; *   (facts-mak PROOFS AXIOMS THEORYLIST DEFNLIST SIMPSETSINFO)  *
+; *   (facts-get-proofs FACTS)                                    *
+; *   (facts-get-axioms FACTS)                                    *
+; *   (facts-get-theories FACTS)                                  *
+; *   (facts-get-definitions FACTS)                               *
+; *   (facts-get-simpsetsinfo FACTS)                              *
+; *                                                               *
+; *    The last functions are necessary in order to make the      *
+; *    switching independent of the data structure. Thanks to     *
+; *    these functions CON.FOL is completely independent of it    *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB facts-mak (PROOFS AXIOMS THEORYLIST DEFNLIST SIMPSETSINFO)
+                (LIST PROOFS AXIOMS THEORYLIST DEFNLIST SIMPSETSINFO))
+
+(DEFSUB facts-get-proofs          (FACTS) (FIRST FACTS))
+(DEFSUB facts-get-axioms          (FACTS) (SECOND FACTS))
+(DEFSUB facts-get-theories        (FACTS) (CADDR FACTS))
+(DEFSUB facts-get-definitions     (FACTS) (HGKM-NTH 4 FACTS))
+(DEFSUB facts-get-simpsetsinfo    (FACTS) (HGKM-NTH 5 FACTS))
+
+
+;;;    PROOFS
+; *****************************************************************
+; *                                                               *
+; *     Each <proofs> contains the following parts                *
+; *                                                               *
+; *     <proofs> = < <cur. proof> (list of non el. proofs) >      *
+; *     note that cur.proof is also contained (an old version) in *
+; *     the list.                                                 *
+; *                                                               *
+; *     The code for switching from the non elementary version to *
+; *     the elementary verrsion of a proof is used both when      *
+; *     switching context and when switching proof. The code is   *
+; *     in the proof switching part of the file.                  *
+; *                                                               *
+; *   The non el. proofs are memorized in PLIST.
+; *   To understand the meaning of PLIST you have to understand   *
+; *   that there is always an active proof (seen in an elementary *
+; *   way) and a list of non active proofs (seen in a non         *
+; *   elementary way).                                            *
+; *   NOTE that PLIST is seen as something outside when switching *
+; *   proof and something part of the context when switching      *
+; *   context. In this piece of code PLIST is treated only for    *
+; *   the context switching.                                      *
+; *                                                               *
+; *   PLIST is global                                             *
+; *                                                               *
+; *****************************************************************
+;
+; proofs
+;
+; *****************************************************************
+; *                                                               *
+; *   SYNTAX                                                      *
+; *    (proofs-mak PROOF PLIST)                                   *
+; *    (proofs-get-proof PROOFS)                                  * 
+; *    (proofs-get-plist PROOFS)                                  *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB proofs-mak (PROOF PLIST) (LIST PROOF PLIST))
+(DEFSUB proofs-get-proof (PROOFS) (FIRST PROOFS))
+(DEFSUB proofs-get-plist    (PROOFS) (SECOND PROOFS))
+
+
+;;; Representation information SIPMSETSINFO
+; **************************************************************
+; *                                                            *
+; * Any simplification sets information is a couple:           *
+; *  SIMPSETSINTERFACE . SIMPSETS                              *
+; * where:                                                     *
+; *     SIMPSETSINTERFACE implements an interface between      * 
+; *     GETFOL's logic and the simpset world.                  *
+; *     SIMPSETS is the list of all the user 	               *
+; *     simplification sets. 	                               *
+; *                                                            *
+; **************************************************************
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (simpsetsinfo-mak SIMPSETSINTERFACE SIMPSETS)                *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB simpsetsinfo-mak  (SIMPSETSINTERFACE SIMPSETS)
+ (CONS SIMPSETSINTERFACE SIMPSETS))
+(DEFSUB simpsetsinfo-get-simpsetsinterface (SIMPSETSINFO) (CAR SIMPSETSINFO))
+(DEFSUB simpsetsinfo-get-simpsets (SIMPSETSINFO) (CDR SIMPSETSINFO))
+
+
+;;;; checkers for ctext names
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (CTEXT-NAME? X)                                          *        
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      (CTEXT-NAME? X) checks if X is a context name or not.    *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB CTEXT-NAME? (X) (HGKM-ASSOC X %CLIST%) )
+
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (CURCTEXT-UNNAMED?)                                          *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *  It checks if the current context is unnamed                  *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB CURCTEXT-UNNAMED? ()    (EQ %CURCNAME% 'NOTNAMED&) )
+
+
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (CURCTEXT-NAME? CNAME)                                       *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *  It checks if CNAME is the name of the current context        *
+; *                                                               *
+; *****************************************************************
+;
+ (DEFSUB CURCTEXT-NAME? (CNAME)  (EQ CNAME %CURCNAME%) )
+
+
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (CTEXT-UNNAMED? CNAME)                                       *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *  It checks if CNAME is the name of the unnamed context        *
+; *                                                               *
+; *****************************************************************
+;
+ (DEFSUB CTEXT-UNNAMED? (CNAME) (EQ CNAME 'NOTNAMED&))
+
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *      Creation of the EMPTY data structures:                   *
+; *                                                               *
+; * - the empty lexicon                                           *
+; * - the empty simulation structure                              *
+; * - the empty facts                                             *
+; *                                                               *
+; * - the empty context                                           *
+; * - the empty ctext                                             *
+; *                                                               *
+; *****************************************************************
+
+
+; 1. Creation of the empty lexicon.
+;
+(DEFSUB lex-mak-empty ()
+ (LET ((CSYMLS (dflt-cxt-symls-mak)))
+  (LET ((CSYMPHIS (cxt-symls-get-phis CSYMLS)))
+   (lex-mak CSYMLS CSYMPHIS))))
+
+
+; 2. Creation of the empty simulation structure.
+;
+
+(DEFSUB reps-mak-empty ()
+ (LIST (rrep-mak %DEFDEFREP% Alist-empty)))
+
+(DEFSUB representations-mak-empty ()(LIST %DEFDEFREP%))
+
+(DEFSUB repsinfo-mak-empty ()
+ (repsinfo-mak (reps-mak-empty) (representations-mak-empty)))
+
+(DEFSUB ints-mak-empty () MTL)
+
+(DEFSUB intsyms-mak-empty () MTL)
+
+(DEFSUB intsinfo-mak-empty ()
+ (intsinfo-mak (ints-mak-empty) (intsyms-mak-empty)))
+
+(DEFSUB desfuns-mak-empty () MTL)
+
+(DEFSUB desfunsinfo-mak-empty () (desfuns-mak-empty))
+
+(DEFSUB defreps-mak-empty () MTL)
+
+(DEFSUB defrepsorts-mak-empty () MTL)
+
+(DEFSUB defrepsinfo-mak-empty ()
+ (defrepsinfo-mak (defreps-mak-empty) (defrepsorts-mak-empty)))
+
+(DEFSUB simstruct-mak-empty ()
+ (simstruct-mak 
+  (repsinfo-mak-empty) 
+  (intsinfo-mak-empty)
+  (desfunsinfo-mak-empty)
+  (defrepsinfo-mak-empty)))
+
+
+
+; 3. Creation of the empty facts.
+;
+
+(DEFSUB proofs-mak-empty () 
+ (proofs-mak (proof-mak-empty 'NOTNAMED&) (plist-mak-empty)))
+
+(DEFSUB axioms-mak-empty () MTL)
+
+(DEFSUB theories-mak-empty () MTL)
+
+(DEFSUB simpsinterface-mak-empty () MTL)
+
+(DEFSUB simps-mak-empty ()
+ (LIST (simp-mak 'EVALSS (amf-mak-empty) MTL MTL)))
+
+(DEFSUB defns-mak-empty () MTL)
+
+(DEFSUB simpsetsinfo-mak-empty () 
+ (simpsetsinfo-mak (simpsinterface-mak-empty)(simps-mak-empty)))
+
+(DEFSUB facts-mak-empty () 
+ (facts-mak
+  (proofs-mak-empty) 
+  (axioms-mak-empty)
+  (theories-mak-empty)
+  (defns-mak-empty)
+  (simpsetsinfo-mak-empty)))
+
+
+; 4. Creation of the empty context
+;
+(DEFSUB context-mak-empty () 
+   (LIST (lex-mak-empty) (simstruct-mak-empty) (facts-mak-empty)) )
+
+
+; 5. Creation of the empty ctext
+;
+(DEFSUB ctext-mak-empty (CNAME) (ctext-mak CNAME (context-mak-empty)))
+(DEFSUB ctext-emptyname-get () 'NOTNAMED&)

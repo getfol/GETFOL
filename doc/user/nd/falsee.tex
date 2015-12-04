@@ -1,0 +1,69 @@
+\gfcommand{falsee}{ falsity rule in intuitionistic logic}
+\index{falsee}\index{fe}
+
+\gfsyntax{
+   falsee \ALT fe \ARG{fact1} \OPT{,} \ARG{wff};\\
+   falsee \ALT fe \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \bot_i  
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      \fraz{\bot}
+           {A}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   \ARG{fact1} must have wff {\tt FALSE}.
+   In the first form, the wff derived is \ARG{wff} and its dependencies are 
+   those of \ARG{fact1}.
+   In the second form, the wff of \ARG{fact2} is derived.
+}
+
+\gfrecap{
+   `fact1' must have wff `FALSE'.
+   In the first form, the wff derived is `wff' and its dependencies are 
+   those of `fact1'.
+   In the second form, the wff of `fact2' is derived.
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   [...]
+
+   ***** assume FALSE;
+   1  FALSE  (1)
+
+   ***** falsee 1 A and not A;
+   2  A and (not A)  (1)
+
+   ***** reset;
+   [...]
+
+   ***** declare sentconst A;
+   [...]
+
+   ***** assume not not A not A A;
+   1  not not A  (1)
+   2  not A  (2)
+   3  A  (3)
+
+   ***** falsei 1 2;
+   4  FALSE  (1 2)
+
+   ***** falsee 4 3;
+   5  A  (1 2);
+
+   ***** impi 1 5;
+   6  not not A imp A (2)
++
+
+\gfnotes{
+   This rule says that anything follows from a contradiction.
+}

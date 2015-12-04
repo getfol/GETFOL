@@ -1,0 +1,43 @@
+\gfcommand{wff}{{\em wff} verifier}
+\index{wff}
+
+\gfsyntax{
+   wff \ARG{wff};
+}
+
+\gfdescription{
+   {\tt term}, {\tt awff} and {\tt wff} verify that their arguments
+   are terms, atomic formulas and well formed formulas respectively.
+   An error is signaled if an expression of the correct
+   syntactic category is not provided.
+}
+
+\gfrecap{
+Verifies whether the formula `wff' is well formed.
+}
+
+\label{language-examples}
+\gfexample+
+   ***** declare predconst P 1 [pre];
+   ***** declare predconst R 2;
+   ***** declare indvar x y;
+   ***** declare funconst g 2;
+   ***** declare funconst f 1;
+   ...
+
+   ***** wff P g(f(x),y) and x = y;
+   (P g(f(x),y)) and (x = y) is a <wff>.
+   ***** wff exists x y . (P g(f(x),y) and x = y);
+   exists x y. ((P g(f(x),y)) and (x = y)) is a <wff>.
+   ***** wff forall x y. wffif P trmif x = y then f(x) else f(y)
+                then R(x,y)
+                else R(y,x);
+   forall x y. (wffif (P (trmif (x = y) then f(x) else f(y))) then R(x,y) else
+   R(y,x)) is a <wff>.
+
+   ***** wff Z(x);
+   wff Z(x);
+       ^
+   The scanner requires a <wff> here
++
+

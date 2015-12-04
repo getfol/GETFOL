@@ -1,0 +1,260 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: systems.fol
+;; Date: Wed Oct 20 10:43:17 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;* The name folsystems.fol is due to the fact that this file      *
+;* contains the routines for handling sets of contexts, that is   *
+;* folsystems.                                                    *
+;*                                                                *
+;******************************************************************
+
+;
+; Basic functions for ctext pairs (FOLSYSs) manipulations
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (cur-ctext-switchout)                                    *
+; *      (ctext-switchin CNAME)                                   *
+; *      (ctext-switch  CNAME)                                    *
+; *      (cur-ctext-copy CNAME)                                   *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      (cur-ctext-switchout) put the current context to %CLIST%.  *
+; *      (ctext-switchin CNAME) gets the ctext of the name CNAME  *
+; *      from %CLIST%.                                              *
+; *      (ctext-switch  CNAME) put the current context to         *
+; *      %CLIST% and get the context of the name CNAME.             *
+; *      (cur-ctext-copy CNAME) copies the current ctext and puts *
+; *      it in %CLIST% with name CNAME.                             *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM cur-ctext-switchout ()  (clist-set-ctext (ectext2ctext) ) )
+
+(DEFLAM  ctext-switchin (CNAME) (ctext2ectext (clist-get-ctext CNAME)) )
+
+(DEFLAM ctext-switch (CNAME)
+  (SEQ
+    (cur-ctext-switchout)
+    (cur-ctext-forget)
+    (ctext-switchin CNAME) ))
+
+(DEFLAM cur-ctext-copy (CNAME)
+     (clist-set-ctext (ctext-mak CNAME (econtext2context))) )
+
+
+;functions for ctext-switching with printing
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (probed-cur-ctext-switchout)                             *
+; *      (probed-ctext-switchin CNAME)                            *
+; *      (probed-ctext-switch  CNAME)                             *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      (probed-cur-ctext-switchout)                             *
+; *      (probed-ctext-switchin CNAME)                            *
+; *      (probed-ctext-switch  CNAME)                             *
+; *                                                               *
+; *          Probed context switching (see above fucntions and    *
+; *          probe files)                                         *
+; *                                                               *
+; *****************************************************************
+;
+ (DEFLAM probed-cur-ctext-switchout ()
+    (SEQ
+      (cur-ctext-switchout)
+      (CS-EPRINC1 "I am switching out the current context")))
+
+ (DEFLAM probed-ctext-switchin (CNAME)
+    (SEQ
+      (ctext-switchin CNAME)
+      (CS-EPRINC2 "I am switching to the context: " CNAME)) )
+
+ (DEFLAM probed-ctext-switch (CNAME)
+  (SEQ
+   (ctext-switch CNAME)
+   (CS-EPRINC2 "I am switching from the current context to: " CNAME)) )
+
+
+; Functions for ctext manipulation
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *   (ctext-set-label LABEL)                                     *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *   (ctext-set-label LABEL)                                     *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM ctext-set-label (CTEXT LABEL)
+ (ctext-mak LABEL (ctext-get-context CTEXT)) )
+
+
+;; Complex folsyss maipulation
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *                                                               *
+; * SYNTAX                                                        *
+; *  (clist-get-ctext&applfun CNAME FUN ARGS)                     *
+; *  (ctext-get&applfun CTEXT FUN ARGS)                           *
+; *  (ctext-applfun OLDCNAME NEWCNAME FUN ARGS)                   *
+; *  (clist-get-ctext&extend CNAME FUN ARGS)                      *
+; *  (ctext-get&extend CTEXT FUN ARGS)                            *
+; *  (ctext-get CTEXT)                                            *
+; *  (probed-ctext-get CTEXT)                                     *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *  (clist-get-ctext&applfun CNAME FUN ARGS)                     *
+; *  (ctext-get&applfun CTEXT FUN ARGS)                           *
+; *  (ctext-applfun OLDCNAME NEWCNAME FUN ARGS)                   *
+; *  (clist-get-ctext&extend CNAME FUN ARGS)                      *
+; *  (ctext-get&extend CTEXT FUN ARGS)                            *
+; *  (ctext-get CTEXT)                                            *
+; *  (probed-ctext-get CTEXT)                                     *
+; *                                                               *
+; * NOTES                                                         *
+; *   I do not make a switch of context but just a parking of it  *
+; *   till when I finish to work in the other one. THIS IS A DEEP *
+; *   THEORETICAL ISSUE: WE CAN HAVE IN OUR HANDS A NON           *
+; *   ELEMENTARY VIEW OF A THEORY BEING INSIDE ANOTHER THEORY     *
+; *   (THAT IS HAVING AN ELEMENTARY VIEW OF IT)                   *
+; *   Note again that at the end we always forget everything of   *
+; *   what FUN did. Moreover the old context can be unnamed and   *
+; *   everything works without problems.                          *
+; *   Note that I always load the old ctext (I don't want the     *
+; *   possible side-effects of FUN)                               *
+; *                                                               *
+; *   You wanna change context even if the curcname is the same   *
+; *   as that where you wanna go. Infact you may have to compute  *
+; *   something in the old version of the current context. If you *
+; *   wanna compute something in the current context without      *
+; *   side-effects you have to copy the current one, switch to it *
+; *   and then switch back.                                       *
+; *                                                               *
+; *   For the implementation of these activities by speech acts   *
+; *   see the commands LOOKUP and RETURN                          *
+; *                                                               *
+; *   (ctext-applfun) works as (clist-get-ctext&applfun) but      *
+; *   the function is applied in a context in %CLIST% and the side  *
+; *   effect is permanent.                                        *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFLAM clist-get-ctext&applfun (CNAME FUN ARGS)
+ (IFN (CTEXT-NAME? CNAME)
+  (CS-EPRINC2
+     "clist-get-ctext&applfun: This name is not a context name: " CNAME)
+  (LET ((NEWCTEXT (clist-get-ctext CNAME) ))
+  (ctext-get&applfun NEWCTEXT FUN ARGS) ) ) )
+
+ (DEFLAM ctext-get&applfun (NEWCTEXT FUN ARGS)
+      (LET ((OLDCTEXT (ectext2ctext) ))
+         (SEQ
+          (probed-ctext-get NEWCTEXT)
+          (LET ((RESULT (TRAP (HGKM-APPLY (GET-FUN FUN) ARGS)) ))
+           (SEQ
+             (probed-ctext-get OLDCTEXT)
+             (IFN (ERROR-OCCURRED? RESULT)  (TRAP-GET-RESULT RESULT)
+              (SEQ
+               (CS-EPRINC1
+               "ctext-get&applfun: Some strange error happened while working")
+                 FVAL)) )) )) )
+
+
+(DEFLAM clist-get-ctext&extend (CNAME FUN ARGS)
+   (IFN (CTEXT-NAME? CNAME)
+       (CS-EPRINC2
+        "clist-get-ctext&extend: This name is not a context name: " CNAME)
+       (LET ((NEWCTEXT (clist-get-ctext CNAME) ))
+       (ctext-get&extend NEWCTEXT FUN ARGS)) ) )
+
+ (DEFLAM ctext-get&extend (NEWCTEXT FUN ARGS)
+    (LET ((OLDCTEXT (ectext2ctext) ))
+     (SEQ
+      (probed-ctext-get NEWCTEXT)
+      (LET ((RESULT (TRAP (HGKM-APPLY (GET-FUN FUN) ARGS)) ))
+      (LET ((EXTENDED-CTEXT
+               (ctext-mak (ctext-emptyname-get)(econtext2context)) ))
+        (SEQ
+         (probed-ctext-get OLDCTEXT)
+         (IFN (ERROR-OCCURRED? RESULT)  EXTENDED-CTEXT
+           (SEQ
+            (CS-EPRINC1
+              "ctext-get&extend: Some strange error happened while working")
+             FVAL)) ))) )) )
+
+(DEFLAM ctext-get (CTEXT)
+     (SEQ
+      (cur-ctext-forget)
+      (ctext2ectext CTEXT) ))
+
+(DEFLAM probed-ctext-get (CTEXT)
+  (SEQ
+   (ctext-get CTEXT)
+   (CS-EPRINC2 "ctext-get: I changed context to: " (ctext-get-cname CTEXT)) ))
+
+(DEFLAM ctext-applfun (OLDCNAME NEWCNAME FUN ARGS)
+ (IFN (CTEXT-NAME? NEWCNAME)
+  (CS-EPRINC2 "ctext-applfun: This name is not a context name: " NEWCNAME)
+  (SEQ
+    (probed-ctext-switch NEWCNAME)
+    (LET ((RESULT (TRAP (HGKM-APPLY (GET-FUN FUN) ARGS)) ))
+     (SEQ
+       (probed-ctext-switch OLDCNAME)
+       (IFN (ERROR-OCCURRED? RESULT)  (TRAP-GET-RESULT RESULT)
+       (SEQ
+         (CS-EPRINC1 "ctext-applfun: Some strange error happened while working")
+          FVAL) ) )) ) ) )
+
+

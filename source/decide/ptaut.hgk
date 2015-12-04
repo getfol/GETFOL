@@ -1,0 +1,129 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 15:08:49 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: ptaut.hgk
+;; Date: Wed Oct 20 10:44:05 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR         ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKES     ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*****************************************************************
+;*                                                               *
+;*                 TAUTOLOGICAL DECIDERS                         *
+;*                                                               *
+;* This file contains the low level functions for tautological   *
+;* deciders.                                                     *
+;*                                                               *
+;*                                                               *
+;*****************************************************************
+
+
+(DEFSUB POSPOL (POL) (EQ POL (QUOTE +)))
+(DEFSUB NEGPOL (POL) (EQ POL (QUOTE -)))
+(DEFSUB BOTHPOL (POL) (EQ POL (QUOTE *)))
+(DEFSUB POSPOL-mak () (QUOTE +))
+(DEFSUB NEGPOL-mak () (QUOTE -))
+(DEFSUB BOTHPOL-mak () (QUOTE *))
+(DEFSUB POL-switch (POL)
+ (IF (BOTHPOL POL) (BOTHPOL-mak)
+  (IF (POSPOL POL) (NEGPOL-mak)
+   (POSPOL-mak))))
+
+(DEFSUB DISMTLDO-mak () (QUOTE DTLDO))
+(DEFSUB DISMTLDO (TLDO) (EQ TLDO (QUOTE DTLDO)))
+(DEFSUB UNDEFTLDO-mak () (QUOTE UNDEFTLDO))
+(DEFSUB UNDEFTLDO (TLDO) (EQ TLDO (QUOTE UNDEFTLDO)))
+
+;
+; the local var stat-list keeps the statistical information about the pcs
+; in the following way: stats is a list of S-expr of this kind:
+; ( PC . ( OCCN . ( GPOL . TLDO ) ) )
+; where:
+; PC : the propositional costituent
+; OCCN : number of occurrences of pc in wff
+; GPOL {POSPOL, NEGPOL, BOTHPOL}: global polarity of pc in wff.
+; TLDO {UNDEFTLDO, POSPOL, NEGPOL, DISMTLDO}: signals the presence of a
+;      POSitive (NEGative or DISMatching) TLDO of PC in wff.
+
+(DEFSUB stats-init () (SETQ STATS MTL))
+(DEFSUB stats-get () STATS)
+(DEFSUB stats-add-stat (stat) (SETQ STATS (CONS stat (stats-get))))
+(DEFSUB stats-get-stat (PC) (HGKM-ASSOC PC (stats-get)))
+
+
+(DEFSUB stat-get-pc (stat) (CAR stat))
+(DEFSUB stat-get-occn (stat) (CADR stat))
+(DEFSUB stat-get-gpol (stat) (CADDR stat))
+(DEFSUB stat-get-tldo (stat) (CDDDR stat))
+(DEFSUB stat-mak&get (PC POL TLDO)
+ (CONS PC (CONS 1 (CONS POL (IF (IST TLDO) POL (UNDEFTLDO-mak))))))
+
+(DEFLAM stats-update-stat (stat POL TLDOFLAG)
+ (LET ((GPOL (IF (BOTHPOL POL) (BOTHPOL-mak)
+              (IF (POSPOL POL)
+               (IF (POSPOL (stat-get-gpol stat)) (POSPOL-mak)
+                (BOTHPOL-mak))
+               (IF (NEGPOL (stat-get-gpol stat)) (NEGPOL-mak)
+                (BOTHPOL-mak)))))
+       (NEWTLDO (LET ((TLDO (stat-get-tldo stat)))
+                 (IFN (IST TLDOFLAG) TLDO
+                  (IF (DISMTLDO TLDO) (DISMTLDO-mak)
+                   (IF (UNDEFTLDO TLDO) POL
+                    (IF (POSPOL TLDO)
+                     (IF (POSPOL POL) (POSPOL-mak) (DISMTLDO-mak))
+                     (IF (POSPOL POL) (DISMTLDO-mak) (NEGPOL-mak)))))))))
+  (SETCDR stat (CONS (ADD1 (stat-get-occn stat)) (CONS GPOL NEWTLDO)))))
+
+(DEFSUB DTLDO? (sub) (EQ sub (QUOTE DTLDO)))
+(DEFSUB UNDEF-SUBS? (sub) (MTL? sub))
+
+
+(DEFSUB assgn-init () (SETQ ASSGN MTL))
+(DEFSUB assgn-update (subs) (SETQ ASSGN (APPEND subs ASSGN)))
+(DEFSUB assgn-set (assgn) (SETQ ASSGN assgn))
+(DEFSUB assgn-get () ASSGN)

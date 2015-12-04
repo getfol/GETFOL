@@ -1,0 +1,360 @@
+\section{Natural Deduction (ND)}
+\label{sec-nd}
+\label{sec-nd-first}
+
+\subsection{{\GF} logic}
+\label{sec-ndrules}
+
+{\GF} uses a Natural Deduction (ND) calculus based on Prawitz's system
+defined in \cite{prawitz1}.
+Some resemblances exist also to the ND calculus defined by Quine in
+\cite{quine3}.
+For various reasons ({\it e.g.} efficiency of the implementation, elegance of
+the proof theory), {\GF} also carries around the dependencies of any derived
+formula.
+This allows to see the {\GF} logic as a sequent calculus, where a sequent is a
+pair $(\Gamma, A)$, where $A$ is a formula and $\Gamma$ a set of formulas, with
+introduction and elimination in the post sequent.
+We claim that the ``{\em correct}'' way to see {\GF} logic is as a ND calculus.
+This is why all the commands are described in ND style, without explicitly
+writing the dependencies.
+
+Some notes about the ND rules described in figure \ref{fig-nd}:
+
+\begin{itemize}
+\item
+	The notation used is the same as in \cite{prawitz1}.
+\item
+	The $\forall I$ and $\exists E$ rules have the following restrictions:
+	$a$ must not appear free in the dependencies of $A$ (for $\forall I$)
+	and $a$ must not appear free in $\exists x A$, in $B$  or in any assumption
+	on which the upper occurrence of B depends other than $A^{x}_{a}$ (for
+	$\exists E$).
+\item
+	{\GF} natural deduction rules {\em discharge all occurrences}.
+\item
+	In {\GF} both the negation connective {\bf not} ($\neg$) and the falsity
+	sentential constant {\tt FALSE} ($\bot$) are available.
+	$\neg A$ and $A \imp \bot$ are logically equivalent.
+	From a wff containing an occurrence of $A \imp \bot$ it is possible to
+	deduce the wff with $\neg A$ in place of $A \imp \bot$ and viceversa.
+	In {\GF}, this deduction can be performed in several ways.
+	The simplest is to use the decider for propositional calculus ({\tt ptaut})
+	(see section \ref{sec-decproc}).
+	For instance:
+	%
+	\begin{verbatim}
+		***** declare sentconst A;
+		A has been declared to be a Sentconst
+		***** assume A imp FALSE;
+		1   A imp FALSE     (1)
+		***** ptaut not A by 1;
+		2   not A     (1)
+		***** assume not A;
+		3   not A     (3)
+		***** ptaut A imp FALSE by 3;
+		4   A imp FALSE     (3)
+	\end{verbatim}
+\end{itemize}
+
+
+The ND notation is given for the primitive ND rules, although the ND commands
+implement (with different options) both basic and more complex derived inference
+rules.
+A complete discussion of the capabilities of the commands is given in the
+description of each command.
+
+In the syntax for the commands we will use {\em fact}, {\em fact}$_1$,
+{\em fact}$_2$, $\ldots$, in place of {\em label}, {\em label}$_1$,
+{\em label}$_2$, $\ldots$ (see section \ref{sec-reas}).
+However, the user refers to the fact by its label.
+
+The {\GF} command \verb+existe+ implementing the exist elimination rule 
+($\exists E$) is the most radically different from the formal statement given
+in Prawitz's ND calculus.
+The command has some resemblance with the ``exist instantiation'' defined in
+\cite{quine3}.
+The {\GF} $\exists E$ command has side effects that make all the other
+rules change behavior.
+This is explained, in more detail, in the description of the command
+\verb+existe+ in section \ref{sec-nd-first}.
+
+
+\renewcommand{\arraystretch}{0.5}
+\begin{figure}[htbp]
+\[
+	\begin{array}{|c|c||c|c|} \hline
+	\multicolumn{2}{|c||}{\mbox{\bf Introduction rules}} &
+	\multicolumn{2}{c|}{\mbox{\bf Elimination rules}} \\ \hline
+	& & &\\
+	& & &\\
+	\con I  & 
+	\fraz{A \ \ B}
+     {A \wedge B}
+	&
+	\con E  & 
+	\fraz{A \con B}
+     {A}
+	\ \ 
+	\fraz{A \con B}
+	     {B}
+	\\
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\imp I   
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\
+	{[A]}\\
+	\vdots\\
+	B\\
+	\hline\\
+	A \imp B
+	\end{array}
+	&
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\imp E  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\ \\ \\ \\
+	\fraz{A \ \ A \imp B}
+	     {B}
+	\end{array}
+	\\
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\dis I
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\ \\ \\ \\
+	\fraz{A}
+	     {A \dis B}
+	\end{array}
+	\ \ 
+	\begin{array}{c}
+	\\ \\ \\ \\ \\
+	\fraz{A}
+  	   {B \dis A}
+	\end{array}
+	&
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\dis E  
+	\end{array}
+	& 
+	\begin{array}{ccc}
+	\\ \\
+	&{[A]}&{[B]}\\
+	&\vdots&\vdots\\
+	A \dis B & C & C\\
+	\hline\\
+	& C &
+	\end{array}
+	\\
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\bot_c 
+	\end{array}
+	&
+	%\renewcommand{\arraystretch}{0.5}
+	\begin{array}{c}
+	\\ \\
+	{[\neg A]}\\
+	\vdots\\
+	\bot\\
+	\hline\\
+	A 
+	\end{array}
+	&
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\bot_i  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\ \\ \\ \\
+	\fraz{\bot}
+	     {A}
+	\end{array}
+	\\
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\imp I_{\neg}  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\
+	{[A]}\\
+	\vdots\\
+	\bot\\
+	\hline\\
+	\neg A
+	\end{array}
+	&
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\imp E_{\neg}  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\ \\ \\ \\
+	\fraz{A \ \ \neg A}
+	     {\bot}
+	\end{array}
+	\\
+	\begin{array}{l}
+	\\ \\
+	\liff  I  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\ 
+	\fraz{A \imp B \ \ B \imp A}
+	     {A \liff B}
+	\end{array}
+	&
+	\begin{array}{l}
+	\\ \\
+	\liff E  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\
+	\fraz{A \liff B}
+	     {A \imp B}
+	\end{array}
+	\ \
+	\begin{array}{c}
+	\\ \\
+	\fraz{A \liff B}
+	     {B \imp A}
+	\end{array}
+	\\
+	\begin{array}{l}
+	\\ \\
+	\forall  I  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\
+	\fraz{A}
+	     {\forall x A^{a}_{x}}
+	\end{array}
+	&
+	\begin{array}{l}
+	\\ \\
+	\forall E
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\
+	\fraz{\forall x A}
+	     {A^{x}_{t}}
+	\end{array}
+	\\
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\exists  I  
+	\end{array}
+	& 
+	\begin{array}{c}
+	\\ \\ \\ \\ \\
+	\fraz{A}
+	     {\exists x A^{t}_{x}}
+	\end{array}
+	&
+	\begin{array}{l}
+	\\ \\ \\ \\ \\
+	\exists E 
+	\end{array}
+	&
+	\begin{array}{cc}
+	\\ \\
+	&{[A^{x}_{a}]}\\
+	&\vdots\\
+	\exists x A & B\\
+	\hline\\
+	B
+	\end{array}
+	\\ 
+	&&& \\ \hline
+	\end{array}
+	\]
+\caption{ND inference rules}
+\label{fig-nd}
+\end{figure}
+
+\renewcommand{\arraystretch}{1}
+
+
+\subsection{{\GF} sorted logic}
+
+In section \ref{sec-ndrules} we described the inference rules for the unsorted
+logic. 
+However, the sort information present in the language has to be taken into
+account when performing deduction.
+The only natural deduction rules that have to be modified are the quantifier
+introduction and elimination rules, where the sort of variables and terms
+involved in the deduction substantially changes the applicability of the rules
+and the conclusion.
+
+The sorted ND rules are defined as follows:
+
+$$
+\begin{array}{ll}
+\forall E & \left\{
+\begin{array}{cl}
+\fraz{\forall x A}{A^{x}_{t}} &
+\mbox{if $t$ is of sort $S_x$} \\
+& \\
+\fraz{\forall x A}{S_x(t)\imp A^x_t} & \mbox{otherwise}
+\end{array}
+\right. % } to balance
+\\
+
+& \\
+
+\forall I & \ps
+\begin{array}{cl}
+\fraz{A}
+     {\forall x A^{a}_{x}}
+& \mbox{applicable only if $x$ is of sort $S_a$}
+\end{array} \\
+
+& \\
+
+\exists I & \left\{
+\begin{array}{cl}
+\fraz{A}
+     {\exists x A^{t}_{x}}
+& \mbox{if $t$ is of sort $S_x$} \\
+& \\
+\fraz{A^x_t}{S_x(t)\imp\exists x A}
+& \mbox{otherwise}
+\end{array} 
+\right. % } to balance
+\\
+
+& \\
+\exists E & \ps
+\fraz{
+\begin{array}{cc}
+&{[A^{x}_{a}]}\\
+&\vdots\\
+\exists x A & B\\
+\end{array}}
+{B}
+\pps
+\mbox{applicable only if $x$ is of sort $S_a$}
+
+\end{array}
+$$
+
+where $S_x$ and $S_a$ stand for the sort of $x$ and the sort of $a$
+respectively.
+The restrictions on the unsorted $\forall I$ and $\exists E$  rules apply also
+to the rules above. 

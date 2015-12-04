@@ -1,0 +1,87 @@
+\gfcommand{subst}{equality substitution}
+\index{subst}
+
+\gfsyntax{
+  subst \ARG{fact1} \OPT{with} \ARG{fact2};\\
+  subst \ARG{fact1} \OPT{with} \ARG{fact2} \OPT{right \ALT left};\\
+  subst \ARG{fact1} \OPT{with} \ARG{fact2} 
+                    \OPT{occ \ARG{n1} \ARG{n2} \SEQ} \OPT{right \ALT left};
+}
+
+\gfdescription{
+  \[
+  \begin{array}{cc}
+    sub_l \ \ 
+    \fraz{A(t_1) \ \ \ \ t_1 = t_2}
+    {A(t_2)}
+    \ \ \ 
+    &
+    \ \ \ 
+    sub_r \ \ 
+    \fraz{A(t_1) \ \ \ \ t_2 = t_1}
+    {A(t_2)}
+  \end{array}
+  \]
+
+  The rule substitutes a term in \ARG{fact1}'s wff with another one proved to 
+  be equal to the former.
+  \ARG{fact2} must be the equality {\tt t1 = t2} and \ARG{fact1} may contain 
+  one or more occurrences of {\tt t1}.
+  The conclusion is the result of the substitution of {\tt t1} with {\tt t2} in
+  \ARG{fact1}'s wff. 
+  Dependencies of derived fact are the union of those of \ARG{fact1} and
+  \ARG{fact2}.
+  If \ARG{fact1} does not contain {\tt t1}, then the conclusion has the same 
+  wff and dependencies as \ARG{fact1}.
+
+  The default is the substitution of {\tt t2} with {\tt t1}, corresponding to 
+  the option {\bf left}. If {\bf right} is indicated, then {\tt t1} is 
+  substituted with {\tt t2}.
+
+  Individual occurrences can be substituted by specifying the optional
+  \OPT{{\tt occ} \ARG{n1} \ARG{n2} \SEQ}, where \ARG{n1}, \ARG{n2}, \SEQ are
+  the occurrences to be substituted.
+  Without this option, all occurrences are substituted. 
+}
+
+\gfrecap{
+The rule substitutes a term in the formula of `fact1' with another one
+proved to be equal to the former.
+`fact2' must be the equality `t1 = t2' and `fact1' may contain one or more
+occurrences of `t1'.
+The conclusion is the result of the substitution of `t1' with `t2' in the
+formula of `fact1'. 
+Dependencies of derived fact are the union of those of `fact1' and `fact2'.
+If `fact1' does not contain `t1', then the conclusion has the same wff and
+dependencies as `fact1'.
+The default is the substitution of `t2' with `t1', corresponding to the option
+`left'.
+If `right' is indicated, then `t1' is substituted with `t2'.
+Individual occurrences can be substituted by specifying the optional
+`[occ n1 n2 ...]', where `n1', `n2', ... are the occurrences to be substituted.
+Without this option, all occurrences are substituted. 
+}
+
+\gfexample+
+   ***** declare predconst P Q 2;
+   ***** declare funconst f 1; 
+   ***** declare indvar x; declare indvar y;
+   [...]
+
+   ***** assume P(x y) imp Q(y x);
+   1   P(x,y) imp Q(y,x)     (1)
+
+   ***** assume x = f(x);
+   2   x = f(x)     (2)
+
+   ***** subst 1 2;
+   3   P(f(x),y) imp Q(y,f(x))     (1 2)
+
+   ***** subst 3 2 right;
+   4   P(x,y) imp Q(y,x)     (1 2)
+
+   ***** subst 1 2 occ 1;
+   5   P(f(x),y) imp Q(y,x)     (1 2)
++
+
+

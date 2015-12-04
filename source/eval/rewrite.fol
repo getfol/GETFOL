@@ -1,0 +1,201 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:36:05 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: rewrite.fol
+;; Date: Wed Oct 20 10:45:12 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								         i
+; i                rewrite.fol                                           i
+; i This file contains the routines to perform a sintactic               i
+; i evaluation of an exp by a chosen amf.			         i
+; i								         i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     1-TOP LEVEL ALGORITHM OF REWRITE             		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     1.a-SIMPLIFICATION ROUTINES             		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; The simplification routines have the following arguments
+; exp is a GETFOL expression.
+; amf is the amf of the simpset used by rewriter
+; arg is a number that indicates that the first arg-arguments of exp
+;     have already been completely simplified (Note that quantified wffs are  
+;     treated as compound expressions with one argument, the matrix).
+; top is TRUE if exp is the top-level expression, FALSE otherwise.
+
+; The simplification routines return a pair (rr = rewrite result)
+; CAR) contains the kind of simplification has been accomplished
+;      MATCH  means that the expression matched a rule of the 
+;             simplification set (and thus more simplification may 
+;             be possible);
+;      SIMP   means that the expression does not match the simplification
+; 	      set at the top level(and that all matches of subexpressions 
+;             to the simplification tree have been checked);
+;      NOSIMP means that the expression does not simplify in any way.
+; CDR) contains the simplified expression.
+
+; If the expression is at the top level, then any match of the expression
+; is simplified immediately; for subexpressions, the code implements the
+; heuristic, that after a match of the subexpression, you immediately
+; pop up a level in the expression and then begin simplifying again.
+
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (exprewrite exp amf arg top)          	                  *
+; *      (exprewrite1 exp amf arg top)        	                  *
+; *      (quantvar-rename quantwff)				  *
+; *      (quantvar-unrename wff oldvar_newvar)                    *
+; *      (simplexprewrite exp)                                    *
+; *      (quantwffrewrite quant var matrix amf arg top)           *
+; *      (compexprewrite applsym args amf arg top)                *
+; *								  *
+; *****************************************************************
+
+; If the expression being simplified contains a bound variable, it has
+; to be treated as a free variable when the matching of the matrix is
+; attempted and as a mute variable when the bound expression is matched.
+; This is achieved renaming to a new fresh symbol the bound variable.
+; The renaming is not necessary if there are no name conflicts with
+; the variables in the amf.
+
+(DEFLAM exprewrite (exp amf arg top)
+ (IF (AND (QUANTWFF exp)
+      (HGKM-MEMBER (bvarof exp) (amf-get-mrn amf)))
+  (LET ((exp_rnvars (quantvar-rename exp)))
+   (LET ((rr (exprewrite1 (CAR exp_rnvars) amf arg top)))
+    (rr-mak (rr-get-res rr)
+     (quantvar-unrename (rr-get-exp rr)(CDR exp_rnvars)))))
+  (exprewrite1 exp amf arg top)))
+
+
+(DEFLAM exprewrite1 (exp amf arg top)
+ (LET ((rr (amf-match exp amf)))
+  (IF (MATCH? rr); Success.
+   (IF top (rr-mak-SIMP (rr-get-exp (exprewrite (rr-get-exp rr) amf 0 TRUE)))
+    rr)
+   (IF (SIMPLE exp) (simplexprewrite exp)
+    (IF (QUANTWFF exp)
+     (quantwffrewrite (quantof exp)(bvarof exp)(matrix exp) amf arg top)
+     (compexprewrite(appl-get-functor exp)(appl-get-args exp) amf arg top))))))
+
+(DEFLAM simplexprewrite (exp) (rr-mak-NOSIMP exp))
+
+(DEFLAM quantwffrewrite(quant var matrix amf arg top)
+ (IF (EQUAL arg 1) (rr-mak-NOSIMP (mkquant quant var matrix))
+  (LET ((rr (exprewrite matrix amf 0 FALSE)))
+   (IF (NOSIMP? rr)(rr-mak-NOSIMP (mkquant quant var matrix))
+    (LET ((quantwff (mkquant quant var (rr-get-exp rr))))
+     (LET ((rr1 (IF (SIMP? rr); matrix was completely rewritten.
+                 (exprewrite quantwff amf 1 top)
+                 (exprewrite quantwff amf 0 top))))
+      (IF (NOSIMP? rr1)
+       (rr-mak-SIMP quantwff); Insuccess, but there was a success before.
+       rr1)))))))
+
+(DEFLAM compexprewrite (applsym args amf arg top)
+ (IF (EQUAL arg (arity applsym))
+  (rr-mak-NOSIMP (appl-mak applsym args))
+  (LET ((rr (exprewrite (HGKM-NTH (ADD1 arg) args) amf 0 FALSE)))
+   (IF (NOSIMP? rr)
+    (compexprewrite applsym args amf (ADD1 arg) top)
+    (LET ((exp (appl-mak applsym (substarg (ADD1 arg)(rr-get-exp rr) args))))
+; Success. Pop up a level in the expression.
+     (LET ((rr1 (IF (SIMP? rr)(exprewrite exp amf (ADD1 arg) top)
+                 (exprewrite exp amf arg top))))
+      (IF (NOSIMP? rr1)
+       (rr-mak-SIMP exp); Insuccess, but there was a success before.
+       rr1)))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     2-LOW LEVEL ALGORITHM OF REWRITE             		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; amf-match initializes the global variables and calls expmatch
+; BINDINGS  keeps track of the bindings (as in the unification algorithm).
+
+(DEFLAM amf-match (exp amf)
+ (SEQ
+  (bindings-ini)
+  (LET ((mp (expmatch exp (amf-get-mtree amf) 1 0)))
+   (IF (MPSUCC mp)
+    (SEQ
+     (usedsimps-add (leaf-get-lab (mpsucc-get-info mp)))
+     (rr-mak-MATCH
+      (COPY
+       (LET ((newbindings (renbindings (bindings-get))))
+        (substbindings
+         (renexp
+          (leaf-get-rhs (mpsucc-get-info mp))
+          (bindings-get)
+          newbindings)
+         newbindings)))))
+    (rr-mak-NOSIMP exp)))))

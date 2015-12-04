@@ -1,0 +1,69 @@
+\gfcommand{extension}{sort extension declaration}
+\index{extension}
+
+\gfsyntax{
+  extension \ARG{sort} by \ARG{extexpr};
+}
+
+\gfdescription{
+  The extension of a sort $S$ is the set of all and only the {\tt indconst}s
+  of sort $S$. To say that $S$ has extension $\{c_1, \ldots ,c_n\}$,
+  where $c_1, \ldots ,c_n$ are {\tt indconst}s, is the same as saying: $\forall
+  x.S(x) \liff (x=c_1  \dis\ldots \dis x=c_n$), where $x$ is an {\tt indvar}
+  of sort {\tt UNIVERSAL}. 
+  The command declares the extension of \ARG{sort} to be \ARG{extexpr}.
+  An extension expression \ARG{extexpr} is defined by the syntax below, where
+  {\bf uni} stands for set union, {\bf dif} stands for set difference and {\bf
+  int} stands for set intersection.
+  The binding power is in the following increasing order: {\bf uni}, {\bf
+  dif}, {\bf int}.
+  %
+  \begin{bnf}
+    $extexpr$  \sep  $sort$ | {\bf \{}$indsym_1,\ldots,indsym_n${\bf \}}|\\ 
+               &     $extexpr$ {\bf uni} $extexpr$      |\\
+               &     $extexpr$ {\bf dif} $extexpr$      |\\  
+               &     $extexpr$ {\bf int} $extexpr$ 
+  \end{bnf}
+  %
+  A sort in \ARG{extexpr} without extension is treated as if it had an empty
+  extension. 
+}
+
+\gfrecap{
+  Declares the extension of a sort S (that is the set of all and only the
+  indconst of sort S).
+}
+
+\gfexample+
+   ***** declare sort S T R;
+   S has been declared to be a sort
+   T has been declared to be a sort
+   R has been declared to be a sort
+
+   ***** declare indconst a b c;
+   UNIVERSAL is a sort
+   a has been declared to be an Indconst
+   b has been declared to be an Indconst
+   c has been declared to be an Indconst
+
+   ***** extension S by {a b c};
+   Now the extension of S is fixed to be : (a b c)
+
+   ***** extension T by S int {a c};
+   Now the extension of T is fixed to be : (a c)
+
+   ***** extension R by T uni {b};
+   Now the extension of R is fixed to be : (a c b)
+
+   ***** extension R by {a b c} dif S;
+   You can't set an empty extension for R
++
+
+\gfnotes{
+  The command overwrites the previous extension of a sort without 
+  warning.
+  The syntactic and semantic simplifiers use the extension
+  information explicitly if there is any (see the command {\tt simplify} 
+  in section \ref{sec-simplify}
+  and the command {\tt eval} in section \ref{sec-eval}).
+}

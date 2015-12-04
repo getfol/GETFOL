@@ -1,0 +1,666 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:46:24 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: fapfnd.fol
+;; Date: Wed Oct 20 10:46:54 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ***********************************************************************
+; *                                                                     *
+; *  This file contains all the routines for natural deduction proof    *
+; *  building.                                                          *
+; *                                                                     *
+; ***********************************************************************
+;
+; assume command
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (assume wffs)                                                     *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   (assume) creates as many assumptions as many <wff>s there are in  *
+; *   wffs.                                                             *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM assume (wffs)
+  (IF (MTL? wffs) (NOP)
+    (LET ((wff (CAR wffs) ))
+     (SEQ
+       (proof-add-line
+              wff
+              (deplist-mak (curnline-get))
+              (reason-mak 'ASSUME (ras1-mak (wff_ra-mak wff))))
+       (assume (CDR wffs)) )) ) )
+
+
+; AND introduction and elimination
+;
+;;; ANDI: and introduction
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (andi fact1 fact2)                                                *
+; *   (factand-get-wffand and_of_facts)                                 *
+; *   (factand-union-dep and_of_facts)                                  *
+; *   (factand-get-facts FACTAND)                                       *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   andi adds the line related to ANDI to the current proof.          *
+; *   The next two functions are necessary because ANDI allows          *
+; *   multiple facts in input.                                          *
+; *   factand-get-facts returns all the facts that constitute           *
+; *   FACTAND.                                    		        *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM andi (and_of_facts1 and_of_facts2)
+  (proof-add-line
+    (mkand (factand-get-wffand and_of_facts1)
+           (factand-get-wffand and_of_facts2))
+    (deplist-union
+      (factand-union-dep  and_of_facts1)
+      (factand-union-dep  and_of_facts2))
+    (reason-mak 'ANDI (ras2-mak
+		       (factand_ra-mak and_of_facts1)
+		       (factand_ra-mak and_of_facts2)))) )
+
+(DEFLAM factand-get-wffand (and_of_facts)
+ (IFN (IS_AND_OF_FACTS? and_of_facts) (fact-get-wff and_of_facts)
+  (mkand (factand-get-wffand (factand-get-1st and_of_facts))
+         (factand-get-wffand (factand-get-2nd and_of_facts)) ) ) )
+
+(DEFLAM factand-union-dep (and_of_facts)
+ (IFN (IS_AND_OF_FACTS? and_of_facts) (fact-get-deplist and_of_facts)
+  (deplist-union (factand-union-dep (factand-get-1st and_of_facts))
+                 (factand-union-dep (factand-get-2nd and_of_facts))) ) )
+
+(DEFLAM factand-get-facts (FACTAND)
+ (IFN (IS_AND_OF_FACTS? FACTAND) (LIST FACTAND)
+      (APPEND (factand-get-facts (factand-get-1st FACTAND))
+	      (factand-get-facts (factand-get-2nd FACTAND)))))
+
+;;; ANDE: and elimination
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (ande fact LIST_OF_NAT)                                           *
+; *   (wff-get-subandwff wff LIST_OF_NAT)                               *
+; *   (wffand-get-subwff wff NATNUM)                                    *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   ande adds the line related to ANDE to the current proof.          *
+; *   The other two functions are necessary because ANDE allows         *
+; *   to take apart arbitrary subparts of the and formulas and          *
+; *   eventual subformulas.                                             *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM ande (fact LIST_OF_NAT)
+  (proof-add-line
+    (wff-get-subandwff (fact-get-wff fact) LIST_OF_NAT)
+    (fact-get-deplist fact)
+    (reason-mak 'ANDE (ras2-mak (fact_ra-mak fact)
+				(natnums_ra-mak LIST_OF_NAT)))))
+
+(DEFLAM wff-get-subandwff (wff LIST_OF_NAT)
+ (IF  (MTL? LIST_OF_NAT) wff
+ (IFN (CONJ wff) 
+   (FERRM0 "And elimination requires a conjunction")
+   (wff-get-subandwff 
+     (wffand-get-subwff wff (CAR LIST_OF_NAT))
+     (CDR LIST_OF_NAT)) )) )
+
+(DEFLAM wffand-get-subwff (wffand NATNUM)
+ (IF (EQ NATNUM 1) (lfand wffand)
+ (IF (EQ NATNUM 2) (rtand wffand)
+  (FERRM0 "A number which is either 1 or 2 is required in this command") )) )
+
+; Or introduction and elimination
+;
+;;; ORI: or introduction
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (ori fact wff left_right)                                         *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   ori adds the line related to ORI to the current proof.            *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM ori (fact wff left_right)
+  (proof-add-line
+    (IF (OR (EQ left_right 'rl) (EQ left_right 'RL)) 
+      (mkor wff (fact-get-wff fact))
+      (mkor (fact-get-wff fact) wff) )
+    (fact-get-deplist fact)
+    (reason-mak 'ORI (ras3-mak (fact_ra-mak fact)
+			       (wff_ra-mak wff)
+			       (left_right_ra-mak left_right)))))
+
+;;; ORE: or elimination
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (ore fact1 fact2 fact3)                                           *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   ore adds to the current proof the result of ore to fact1, fact2   *
+; *   and fact3.                                                        *
+; *   The wff of fact1 must be of the form A or B, and the wffs of      *
+; *   fact2 and fact3 must be equal.                                    *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM ore (fact1 fact2 fact3)
+ (LET ((wff1 (fact-get-wff fact1) ))
+ (LET ((wff2 (fact-get-wff fact2) ))
+ (IFN (DISJ wff1)
+  (FERRM0 "The 1st <fact> must be a disjunction")
+  (IFN (EQUALEXP wff2 (fact-get-wff fact3))
+   (FERRM0 "The 2nd and 3rd <fact> must have equal <wff>s")
+   (proof-add-line
+     wff2
+     (deplist-union
+       (fact-get-deplist fact1)
+       (deplist-union
+         (deplist-del-wff (lfor wff1) (fact-get-deplist fact2))
+         (deplist-del-wff (rtor wff1) (fact-get-deplist fact3))))
+     (reason-mak 'ORE (ras3-mak (fact_ra-mak fact1)
+				(fact_ra-mak fact2)
+				(fact_ra-mak fact3)))))))))
+
+
+; False introduction and elimination
+;
+;;; FALSEI : false introduction
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (falsei fact1 fact2)                                              *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to FALSEI to the current proof.          *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM falsei (fact1 fact2)
+  (LET ((wff1 (fact-get-wff fact1)) (wff2 (fact-get-wff fact2)) )
+  (IFN (OR (NEG wff1) (NEG wff2))
+       (FERRM0 "False introduction requires a FACT which is a negation")
+  (IF (IS-NEG-OF? wff1 wff2)   (proof-falsei fact1 fact2)
+  (IF (IS-NEG-OF? wff2 wff1)   (proof-falsei fact2 fact1)
+  (FERRM0 "False introduction requires that one FACT be the negation of the other") )))) )
+
+(DEFLAM IS-NEG-OF? (wff1 wff2) (AND (NEG wff1)
+                                    (EQUALEXP (body  wff1) wff2)))
+
+(DEFLAM proof-falsei (fact1 fact2)
+  (proof-add-line 
+     (mkfalsity)
+     (fact-union-dep fact1 fact2) 
+     (reason-mak 'FALSEI (ras2-mak (fact_ra-mak fact1) (fact_ra-mak fact2)))))
+
+;;; FALSEE : false elimination
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (falsee fact1 wff)                                                *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to FALSEE to the current proof.          *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM falsee (fact wff) 
+   (IFN (FALSITY (fact-get-wff fact)) 
+       (FERRM0 "This command requires a <fact> whose <wff> is: FALSE")
+       (proof-add-line
+         wff
+         (fact-get-deplist fact)
+         (reason-mak 'FALSEE (ras2-mak (fact_ra-mak fact) (wff_ra-mak wff))))))
+
+; NOT introduction and elimination
+;
+;;; NOTI:not introduction
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (noti fact wff)                                                   *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to NOTI to the current proof.            *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM noti (fact wff) 
+ (IFN (FALSITY (fact-get-wff fact))
+  (FERRM0 "This command requires a <fact> whose <wff> is: FALSE")
+  (proof-add-line 
+    (mknot wff)
+    (deplist-del-wff wff (fact-get-deplist fact))
+    (reason-mak 'NOTI (ras2-mak (fact_ra-mak fact) (wff_ra-mak wff))))))
+         
+
+;;; NOTE: not elimination
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (note fact wff)                                                   *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to NOTE to the current proof.            *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM note (fact wff) 
+ (IFN (FALSITY (fact-get-wff fact)) 
+   (FERRM0 "This command requires a <fact> whose <wff> is: FALSE")
+   (IFN (NEG wff)
+     (FERRM0 "This command requires a negation")
+     (proof-add-line 
+       (body wff)
+       (deplist-del-wff wff (fact-get-deplist fact))
+       (reason-mak 'NOTE (ras2-mak (fact_ra-mak fact) (wff_ra-mak wff)))))))
+              
+
+; Implication insertion and elimination
+;
+; IMPE MP
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (impe fact1 fact2)                                                *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to IMPE (MP) to the current proof.       *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM impe (fact1 fact2)
+  (LET ((wff1 (fact-get-wff fact1)) (wff2 (fact-get-wff fact2)) )
+  (IFN (OR (IMP wff1) (IMP wff2))
+       (FERRM0 "Implication elimination requires a FACT which is an implication")
+  (IF (IS-IMP-OF? wff1 wff2)   (proof-impe fact1 fact2)
+  (IF (IS-IMP-OF? wff2 wff1)   (proof-impe fact2 fact1)
+  (FERRM0 "Implies elimination requires that one FACT be the hypothesis of the other") )))) )
+
+(DEFLAM IS-IMP-OF? (wff1 wff2) (AND (IMP wff1)
+                                    (EQUALEXP (hypot wff1) wff2)))
+
+(DEFLAM proof-impe (fact1 fact2)
+  (proof-add-line
+    (concl (fact-get-wff fact1)) 
+    (fact-union-dep fact1 fact2) 
+    (reason-mak 'IMPE (ras2-mak (fact_ra-mak fact1) (fact_ra-mak fact2))) ))
+
+; IMPI DED
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (impi wff fact)                                                   *
+; *   It adds the line related to IMPI (DED) to the current proof.      *
+; *   It is important to note that we always delete the dependencies    *
+; *   when we can.                                                      *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM impi (wff fact)
+ (proof-add-line
+   (mkimp wff (fact-get-wff fact))
+   (deplist-del-wff wff (fact-get-deplist fact))
+   (reason-mak 'IMPI (ras2-mak (wff_ra-mak wff) (fact_ra-mak fact)))))
+
+; iff introduction and elimination
+;
+;iff introduction
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (iffi fact1 fact2)                                                *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to IFFI to the current proof.            *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM iffi (fact1 fact2)
+ (IFN (AND (IMP (fact-get-wff fact1)) (IMP (fact-get-wff fact2)) )
+    (FERRM0 "IFFI requires that both <fact>s have <wff>s with main symbol <imp>")
+    (LET ((wff1   (fact-get-wff fact1) ))
+    (LET ((wff2   (fact-get-wff fact2) ))
+    (LET ((hypot1 (hypot wff1        ) ))
+    (LET ((hypot2 (hypot wff2        ) ))
+    (IFN (AND (EQUALEXP hypot1 (concl wff2)) (EQUALEXP hypot2 (concl wff1)) )
+     (FERRM0 
+       "The hypot of <wff>1 be uqual to the concl of <wff>2 and viceversa")
+     (proof-add-line
+       (mkiff hypot1 hypot2)
+       (deplist-union
+         (fact-get-deplist fact1)
+         (fact-get-deplist fact2))
+       (reason-mak 'IFFI (ras2-mak (fact_ra-mak fact1)
+				   (fact_ra-mak fact2)))))))))))
+
+;iff elimination
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (iffe fact NATNUM)                                                *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to IFFE to the current proof.            *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM iffe (fact NATNUM)
+  (LET ((wff (fact-get-wff fact) ))
+  (IFN (IFF wff) (FERRM0 "IFFE requires a <fact> with a <wff> with <iff> as main symbol")
+  (LET ((wff (wffiff-get-wffimp wff NATNUM) ))
+  (proof-add-line
+    wff
+    (fact-get-deplist fact)
+    (reason-mak 'IFFE (ras2-mak (fact_ra-mak fact) (natnum_ra-mak NATNUM))))))))
+
+
+(DEFLAM wffiff-get-wffimp (wff NATNUM)
+ (IF (EQ NATNUM 1) (mkimp (lfiff wff) (rtiff wff))
+ (IF (EQ NATNUM 2) (mkimp (rtiff wff) (lfiff wff))
+  (FERRM1 "IFFE requires a number which is either 1 or 2"))))
+
+; forall introduction and elimination
+;
+;forall introduction
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (alli fact SUBSTLIST)                                            *
+; *   (IS_FREE_DEP? fact SUBSTLIST)                                     *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to ALLI to the current proof.            *
+; *                                                                     *
+; *  NOTES                                                              *
+; *   (alli) reverses the list of substitutions because substitutions   *
+; *   in 1st order logic go from the inside to the outside.             * 
+; *   (wfforall-mak) computes the freevars at any call and so it is     *
+; *   able to quantify (renaming) on a variable which has be bounded in *
+; *   in the step before.                                               *
+; *                                                                     *
+; *   In IS_FREE_DEP? APPEND should be UNION to be very correct,        *
+; *   but UNION would do only some more useless work. We accept         *
+; *   this solution not to complicate too much the code.                *
+; *    .....NOTE that you cannot apply MAPCAR to a macro.....           *
+; *                                                                     *
+; *   IS_FREE_DEP? returns FALSE if a var occurs free in an             *
+; *   assumption. The test is not done for axioms, as it is not         *
+; *   important for the restriction on the alli rule.                   *
+; *                                                                     *
+; ***********************************************************************
+
+(DEFLAM alli (fact SUBSTLIST)
+ (IF (IS_FREE_DEP? fact SUBSTLIST)
+  (FERRM0 "Some variables appear free in the assumptions")
+   (proof-alli
+    (wfforall-mak (fact-get-wff fact) (REVERSE SUBSTLIST))
+    (fact-get-deplist fact)
+    (reason-mak 'ALLI (ras2-mak (fact_ra-mak fact)
+				(substlist_ra-mak SUBSTLIST))))))
+
+(DEFLAM proof-alli (wff DEPLIST REASON)
+  (proof-add-line wff DEPLIST REASON))
+
+
+(DEFLAM wfforall-mak (wff SUBSTLIST)
+ (IF (MTL? SUBSTLIST) wff
+  (LET ((SUBST_PAIR (CAR SUBSTLIST) ))
+  (wfforall-mak (wff-subst-var
+                      (alli_subst_pair-get-old SUBST_PAIR)
+                      (alli_subst_pair-get-new SUBST_PAIR)
+                      wff) 
+                (CDR SUBSTLIST) ) ) ) )
+
+(DEFLAM wff-subst-var (old_var new_var wff)
+  (IF (EQ old_var new_var) 
+    (mkforall old_var wff)
+    (IFN (IS-MG (sort old_var) (sort new_var))
+      (FERRM0 "A <var> cannot be replaced by one with more general sort")
+      (mkforall new_var (substexp+bind old_var new_var wff) ) ) ) )
+
+
+(DEFLAM IS_FREE_DEP? (fact SUBSTLIST)
+   (INTERSECT
+     (APPLY (FUNCTION APPEND)
+                  (MAPCAR 'fact-get-freevars (fact-get-deplist fact)))
+     (alli_subst_pair-get-old* SUBSTLIST) ))
+
+(DEFLAM alli_subst_pair-get-old* (SUBSTLIST)
+  (IF (MTL? SUBSTLIST) MTL
+      (CONS (alli_subst_pair-get-old  (CAR SUBSTLIST))
+            (alli_subst_pair-get-old* (CDR SUBSTLIST))) ) )
+
+;forall elimination
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (alle fact TERMLIST)                                              *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to ALLE to the current proof.            *
+; *                                                                     *
+; * NOTE                                                                *
+; * (alle-mak) computes "bvar" at any step.                             *
+; *                                                                     *
+; ***********************************************************************
+
+(DEFLAM alle (fact TERMLIST)
+  (proof-alle
+    (alle-mak (fact-get-wff fact) TERMLIST) 
+    (fact-get-deplist fact) 
+    (reason-mak 'ALLE (ras2-mak (fact_ra-mak fact)
+				(terms_ra-mak TERMLIST)))))
+
+(DEFLAM proof-alle (wff DEPLIST REASON)
+  (proof-add-line wff DEPLIST REASON))
+
+(DEFLAM alle-mak (wff TERMLIST)
+  (IF (MTL? TERMLIST) wff
+  (IFN (FORALL wff)
+   (FERRM0 "There are not enough universal quantifiers")
+   (LET ((term (CAR TERMLIST) ))
+   (LET ((bvar (bvarof wff  ) ))
+   (LET ((wff (substexp bvar term (matrix wff)) ))
+   (IF (TRM_SUPERSORT (sort bvar) term)
+      (alle-mak wff (CDR TERMLIST))
+      (mkimp
+        (predappl1-mak (sort bvar)   term) 
+        (alle-mak wff (CDR TERMLIST)) ) ) ) ))) ) )
+
+; exists introduction and elimination
+;
+;exists introduction
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (existi fact TERMLIST)                                            *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to EXISTI to the current proof.          *
+; *                                                                     *
+; * NOTE                                                                *
+; * In (wffexists-mak) the order of substitution is the same as that of *
+; * occurrence.                                                         *
+; *                                                                     *
+; ***********************************************************************
+
+(DEFLAM existi (fact TERMLIST)
+ (proof-existi
+  (wffexists-mak (fact-get-wff fact) TERMLIST)
+  (fact-get-deplist fact)
+  (reason-mak 'EXISTI (ras2-mak (fact_ra-mak fact)
+				(terms_ra-mak TERMLIST)))))
+
+(DEFLAM proof-existi (wff DEPLIST REASON)
+       (proof-add-line wff DEPLIST REASON))
+
+(DEFLAM wffexists-mak (wff SUBLIST)
+  (IF (MTL? SUBLIST) wff
+    (LET ((SUBST_PAIR (CAR SUBLIST) ))
+    (LET ((oldterm (existi_subst_pair-get-oldterm SUBST_PAIR) ))
+    (LET ((newvar  (existi_subst_pair-get-newvar  SUBST_PAIR) ))
+    (LET ((OCCLST  (existi_subst_pair-get-occlist SUBST_PAIR) ))
+    (LET ((wff     (substexp+occ+bind oldterm newvar wff OCCLST) ))
+    (LET ((wff     (mkexists newvar wff) ))
+    (IF (TRM_SUPERSORT (sort newvar) oldterm)
+        (wffexists-mak wff (CDR SUBLIST))
+        (mkimp 
+         (predappl1-mak (sort newvar) oldterm) 
+         (wffexists-mak wff (CDR SUBLIST))) ) )))))) ) )
+
+
+;exists elimination
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   (existe fact VARORPARLIST)                                        *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   It adds the line related to EXISTE to the current proof.          *
+; *                                                                     *
+; * NOTE                                                                *
+; *  Here is only the code for the existe command. All the code related *
+; *  to the automatic elimination of the dependencies due to "exists    *
+; *  elimination" is with the code for the production of the line of    *
+; *  the proof (old NEWSTEP).                                           *
+; *                                                                     *
+; ***********************************************************************
+
+(DEFLAM existe (fact VARORPARLIST)
+  (LET ((wff (existe-mak (fact-get-wff fact) VARORPARLIST) ))
+    (SEQ
+      (curexiste-add-substs
+             (curexiste_substs-mak (fact-get-label fact) VARORPARLIST))
+      (proof-existe wff (deplist-mak (curnline-get))
+		    (reason-mak 'EXISTE
+		     (ras2-mak (fact_ra-mak fact)
+			       (varorparlist_ra-mak VARORPARLIST)))))))
+
+(DEFLAM proof-existe (wff DEPLIST REASON)
+       (proof-add-line wff DEPLIST REASON))
+
+(DEFLAM existe-mak (wff VARORPARLIST)
+ (IF  (MTL? VARORPARLIST) wff
+ (IFN (EXISTS wff)
+   (FERRM0 "There are not enough existential quantifiers")
+   (LET ((var_or_par (CAR VARORPARLIST) ))
+   (LET ((bvar (bvarof wff) ))
+    (IFN (IS-MG (sort var_or_par) (sort bvar))
+     (FERRM0 "A <var> must be replaced by one with more general sort")
+     (IF (IS-FREE var_or_par wff)
+         (FERRM0 "The indvar or indpar cannot be free in the wff")
+         (existe-mak
+            (substexp bvar var_or_par (matrix wff))
+            (CDR VARORPARLIST) ) ) ))) )) )
+
+;;; SUBST: substitution for equality
+;
+
+;*****************************************************************************
+;*                                                                           *
+;*   The "subst" command implements the the substitution rule for            *
+;*   equality. The rule has two premisses, one of which must be an equality, *
+;*   that is its wff must be of the form "t1=t2", where t1 and t2 are terms. *
+;*   Thus t1 and t2 are not ground. The other is any wff. The conclusion's   *
+;*   wff is obtained by substituing the right hand of the equality (t2)      *
+;*   in place of any "FREE" occurrence of the left hand (t1) in the latter   *
+;*   premisses.                                                              *
+;*   If a particular list of occurrences is specified, then the substitution *
+;*   is performed only in the occurrences which are specified in the list.   *
+;*   The rule can be described as:                                           *
+;*                                                                           *
+;*                        A(t1)    t1 = t2                                   *
+;*                       ------------------                                  *
+;*                             A(t2)                                         *
+;*                                                                           *
+;*   Note that if there is no free occurrence of t1 in A(t1),                *
+;*   then the rule does not fail, but simply returns a conclusion            *
+;*   whose wff is equal to A(t1).                                            *
+;*                                                                           *
+;*   The conclusion depends on the union of the facts the premisses          *
+;*   depend on.                                                              *
+;*                                                                           *
+;*   fact1: the fact in which the substitution is performed                  *
+;*   fact2: the fact whose wff is an equaliyt of the kind t1 = t2            *
+;*   intlist: a possible empty list of occurrences of the term to            *
+;*            to be substituted in fact1' s wff                              *
+;*   left_right: can be "left" or "right" and indicates which hand of        *
+;*   the equality must be substituted. The default is "left"                 *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM subst (fact1 fact2 intlist left_right)
+  (IFN (EQU (fact-get-wff fact2))
+    (ERRMES-printexp (fact-get-wff fact2) " : it is not an equality.")
+    (LET ((intlist_or_all (IFN (MTL? intlist) intlist 'ALL)))
+     (proof-add-line 
+        (IF (OR (EQ left_right 'RIGHT)
+                (EQ left_right 'right))
+            (substexp+occ (rtequ (fact-get-wff fact2))
+                          (lfequ (fact-get-wff fact2))
+                          (fact-get-wff fact1) intlist_or_all)
+            (substexp+occ (lfequ (fact-get-wff fact2))
+                          (rtequ (fact-get-wff fact2))
+                          (fact-get-wff fact1) intlist_or_all))
+        (fact-union-dep fact1 fact2)
+        (reason-mak 'SUBST (ras4-mak (fact_ra-mak fact1) (fact_ra-mak fact2)
+                 (natnums_ra-mak intlist)
+                 (left_right_ra-mak left_right)))))))

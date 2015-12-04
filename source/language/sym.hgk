@@ -1,0 +1,265 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: sym.hgk
+;; Date: Wed Oct 20 10:46:13 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;****************************************************************************
+;*                                                                          *
+;*                                                                          *
+;*                             sym.hgk                                      *
+;*                                                                          *
+;* This file contains the low level primitives for creating the data        *
+;* structure for a single symbol of the language.                           *
+;*                                                                          *
+;*                                                                          *
+;****************************************************************************
+
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *       PART I: the data structure for  <sym>                   *
+; *                                                               *
+; *                                                               *
+; * The <sym>s of the formal language are implemented as HGKM     *
+; * symbols. All syntactic information is stored by means of      *
+; * the following properties:                                     *
+; *                                                               *
+; *                                                               *
+; *   (1) SYNTYPE                                                 *
+; *       SYNTYPE is used to keep the information on the          *
+; *       syntactic types of symbols.                             *
+; *                                                               *
+; *   (2) ARITY                                                   *
+; *       ARITY is used to keep the information on the            *
+; *       arity of application symbols.                           *
+; *                                                               *
+; *   (3) SORTOF                                                  *
+; *       SORTOF is used to keep the information on the           *
+; *       sort of a individual symbol.                            *
+; *                                                               *
+; *   (4) FMAP                                                    *
+; *       FMAP is used to keep the information on the             *
+; *       fmaps of application symbols.                           *
+; *       The format of fmaps is ( (ARG1 ... ARGn ) . RES ).      *
+; *                                                               *
+; *   (5) SACTBLOCK                                               *
+; *       SACTBLOCK (Speech ACT BLOCK) contains the data          *
+; *       necessary for reading and printing <exp>s.              *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB syntype   (SYM)     (GETPROP SYM 'SYNTYPE))
+(DEFSUB settype   (SYM TYP) (SETPROP SYM TYP 'SYNTYPE))
+
+(DEFSUB arity     (SYM)    (GETPROP SYM  'ARITY))
+(DEFSUB setarit   (SYM AR) (SETPROP SYM AR 'ARITY))
+
+(DEFSUB sort      (SYM)   (GETPROP SYM  'SORTOF))
+(DEFSUB setsort   (SYM ST)  (SETPROP SYM ST 'SORTOF))
+
+(DEFSUB fmap-mak (ARGLIST RES)(CONS ARGLIST RES))
+(DEFSUB fmap-get-out (FMAP)   (CDR FMAP))
+(DEFSUB fmap-get-args (FMAP)  (CAR FMAP))
+
+(DEFSUB fmaps     (SYM)       (GETPROP SYM 'FMAP))
+(DEFSUB inifmap   (SYM)       (SETPROP SYM MTL 'FMAP))
+(DEFSUB setfmap   (SYM FMAPS) (SETPROP SYM FMAPS 'FMAP))
+(DEFSUB addfmap   (SYM FM)    (SETPROP SYM (CONS FM (fmaps SYM)) 'FMAP))
+
+
+
+; *****************************************************************
+; *                                                               *
+; * The Speech Act BLOCK (SACTBLOCK)                              *
+; *                                                               *
+; * Parsing and printing information (Speech ACT information      *
+; * BLOCK) is stored on the property list of the symbol concerned *
+; * under the SACTBLOCK property as a binary tree in the following*
+; * format:                                                       *
+; *      			 :
+; *                  ---------------------------------------
+; *      	   :					   :
+; *         --------------		         --------------------
+; *         :          	  :			:		     :
+; *    -------       ---------            ----------           ---------
+; *   :       :     :         :	  :	     :	       :	 :
+; * unused  | RBP | LBP | prefix RBP | APPLNAM  | OUTNAM  | PRENAM | INFNAM |
+; *                                                               *
+; *****************************************************************
+
+
+
+
+(DEFSUB sact-mak (RBP LBP PRBP APPLNAM OUTNAM PRENAM INFNAM)
+ (CONS
+  (CONS
+   (CONS MTL RBP)
+   (CONS LBP PRBP))
+  (CONS
+   (CONS APPLNAM OUTNAM)
+   (CONS PRENAM INFNAM))))
+
+
+; Definition of Prefix Right Binding Power, Left BP, Right BP
+;
+(DEFCONSTANT DefaultPRBP 1000)
+(DEFCONSTANT DefaultLBP 500)
+(DEFCONSTANT DefaultRBP 550)
+   
+
+;;; The SACTBLOCK
+;
+(DEFSUB sact (SYM) (GETPROP SYM 'SACTBLOCK))
+(DEFSUB setsact (X SB) (SETPROP X SB 'SACTBLOCK))
+
+(DEFSUB sact_empty-get ()
+ (sact-mak MTL MTL MTL MTL MTL MTL MTL))
+
+(DEFSUB inisact (X) (setsact X (sact_empty-get)))
+
+
+;;; The Right Binding Priority
+;
+(DEFSUB    rbp (SYM) (CDAAR (sact SYM)))
+(DEFLAM setrbp (X RB)
+  (LET ((I (sact X)))
+    (setsact X (CONS (CONS (CONS (CAAAR I) RB) (CDAR I)) (CDR I))) ) )
+
+
+;;; The Left Binding Priority
+;
+(DEFSUB lbp (SYM) (CADAR (sact SYM)))
+(DEFLAM setlbp (X LB)
+ (LET ((I (sact X)))
+  (setsact X (CONS (CONS (CAAR I) (CONS LB (CDDAR I))) (CDR I))) ) )
+
+
+; The Prefix Right Binding Priority
+;
+(DEFSUB    prbp (SYM) (CDDAR (sact SYM)))
+(DEFLAM setprbp (X PR)
+  (LET ((I (sact X)))
+    (setsact X (CONS (CONS (CAAR I) (CONS (CADAR I) PR)) (CDR I))) ) )
+
+
+; The internal name
+;
+(DEFSUB applnam (SYM) (CAADR (sact SYM)))
+(DEFLAM setappl (X AP)
+  (LET ((I (sact X)))
+    (setsact X (CONS (CAR I) (CONS (CONS AP (CDADR I)) (CDDR I)))) ) )
+
+
+; The external name
+;
+(DEFSUB outnam (SYM) (CDADR (sact SYM)))
+(DEFLAM setoutn (X OU)
+  (LET ((I (sact X)))
+    (setsact X (CONS (CAR I) (CONS (CONS (CAADR I) OU) (CDDR I)))) ) )
+
+(DEFLAM syms-get-outnams (SYMS)
+ (IF (EQ SYMS MTL) MTL
+  (CONS (outnam (FIRST SYMS)) (syms-get-outnams (REST SYMS)))))
+
+; The prefix name
+;
+(DEFSUB prenam (SYM) (CADDR (sact SYM)))
+(DEFLAM setpre (X PR)
+  (LET ((I (sact X)))
+    (setsact X (CONS (CAR I) (CONS (CADR I) (CONS PR (CDDDR I))))) ) )
+
+
+; The infix name
+;
+(DEFSUB infnam (SYM) (CDDDR (sact SYM)))
+(DEFLAM setinf (X IN)
+  (LET ((I (sact X)))
+    (setsact X (CONS (CAR I) (CONS (CADR I) (CONS (CADDR I) IN)))) ) )
+
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; * PART II: transformation between low level and logical level   *
+; * symbol data structures.                                       *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+
+(DEFLAM FOL-SYMBOL (SYM) (IST (syntype SYM)))
+(DEFLAM UNARY      (SYM) (INTEQ (arity SYM) 1))
+
+(DEFLAM SENTCONN  (SYM) (EQ 'Sentconn  (syntype SYM)))
+(DEFLAM QUANT     (SYM) (EQ 'Quant     (syntype SYM)))
+(DEFLAM IFTRM	  (SYM) (EQ 'Iftrm     (syntype SYM)))
+(DEFLAM IFWFF     (SYM) (EQ 'Ifwff     (syntype SYM)))
+
+(DEFLAM SENTCONST (SYM) (EQ 'Sentconst (syntype SYM)))
+(DEFLAM SENTPAR   (SYM) (EQ 'Sentpar   (syntype SYM)))
+(DEFLAM INDCONST  (SYM) (EQ 'Indconst  (syntype SYM)))
+(DEFLAM INDPAR    (SYM) (EQ 'Indpar    (syntype SYM)))
+(DEFLAM INDVAR    (SYM) (EQ 'Indvar    (syntype SYM)))
+(DEFLAM FUNCONST  (SYM) (EQ 'Funconst  (syntype SYM)))
+(DEFLAM FUNPAR    (SYM) (EQ 'Funpar    (syntype SYM)))
+(DEFLAM PREDCONST (SYM) (EQ 'Predconst (syntype SYM)))
+(DEFLAM PREDPAR   (SYM) (EQ 'Predpar   (syntype SYM)))
+
+(DEFLAM IFSYM	  (SYM) (HGKM-MEMBER (syntype SYM) '(Ifwff Iftrm)))
+(DEFLAM SENTSYM   (SYM) (HGKM-MEMBER (syntype SYM) '(Sentconst Sentpar)))
+(DEFLAM INDSYM    (SYM) (HGKM-MEMBER (syntype SYM) '(Indconst Indpar Indvar)))
+(DEFLAM FUNSYM    (SYM) (HGKM-MEMBER (syntype SYM) '(Funconst Funpar)))
+(DEFLAM PREDSYM   (SYM) (HGKM-MEMBER (syntype SYM) '(Predconst Predpar)))
+
+(DEFLAM SIMPSYM (SYM)
+ (HGKM-MEMBER (syntype SYM) '(Sentconst Sentpar Indconst Indpar Indvar)))
+(DEFLAM APPLSYM (SYM)
+ (HGKM-MEMBER (syntype SYM)
+  '(Sentconn Funconst Funpar Predconst Predpar Quant Ifwff Iftrm)))
+
+

@@ -1,0 +1,97 @@
+\gfcommand{declare}{language declaration}
+\index{declare}
+\index{declare!language}
+
+\gfsyntax{
+   declare \OPT{\ARG{sentsym} \ALT \ARG{indsym}} \ARG{sym1} \SEQ \ARG{symN}; \\
+   declare \OPT{\ARG{funsym}  \ALT \ARG{predsym}} \ARG{sym1} \SEQ \ARG{symN}
+   \ARG{arity};\\
+   declare \OPT{\ARG{funsym} \ALT \ARG{predsym}} \ARG{sym1} \SEQ \ARG{symN}
+   1 \OPT{[ pre \OPT{= \ARG{prbp}} ]};\\
+   declare \OPT{\ARG{funsym} \ALT \ARG{predsym}} \ARG{sym1} \SEQ \ARG{symN}
+   2 \OPT{[ inf \OPT{= \ARG{lbp} \ARG{rbp}} ] };
+}
+
+\gfdescription{
+   This commands adds new symbols to the {\GF} language.
+   The user can declare primitive symbols belonging to the following
+   categories: {\tt sentpar}, {\tt sentconst}, {\tt indvar}, {\tt indpar},
+   {\tt indconst}, {\tt funpar}, {\tt funconst}, {\tt predpar}, 
+   {\tt predconst}.
+   The user can specify binding priorities ($prbp$, $lbp$, $rbp$) 
+   for the operator symbols being declared.
+   If this is not done, then the default priorities are used
+   (see section \ref{sec-log-symb}).
+}
+
+\gfrecap{
+Adds new symbols to the GETFOL language.
+}
+
+\gfexample+
+   ***** comment ! declarations of the first kind !
+
+   ***** declare sentconst A B C;
+   A has been declared to be a Sentconst
+   B has been declared to be a Sentconst
+   C has been declared to be a Sentconst
+
+   ***** declare sentpar S1 S2;
+   S1 has been declared to be a Sentpar
+   S2 has been declared to be a Sentpar
+
+   ***** declare indvar x y;
+   UNIVERSAL is a sort
+   x has been declared to be an Indvar
+   y has been declared to be an Indvar
+
+   ***** declare indpar a;
+   UNIVERSAL is a sort
+   a has been declared to be an Indpar
+
+   ***** declare indconst alpha;
+   UNIVERSAL is a sort
+   alpha has been declared to be an Indconst
+
+   ***** comment ! declarations of the second kind !
+   
+   ***** declare predconst R 2;
+   R has been declared to be a Predconst
+   
+   ***** declare funconst f 1;
+   f has been declared to be a Funconst
+   
+   ***** declare funconst g 2;
+   g has been declared to be a Funconst
+   
+   ***** declare funconst h 4;
+   h has been declared to be a Funconst
+   
+   ***** comment ! declarations of the third kind !
+   
+   ***** declare funconst f1 1 [pre = 500];
+   f1 has been declared to be a Funconst
+   
+   ***** declare predconst P 1 [pre];
+   P has been declared to be a Predconst
+   
+   ***** comment ! declarations of the fourth kind !
+   
+   ***** declare funconst g1 2 [inf = 400 405];
+   g1 has been declared to be a Funconst
+   
+   ***** declare funconst g2 2 [inf = 605 600];
+   g2 has been declared to be a Funconst
+   
+   ***** declare funpar g3 2 [inf];
+   g3 has been declared to be a Funpar
++
+
+\gfnotes{
+   Since the {\GF} logic is sorted, the user can specify sort
+   information for some categories of symbols. If this is not done, then the
+   default information is used (as is the case in the examples above).
+   The sorting mechanism in {\GF} is discussed in section \ref{sec-sort}.
+}
+
+

@@ -1,0 +1,567 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:00:24 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: extended.hgk
+;; Date: Wed Oct 20 14:42:11 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ****************************************************************************
+; *                                                                          *
+; *   This file contains extended HGKM primitives which are written in       *
+; *   pure HGKM (in fact its suffix is .hgk).                                *
+; *                                                                          *
+; *   The functions are ordered depending on the data structures they        *
+; *   access. Functions in the same group make related and/or similar        *
+; *   work.                                                                  *
+; *                                                                          *
+; *   A raw description of these function may be found in HGKM manual.       *
+; *                                                                          *
+; *   DATA STRUCTURES                                                        *
+; *      <symbols> <strings> <lists> <plists> <alists>                       *
+; *                                                                          *
+; ****************************************************************************
+
+;;;;<symbols> 
+; *****************************************************************
+; *                                                               *
+; *  (CAPITALIZE [sym | str])                                     *
+; *    Returns the atomic argument wiht all its letters           *
+; *    capatalized.                                               *
+; *  (CAPITALIZE-SYM [sym])                                       *
+; *    Returns the symbol argument wiht all its letters           *
+; *    capatalized.                                               *
+; *  (CAPITALIZE-STR [str])                                       *
+; *    Returns the string argument wiht all its letters           *
+; *    capatalized.                                               *
+; *                                                               *
+; *  (CONCAT-SYMS [sym1] [sym2])                                  *
+; *    CONCAT-SYMS returns the concatenation of the two           *
+; *    input symbols.                                             *
+; *  (CONCAT-EMPTY?SYMS [sym1] [sym2])                            *
+; *    Just like CONCAT-SYMS but ignores sym1/2 if MTL            *
+; *  (PAIR2CHR [pair])                                            *
+; *    PAIR2CHR gets a pair and makes it into a symbol.           *
+; *  (INT2SYM [int])                                              *
+; *    INT2SYM makes an INTEGER into the corresponding symbol.    *
+; *  (NAT2SYM [int])                                              *
+; *    NAT2SYM makes a NATNUM into the corresponding symbol.      *
+; *  (SYM2NAT [sym])                                              *
+; *    SYM2NAT makes a symbol into the corresponding NATNUM, else *
+; *    returns MTL                                                *
+; *                                                               *
+; *****************************************************************
+
+;; CAPITALIZE, CAPITALIZE-SYM, CAPITALIZE-STR
+;
+(DEFSYS CAPITALIZE (X)
+  (IF (STRING? X) (CAPITALIZE-STR X) (CAPITALIZE-SYM X)))
+
+(DEFSYS CAPITALIZE-SYM (X)
+  (CHR2SYM (MAPCAR 'CAPITALIZE-1 (SYM2CHR X))))
+
+(DEFSYS CAPITALIZE-STR (X)
+  (CHR2STR (MAPCAR 'CAPITALIZE-1 (STR2CHR X))))
+
+(DEFSYS CAPITALIZE-1 (L)
+  (IF (OR (LT L 97.)(GT L 122.)) L (- L 32.)))
+
+
+;; CONCAT-SYMS, PAIR2CHR, INT2SYM, NAT2SYM
+;
+(DEFLAM CONCAT-SYMS (SYM1 SYM2)
+  (SYM-INTERN (CHR2SYM (APPEND (SYM2CHR SYM1) (SYM2CHR SYM2)) ) ) )
+
+(DEFLAM CONCAT-EMPTY?SYMS (SYM1 SYM2)
+  (IF (MTL? SYM1)
+      (IF (MTL? SYM2) MTL SYM2)
+      (IF (MTL? SYM2) SYM1 (CONCAT-SYMS SYM1 SYM2)) ))
+
+(DEFLAM PAIR2CHR (SYNTOBJ)
+  (IF (ATOMIC? SYNTOBJ) (SYM2CHR SYNTOBJ)
+      (APPEND (SYM2CHR  (CAR SYNTOBJ))
+              (PAIR2CHR (CDR SYNTOBJ)))))
+
+(DEFLAM INT2SYM (N) (CHR2SYM (INT2CHR N)))
+
+(DEFSYS NAT2SYM (N)
+  (IF (GE N 0) (CHR2SYM (INT2CHR N)) (NAT2SYMerror)))
+
+(DEFSYS NAT2SYMerror ()
+  (SEQ
+    (PRINC "NAT2SYM requires a NATURAL as argument")
+    (HGKM-ABORT 'NAT2SYM)))
+
+(DEFSYS SYM2NAT (SYM)(IF (NUMERAL SYM) (CHR2INT (SYM2CHR SYM)) MTL))
+
+(DEFSYS NUMERAL (SYM)(DIGITS (SYM2CHR SYM)))
+
+(DEFSYS DIGITS (CHARS)
+ (IF (MTL? CHARS) T
+  (IFN (DIGIT (FIRST CHARS)) NIL
+   (DIGITS (REST CHARS)))))
+
+(DEFSYS DIGIT (CHAR) (AND (>= CHAR 48)(<= CHAR 57)))
+
+;;;;<strings> 
+; *****************************************************************
+; *                                                               *
+; *  (SUBSTR? [str1][str2])                                       *
+; *                                                               *
+; *  (CONCAT-STRS [str1][str2])                                        *
+; *                                                               *
+; *  (SUBSTR [str][int])                                          *
+; *                                                               *
+; *  (INSTR? [str1][str2])                                        *
+; *                                                               *
+; *****************************************************************
+
+;; SUBSTR?, CONCAT-STRS, SUBSTR, INSTR?
+;
+(DEFSYS SUBSTR? (STR1 STR2)
+	(LET ((L1 (STR2CHR STR1))
+	      (L2 (PRELIST (STR2CHR STR2) (LENSTR STR1))))
+	(EQUAL L1 L2)))
+
+(DEFSYS CONCAT-STRS (STR1 STR2)
+	(LET ((L1 (STR2CHR STR1))
+	      (L2 (STR2CHR STR2)))
+	(CHR2STR (APPEND L1 L2))))
+
+(DEFSYS SUBSTR (STR INT)
+	(IF (POSITIVE? INT)
+	    (CHR2STR (PRELIST (STR2CHR STR) INT))
+	    (SUBSTRerror)))
+
+(DEFLAM SUBSTRerror () (HGKM-ABORT 'SUBSTR))
+
+(DEFSYS INSTR? (STR1 STR2) 
+	(LET ((L1 (STR2CHR STR1))
+	      (L2 (STR2CHR STR2)))
+	(INLIST? L1 L2)))
+
+;;;;<list>
+; *****************************************************************
+; *                                                               *
+; *  (POS [sym][list])                                            *
+; *    Returns the first position of [sym] in [list].             *
+; *    If it does not exist POS returns 0                         *
+; *  (TAIL L X)                                                   *
+; *    The arguments of TAIL are a list L and an object X.        *
+; *    If X occurs in L, TAIL returns the list of elements        *
+; *    following X (not including X); otherwise TAIL returns      *
+; *    MTL.                                                       *
+; *                                                               *
+; *  (FLATTEN [list])                                             *
+; *    The argument is a list of lists. The list of lists         *
+; *    is flattened recursively in a list of elements of the      *
+; *    lists contained in the outer lists.                        *
+; *    If the list is a list of empty lists, then NIL is          *
+; *    returned. Empty lists (NIL) in the list are not considered *
+; *    Note: FLATTEN does not work with dotted pairs              *
+; *    (for instance with GETFOL expressions not represented      *
+; *    as lists but with dotted pairs)                            *
+; *                                                               *
+; *  (PRELIST [list][int])                                        *
+; *    Creates a list of the first int elements of the list.      *
+; *  (SUFLIST [list][int])                                        *
+; *    Creates a list by deleting the first int elements of list. *
+; *  (INLIST? [list1][list2])                                     *
+; *    Looks if list1 is in list2 (only at top level).            *
+; *                                                               *
+; *  (SUBTRACT [list1][list2])                                    *
+; *    Returns the list of the elements of list1 which are not    *
+; *    in list2.                                                  *
+; *  (INTERSECT [list1][list2])                                   *
+; *    Returns the intersection of list1 and list2.               *
+; *  (SUBSET   [list1][list2])                                    *
+; *    Looks if list1 is a subset of list2.                       *
+; *                                                               *
+; *  (INSERT! [obj][list])                                        *
+; *    Destructively inserts obj in list. INSERT! assumes that    *
+; *    obj can only occur once in L.                              *
+; *  (HGKM-DELETE [obj][list])                                    *
+; *    Deletes obj from list without doing side effect.           *
+; *    HGKM-DELETE assumes that obj only occurs once in L.        *
+; *  (DELETE! [obj][list])                                        *
+; *    Destructively deletes obj from list.                       *
+; *    DELETE! assumes that obj only occurs once in L.            *
+; *  (OUTOF [obj][list])                                          *
+; *    Removes all the occurrences of obj from list without       *         
+; *    doing side effect.                                         *         
+; *  (OUTOF! [obj][list])                                         *
+; *    The same as OUTOF but with side effect.                    *
+; *                                                               *
+; *  (UNLIST [list])                                              *
+; *    UNLIST substitutes the last cons of list with its car.     *
+; *            (UNLIST (QUOTE (A))) --> A                         *
+; *          (UNLIST (QUOTE (A B))) --> (A . B)                   *
+; *        (UNLIST (QUOTE (A B C))) --> (A B . C)                 *
+; *  (REVMAP [list])                                              *
+; *    REVMAP puts the last element of list at the top of         *
+; *    the list itself. It is called by DEFAULTREP in sim.hgk     *
+; *    and by SUPERSORT in faso.fol.                              *
+; *  (PRINTLIST [list])                                           *
+; *    Prints all the elements of list.                           *
+; *                                                               *
+; *****************************************************************
+;
+
+
+;; POS, TAIL 
+;
+(DEFSYS POS (SYM L) (POS1 SYM L 1))
+
+(DEFSYS POS1 (SYM L N)
+       (IF (EQUAL SYM (FIRST L)) N	
+       (IF (ATOMIC? (REST L))   0
+           (POS1 SYM (REST L) (ADD1 N)))))
+
+(DEFSYS TAIL (L X)
+  (LET ((Y (HGKM-MEMQ X L)))
+  (IF (MTL? Y) MTL (REST Y)) ) )
+
+
+
+;; FLATTEN 
+;
+(DEFSYS FLATTEN (list)
+  (IF (MTL? (CAR list)) 
+      (IF (MTL? (CDR list)) NIL
+          (FLATTEN (CDR list)))
+      (IF (ATOMIC? (CAR list))
+          (CONS (CAR list) (FLATTEN (CDR list)))
+          (APPEND (FLATTEN (CAR list)) (FLATTEN (CDR list))))))
+
+
+
+(DEFSYS REPETITION-GET (LIST)
+ (IF (MTL? LIST) LIST
+  (IF (MEMBER (CAR LIST) (CDR LIST))
+   (CAR LIST)
+   (REPETITION-GET (CDR LIST)))))
+
+
+(DEFSYS LIST-N (SYM N)
+ (IF (INTEQ N 0) MTL
+  (CONS SYM (LIST-N SYM (SUB1 N)))))
+
+
+;; PRELIST, SUFLIST, INLIST?
+;
+(DEFSYS PRELIST (L N)
+    (IF (EQ N 0) MTL (LCONS (FIRST L) (PRELIST (REST L) (SUB1 N))) ) )
+
+(DEFSYS SUFLIST (L N)
+    (IF (OR (EQ N 0) (MTL? L)) L (SUFLIST (REST L) (SUB1 N)) ) )
+
+(DEFSYS INLIST? (L1 L2)
+	(LET ((NAT1 (LENGTH L1))
+	      (NAT2 (LENGTH L2)))
+	(IF (GT NAT1 NAT2) NIL
+	    (IF (EQUAL L1 (PRELIST L2 NAT1)) T
+		(INLIST? L1 (REST L2))))))
+
+
+;; SUBTRACT, INTERSECT
+;
+(DEFSYS SUBTRACT (L1 L2) 
+    (IF (MTL? L2) L1
+    (SUBTRACT (OUTOF (CAR L2) L1) (REST L2)) ) )
+
+(DEFSYS INTERSECT (L1 L2)
+  (IF (MTL? L1) MTL
+  (LET ((X (FIRST L1)))
+  (IF (HGKM-MEMQ X L2) (LCONS X (INTERSECT (REST L1) L2))
+  (INTERSECT (REST L1) L2) ))) )
+
+(DEFLAM SUBSET (list1 list2)
+ (IF (MTL? list1)
+  TRUE
+  (IFN (HGKM-MEMBER (FIRST list1) list2)
+   FALSE
+   (SUBSET (REST list1) list2))))
+
+
+;; INSERT! DELETE DELETE! OUTOF OUTOF!
+;
+(DEFSYS INSERT! (OBJ L)
+  (IF (MTL? L) (LIST OBJ)
+  (IF (EQ OBJ (FIRST L)) L
+  (SETREST L (INSERT! OBJ (REST L))) )) )
+
+(DEFSYS HGKM-DELETE (OBJ L)
+  (IF (MTL? L) MTL
+  (IF (EQ (FIRST L) OBJ) (REST L)
+  (LCONS (FIRST L) (HGKM-DELETE OBJ (REST L))) )) )
+
+(DEFMAC DELETE! (OBJ L)
+ (LIST 'IF (LIST 'MTL? L) 'MTL
+       (LIST 'IF (LIST 'EQ OBJ (LIST 'FIRST L))
+             (LIST 'LET (LIST (LIST 'rest (LIST 'REST L)))
+                   (LIST 'IF (LIST 'MTL? 'rest)
+                         (LIST 'SETQ L 'MTL)
+                         (LIST 'SEQ
+                               (LIST 'SETFIRST L (LIST 'FIRST 'rest))
+                               (LIST 'SETREST L (LIST 'REST 'rest)))))
+             (LIST `SETREST L (LIST 'DELETE1! OBJ (LIST 'REST L))))))
+
+(DEFSYS DELETE1! (OBJ L)
+          (IF (MTL? L) MTL
+           (IF (EQ OBJ (FIRST L)) (REST L)
+            (SETREST L (DELETE1! OBJ (REST L))))))
+
+(DEFSYS OUTOF (M L)
+    (IF (MTL? L) MTL
+    (IF (EQ M (FIRST L)) (OUTOF M (REST L))
+    (LCONS (FIRST L) (OUTOF M (REST L))) )) )
+
+(DEFMAC OUTOF! (OBJ L)
+        (LIST 'IF (LIST 'MTL? L) 'MTL
+              (LIST 'IF (LIST 'EQ OBJ (LIST 'FIRST L))
+                    (LIST 'OUTOF1! OBJ (LIST 'DELETE! OBJ L))
+                    (LIST 'SETREST L (LIST 'OUTOF1! OBJ (LIST 'REST L))))))
+
+(DEFSYS OUTOF1! (M L)
+    (IF (MTL? L) MTL
+    (IF (EQ M (FIRST L)) (OUTOF1! M (DELETE! M L))
+    (SETREST L (OUTOF1! M (REST L))) )) )
+
+
+;; UNLIST, REVMAP, PRINTLIST
+;
+(DEFSYS UNLIST (L)
+  (IF (MTL? (REST L)) (FIRST L) (LCONS (FIRST L) (UNLIST (REST L)))) )
+
+(DEFSYS REVMAP (L)
+	(IF (MTL? L) MTL
+	    (REVMAP1 L MTL)))
+
+(DEFSYS REVMAP1 (L1 L2)
+	(IF (MTL? (REST L1)) (LCONS (FIRST L1) L2)
+	    (REVMAP1 (REST L1) (APPEND L2 (LIST (FIRST L1))))))
+
+(DEFSYS PRINTLIST (L)
+  (IF (MTL? L) NIL
+   (SEQ
+     (HGKM-PRINC (CAR L))
+     (HGKM-PRINC (QUOTE " "))
+     (PRINTLIST (CDR L)) )))
+
+
+;;;;<ordered lists of integers>
+; *****************************************************************
+; *                                                               *
+; *  (UNIONLE [list1][list2])                                     *
+; *    Given two lists of natural numbers, each in ascending      *
+; *    order, UNIONLE creates the ascending ordered union.        *
+; *  (UNIONGE [list1][list2])                                     *
+; *    Given two lists of natural numbers, each in descending     *
+; *    order, UNIONGE creates the descending ordered union.       *
+; *  (ORDER [list])                                               *
+; *    Returns the list of natural numbers occurring in list      *
+; *    in increasing order.                                       *
+; *  (INSERT [int][list])                                         *
+; *    Inserts int in list, an ascendingly ordered list of        *
+; *    natural number.                                            *  
+; *  (hole [list])                                                *
+; *    Being the argument a list of integers greater than         *
+; *    or equal to -1, hole returns the smallest number not       *
+; *    appearing in L.                                            *
+; *            (hole (QUOTE (-1 0 1 3))) --> 2                    *
+; *               (hole (QUOTE (0 2 3))) --> -1                   *
+; *                                                               *
+; *****************************************************************
+;
+
+;; UNIONLE, UNIONGE, ORDER, INSERT, hole
+;
+
+(DEFSYS UNIONLE (L1 L2)
+    (IF (MTL? L1) L2
+    (IF (MTL? L2) L1 
+    (IF (LT (CAR L1) (CAR L2)) (CONS (CAR L1) (UNIONLE (CDR L1) L2))
+    (IF (NOT (EQ (CAR L1) (CAR L2))) (CONS (CAR L2) (UNIONLE L1 (CDR L2)))
+    (CONS (CAR L1) (UNIONLE (CDR L1) (CDR L2))) )))) )
+
+(DEFSYS UNIONGE (L1 L2)
+    (IF (MTL? L1) L2
+    (IF (MTL? L2) L1
+    (IF (GT (CAR L1) (CAR L2)) (CONS (CAR L1) (UNIONGE (CDR L1) L2))
+    (IF (NOT (EQ (CAR L1) (CAR L2))) (CONS (CAR L2) (UNIONGE L1 (CDR L2)))
+    (CONS (CAR L1) (UNIONGE (CDR L1) (CDR L2))) )))) )
+
+(DEFSYS ORDER (L)
+    (IF (MTL? L) L (INSERT (CAR L) (ORDER (CDR L))) )  )
+
+(DEFSYS INSERT (X Y)
+    (IF (NATNUM X) (UNIONLE (LIST X) Y) Y) )
+
+(DEFSYS hole (L) (hole1 L -1))
+
+(DEFSYS hole1 (L N)
+  (IF (NOT (HGKM-MEMBER N L)) N (hole1 L (ADD1 N))))
+
+
+;;;;<associative lists elements>
+; *****************************************************************
+; *                                                               *
+; *  The alist elements are implemented as dotted pairs.          *
+; *                                                               *
+; *  (alistelement-get-1st ALISTELEMENT)                          *
+; *  (alistelement-get-2nd ALISTELEMENT)                          *
+; *  (alistelement-mak OBJ1 OBJ2)                                 *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB alistelement-get-1st (ALISTELEMENT) (CAR ALISTELEMENT))
+(DEFSUB alistelement-get-2nd (ALISTELEMENT) (CDR ALISTELEMENT))
+(DEFSUB alistelement-mak (OBJ1 OBJ2) (CONS OBJ1 OBJ2)) 
+
+
+;;;;<associative lists>
+; *****************************************************************
+; *                                                               *
+; *  Associative lists are implemented as lists of alistelements. *
+; *  Basic Alist constructors                                     *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB alist-get-first (ALIST) (FIRST ALIST))
+(DEFSUB alist-get-rest  (ALIST) (REST ALIST))
+(DEFSUB alist-cons (ALIST ALISTELEMENT)  (LCONS ALISTELEMENT ALIST)) 
+
+
+
+; *****************************************************************
+; *                                                               *
+; *  (HGKM-REPLACE X Y AL)                                        *
+; *    AL is an alist. If X is the 1st element of an alist        *
+; *    element, then HGKM-REPLACE replaces the 2nd element with Y.*
+; *    Otherwise, HGKM-REPLACE adds (CONS X Y) to AL.             *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFSYS  HGKM-REPLACE (X Y AL)
+ (IF (OR (MTL? AL) (EQUAL AL '(())))
+  (LIST (CONS X Y))
+  (IF (EQ (CAAR AL) X)
+   (CONS (CONS X Y) (CDR AL))
+   (CONS (CAR AL) (HGKM-REPLACE X Y (CDR AL))) ))) 
+
+
+
+;;;;<other stuff about Alists>
+; *****************************************************************
+; *                                                               *
+; *  Alist-empty                                                  *
+; *  (ALIST-EMPTY? OBJ)                                           *
+; *                                                               *
+; *  (alist-add ALIST OBJ1 OBJ2)                                  *
+; *  (alist-del ALIST OBJ)                                        *
+; *  (alist-union ALIST1 ALIST2)                                  *
+; *                                                               *
+; * (alist-cons-shared ALIST ALISTELEMENT)                        *
+; *                                                               *
+; *****************************************************************
+
+(DEFCONSTANT Alist-empty MTL)
+(DEFSYS ALIST-EMPTY? (OBJ) (MTL? OBJ))
+
+(DEFSYS alist-add (ALIST OBJ1 OBJ2) 
+  (IF (MTL? ALIST) (LCONS (alistelement-mak OBJ1 OBJ2) MTL)
+  (IF (EQUAL (alistelement-get-1st (FIRST ALIST)) OBJ1) 
+      (LCONS (alistelement-mak OBJ1 OBJ2) (REST ALIST))
+      (LCONS (FIRST ALIST) 
+                 (alist-add (REST ALIST) OBJ1 OBJ2)) )) )
+
+(DEFSYS alist-del (ALIST OBJ)
+  (IF (MTL? ALIST) ALIST
+  (IF (EQUAL (alistelement-get-1st (FIRST ALIST)) OBJ) 
+      (REST ALIST)
+      (LCONS (FIRST ALIST) 
+                 (alist-del (REST ALIST) OBJ)) )) )
+
+;                    alist-union
+; adds to ALIST2 all the elements of ALIST1, overwriting those elements
+; of ALIST2 which are also in ALIST1.
+
+(DEFSYS alist-union (ALIST1 ALIST2)
+	(IF (ALIST-EMPTY? ALIST1) ALIST2
+	    (alist-union (alist-get-rest ALIST1)
+		 (alist-add ALIST2
+		      (alistelement-get-1st (alist-get-first ALIST1))
+		      (alistelement-get-2nd (alist-get-first ALIST1))))))
+
+
+; functions which operate on all occurrences
+
+(DEFSYS alist-cons-shared (ALIST ALISTELEMENT)
+	(SEQ (SETREST ALIST (LCONS (FIRST ALIST) (REST ALIST)))
+	     (SETFIRST ALIST ALISTELEMENT)
+	     ALIST))
+
+
+;****************************************************************************
+;*                                                                          *
+;* SYNTAX                                                                   *
+;*      (IST SYM)                                                           *
+;*      (ISF SYM)                                                           *
+;*                                                                          *
+;* DESCRIPTION                                                              *
+;*      They should theoretically allow FOL to use real truth               *
+;*      values instead that T and NIL. They are supposed to                 *
+;*      return TVAL and FVAL when SYM is (is not) MTL                       *
+;*                                                                          *
+;****************************************************************************
+
+(DEFSUB IST (L)  L)         
+(DEFSUB ISF (L) (MTL? L))            
+

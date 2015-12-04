@@ -1,0 +1,52 @@
+\gfcommand{falsei}{implication elimination for negation or false introduction}
+\index{falsei}\index{fi}
+
+\gfsyntax{
+   falsei \ALT fi \ARG{fact1} \OPT{,} \ARG{fact2}; 
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \imp E_{\neg}  
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      \fraz{A \ \ \neg A}
+           {\bot}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   One fact must be the negation of the other. 
+   The wff derived is {\tt FALSE} and its dependencies are the union of the
+   dependencies of both facts.
+}
+
+\gfrecap{
+   One fact must be the negation of the other. 
+   The wff derived is `FALSE' and its dependencies are the union of the
+   dependencies of both facts.
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   [...]
+
+   ***** assume A not A;
+   1  A  (1)
+   2  not A  (2)
+
+   ***** falsei 1 2;
+   3  FALSE  (1 2)
+
+   ***** falsei 2 1;
+   4  FALSE  (1 2)
++
+
+\gfnotes{
+   This rule can be seen as a special case of introduction elimination
+   in which the main symbol of one of the premises must be {\tt not} ($\neg$)
+   rather than {\tt imp} ($\imp$). 
+}

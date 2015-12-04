@@ -1,0 +1,266 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: reason.hgk
+;; Date: Wed Oct 20 10:47:34 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;**********************************************************************
+;*                                                                    *
+;* 			      reason.hgk                              *
+;*                                                                    *
+;* This file contains all the constructors and selectors for reason   *
+;* and part of reason.                                                *
+;*                                                                    *
+;**********************************************************************
+;
+;**********************************************************************
+;*                                                                    *
+;* The structure <reason> is a substructure of <fact>.                *
+;* Its role is to record the deduction by which the fact has been     *
+;* produced.                                                          *
+;*                                                                    *
+;* <reason> = ( <rule> . <ras> )                                      *
+;* <ras>    = ( <ra> <ra> .... <ra> )                                 *
+;* <ra>     = ( <type> . <value>)                                     *
+;*      <rule>  is the name of the rule that has generated the fact;  *
+;*      <ras>   is a list of reason arguments (ra), there is a ra for *
+;*              every argument passed to the rule;                    *
+;*      <ra>    containes the type of the argument and the value;     *
+;*      <type>  is the type of the reason argument;                   *
+;*      <value> is the value of the reason argument;                  *
+;*                                                                    *
+;**********************************************************************
+
+;;; data structure of ra (reason argument)
+;
+;**********************************************************************
+;*                                                                    *
+;* <ra> = ( <type> . <value>)                                         *
+;*                                                                    *
+;**********************************************************************
+;
+;;; constructor and selectors of <ra>
+;
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(ra-mak      TYPE  VALUE)                                     *
+;* 	(ra-get-type RA)                                              *
+;* 	(ra-get-value  RA)                                            *
+;* DESCRIPTION:                                                       *
+;* 	ra-mak	    makes a ra					      *
+;* 	ra-get-type selects the type from RA			      *
+;* 	ra-get-value selects the value from RA		              *
+;*                                                                    *
+;**********************************************************************
+	
+(DEFSUB ra-mak      (TYPE VALUE) (CONS TYPE VALUE))
+(DEFSUB ra-get-type (RA) (CAR RA))
+(DEFSUB ra-get-value  (RA) (CDR RA))
+
+;;; ra-type constructors and predicates
+;
+;**********************************************************************
+;*                                                                    *
+;* For each ra-type has been created a ra constructor and a predicate.*
+;* These constructors perform a call to the function ra-mak with the  *
+;* correct ra-type.                                                   *
+;* The reason of have these special constructors for every ra is due  *
+;* to the fact that in this manner all the constant (FACT WFF ...)    *
+;* and their use are concentrated in this file, but, if a new ra is   *
+;* implemented, this file must be modified.                           *
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	("ra-type"_ra-mak VALUE)                                      *
+;* 	("RA-TYPE"_RA RA)                                             *
+;* DESCRIPTION:                                                       *
+;* 	"ra-type"_ra-mak makes a ra with type "ra-type"               *
+;* 	"RA-TYPE"_RA return TRUE if the type of RA is "RA-TYPE"       *
+;*                                                                    *
+;**********************************************************************
+
+(DEFSUB indconst_ra-mak (INDCONST) (ra-mak '%INDCONST% INDCONST))
+(DEFSUB INDCONST_RA	(RA)	   (EQ (ra-get-type RA) '%INDCONST%))
+
+(DEFSUB varorparlist_ra-mak (VARORPARLIST)
+ (ra-mak '%VARORPARLIST% VARORPARLIST))
+(DEFSUB VARORPARLIST_RA	(RA)(EQ (ra-get-type RA) '%VARORPARLIST%))
+
+(DEFSUB term_ra-mak  (TERM)  (ra-mak '%TERM% TERM))
+(DEFSUB terms_ra-mak (TERMS) (ra-mak '%TERMS% TERMS))
+(DEFSUB TERM_RA	     (RA)    (EQ (ra-get-type RA) '%TERM%))
+(DEFSUB TERMS_RA     (RA)    (EQ (ra-get-type RA) '%TERMS%))
+
+(DEFSUB wff_ra-mak  (WFF)  (ra-mak '%WFF% WFF))
+(DEFSUB wffs_ra-mak (WFFS) (ra-mak '%WFFS% WFFS))
+(DEFSUB WFF_RA	    (RA)   (EQ (ra-get-type RA) '%WFF%))
+(DEFSUB WFFS_RA	    (RA)   (EQ (ra-get-type RA) '%WFFS%))
+
+(DEFSUB fact_ra-mak    (FACT)    (ra-mak '%FACT% FACT))
+(DEFSUB facts_ra-mak   (FACTS)   (ra-mak '%FACTS% FACTS))
+(DEFSUB factand_ra-mak (FACTAND) (ra-mak '%FACTAND% FACTAND))
+(DEFSUB FACT_RA	       (RA)	 (EQ (ra-get-type RA) '%FACT%))
+(DEFSUB FACTS_RA       (RA)	 (EQ (ra-get-type RA) '%FACTS%))
+(DEFSUB FACTAND_RA     (RA)	 (EQ (ra-get-type RA) '%FACTAND%))
+
+(DEFSUB exp_ra-mak (EXP) (ra-mak '%EXP% EXP))
+(DEFSUB EXP_RA	   (RA)  (EQ (ra-get-type RA) '%EXP%))
+
+(DEFSUB simpsetlabel_ra-mak (SIMPSETLABEL)
+ (ra-mak '%SIMPSETLABEL% SIMPSETLABEL))
+(DEFSUB simpsetlabels_ra-mak (SIMPSETLABELS)
+ (ra-mak '%SIMPSETLABELS% SIMPSETLABELS))
+(DEFSUB SIMPSETLABEL_RA	 (RA) (EQ (ra-get-type RA) '%SIMPSETLABEL%))
+(DEFSUB SIMPSETLABELS_RA (RA) (EQ (ra-get-type RA) '%SIMPSETLABELS%))
+
+(DEFSUB axiom_ra-mak  (AXIOM)  (ra-mak '%AXIOM% AXIOM))
+(DEFSUB axioms_ra-mak (AXIOMS) (ra-mak '%AXIOMS% AXIOMS))
+(DEFSUB AXIOM_RA      (RA)     (EQ (ra-get-type RA) '%AXIOM%))
+(DEFSUB AXIOMS_RA     (RA)     (EQ (ra-get-type RA) '%AXIOMS%))
+
+(DEFSUB axiomschema_ra-mak (AXIOMSCHEMA) (ra-mak '%AXIOMSCHEMA% AXIOMSCHEMA))
+(DEFSUB AXIOMSCHEMA_RA     (RA)          (EQ (ra-get-type RA) '%AXIOMSCHEMA%))
+(DEFSUB wtsubstrep_ra-mak  (WTSUBSTREP)  (ra-mak '%WTSUBSTREP% WTSUBSTREP))
+(DEFSUB WTSUBSTREP_RA      (RA)          (EQ (ra-get-type RA) '%WTSUBSTREP%))
+
+
+(DEFSUB defn_ra-mak (DEFN) (ra-mak '%DEFN%	DEFN))
+(DEFSUB DEFN_RA	    (RA)   (EQ (ra-get-type RA) '%DEFN%))
+
+(DEFSUB theory_ra-mak (THEORY) (ra-mak '%THEORY% THEORY))
+(DEFSUB THEORY_RA     (RA)     (EQ (ra-get-type RA) '%THEORY%))
+
+(DEFSUB natnum_ra-mak  (NATNUM)  (ra-mak '%NATNUM% NATNUM))
+(DEFSUB natnums_ra-mak (NATNUMS) (ra-mak '%NATNUMS% NATNUMS))
+(DEFSUB NATNUM_RA      (RA)	 (EQ (ra-get-type RA) '%NATNUM%))
+(DEFSUB NATNUMS_RA     (RA)	 (EQ (ra-get-type RA) '%NATNUMS%))
+
+(DEFSUB left_right_ra-mak (LEFT) (ra-mak '%LEFT_RIGHT% LEFT))
+(DEFSUB LEFT_RIGHT_RA	  (RA)	 (EQ (ra-get-type RA) '%LEFT_RIGHT%))
+
+(DEFSUB substlist_ra-mak (SUBSTLIST) (ra-mak '%SUBSTLIST% SUBSTLIST))
+(DEFSUB SUBSTLIST_RA	 (RA)	     (EQ (ra-get-type RA) '%SUBSTLIST%))
+
+(DEFSUB occurences_ra-mak (OCCURENCES) (ra-mak '%OCCURENCES% OCCURENCES))
+(DEFSUB OCCURENCES_RA	  (RA)	       (EQ (ra-get-type RA) '%OCCURENCES%))
+
+(DEFSUB replabel_ra-mak (REPLABEL) (ra-mak '%REPLABEL% REPLABEL))
+(DEFSUB REPLABEL_RA	(RA)	   (EQ (ra-get-type RA) '%REPLABEL%))
+
+(DEFSUB metafact_ra-mak (METAFACT) (ra-mak '%METAFACT% METAFACT))
+(DEFSUB METAFACT_RA	(RA)	   (EQ (ra-get-type RA) '%METAFACT%))
+
+(DEFSUB mnglist&deplist_ra-mak (MNGLIST&DEPLIST)
+ (ra-mak '%MNGLIST&DEPLIST% MNGLIST&DEPLIST))
+(DEFSUB MNGLIST&DEPLIST_RA (RA) (EQ (ra-get-type RA) '%MNGLIST&DEPLIST%))
+
+;;; data structure of ras
+;
+;**********************************************************************
+;*                                                                    *
+;* <ras>    = ( <ra> <ra> .... <ra> )                                 *
+;*                                                                    *
+;**********************************************************************
+;
+;;;  constructors and selectors of <ras>
+;
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(ras_empty-mak)                                               *
+;* 	(ras1-mak RA1)                                                *
+;* 	(ras2-mak RA1 RA2)                                            *
+;* 	(ras3-mak RA1 RA2 RA3)                                        *
+;* 	(ras4-mak RA1 RA3 RA4 RA5)                                    *
+;* 	(ras5-mak RA1 RA2 RA3 RA4 RA5)                                *
+;* 	(ras-get-first RAS)                                           *
+;* 	(ras-get-rest  RAS)                                           *
+;* 	(RAS-EMPTY RAS)                                               *
+;* DESCRIPTION:                                                       *
+;* 	ras_empty-mak returns an empty ras.                           *
+;* 	ras[1-5]-mak  constructs the ras (reason argument list).      *
+;* 	ras-get-first selects the first ra from RAS.                  *
+;* 	ras-get-rest  selects the rest of RAS.                        *
+;* 	RAS-EMPTY     returns TRUE if RAS is the empty RAS.           *
+;*                                                                    *
+;**********************************************************************
+
+(DEFSUB ras_empty-mak () MTL)
+(DEFSUB ras1-mak (RA1)                 (LIST RA1))
+(DEFSUB ras2-mak (RA1 RA2)	       (LIST RA1 RA2))
+(DEFSUB ras3-mak (RA1 RA2 RA3)	       (LIST RA1 RA2 RA3))
+(DEFSUB ras4-mak (RA1 RA2 RA3 RA4)     (LIST RA1 RA2 RA3 RA4))
+(DEFSUB ras5-mak (RA1 RA2 RA3 RA4 RA5) (LIST RA1 RA2 RA3 RA4 RA5))
+
+(DEFSUB ras-get-first (RAS) (FIRST RAS))
+(DEFSUB ras-get-rest  (RAS) (REST RAS))
+
+(DEFSUB RAS-EMPTY (RAS) (MTL? RAS))
+
+;;; data structure of reason
+;
+;**********************************************************************
+;*                                                                    *
+;* <reason> = ( <rule> . <ras> )                                      *
+;*                                                                    *
+;**********************************************************************
+;
+;;; constructor and selectors of <reason>
+;
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(reason-mak      RULE RAS)				      *
+;* 	(reason-get-rule REASON)				      *
+;* 	(reason-get-ras	 REASON)				      *
+;* DESCRIPTION:                                                       *
+;* 	reason-mak      makes a reason				      *
+;* 	reason-get-rule	selects the rule from REASON		      *
+;* 	reason-get-ras  selects the ras from REASON		      *
+;*                                                                    *
+;**********************************************************************
+
+(DEFSUB reason-mak      (RULE RAS) (CONS RULE RAS))
+(DEFSUB reason-get-rule (REASON)   (CAR REASON))
+(DEFSUB reason-get-ras	(REASON)   (CDR REASON))

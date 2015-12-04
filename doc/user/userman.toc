@@ -1,0 +1,56 @@
+\contentsline {section}{\numberline {1}Introduction}{1}
+\contentsline {section}{\numberline {2}Acknowledgements}{2}
+\contentsline {section}{\numberline {3}How to get started in {{\ptt GETFOL}}}{2}
+\contentsline {subsection}{\numberline {3.1}Some general hints}{2}
+\contentsline {subsection}{\numberline {3.2}Entering and exiting the {{\ptt GETFOL}} system}{3}
+\contentsline {section}{\numberline {4}Conventions}{4}
+\contentsline {section}{\numberline {5}Parser}{5}
+\contentsline {section}{\numberline {6}Administration}{14}
+\contentsline {section}{\numberline {7}Language}{27}
+\contentsline {subsection}{\numberline {7.1}{{\ptt GETFOL}} symbols}{27}
+\contentsline {subsection}{\numberline {7.2}{{\ptt GETFOL}} special symbols}{28}
+\contentsline {subsection}{\numberline {7.3}Syntypes of primitive symbols}{28}
+\contentsline {subsection}{\numberline {7.4}Logical expressions}{29}
+\contentsline {subsection}{\numberline {7.5}Operator symbols}{30}
+\contentsline {subsection}{\numberline {7.6}The logical symbols}{31}
+\contentsline {section}{\numberline {8}Sorts}{38}
+\contentsline {subsection}{\numberline {8.1}Introduction}{38}
+\contentsline {subsection}{\numberline {8.2}Defining the sort hierarchy}{38}
+\contentsline {subsection}{\numberline {8.3}Sorted declarations}{38}
+\contentsline {section}{\numberline {9}Facts: reasoning building blocks}{47}
+\contentsline {subsection}{\numberline {9.1}Proof lines: reasoning steps}{47}
+\contentsline {subsection}{\numberline {9.2}Axioms and theories}{47}
+\contentsline {section}{\numberline {10}Multiple proofs}{57}
+\contentsline {subsection}{\numberline {10.1}Introduction}{57}
+\contentsline {section}{\numberline {11}Natural Deduction (ND)}{68}
+\contentsline {subsection}{\numberline {11.1}{{\ptt GETFOL}} logic}{68}
+\contentsline {subsection}{\numberline {11.2}{{\ptt GETFOL}} sorted logic}{69}
+\contentsline {section}{\numberline {12}Equality rules}{98}
+\contentsline {section}{\numberline {13}Other rules}{100}
+\contentsline {subsection}{\numberline {13.1}Conditional rules}{100}
+\contentsline {subsection}{\numberline {13.2}Structural rules}{100}
+\contentsline {section}{\numberline {14}Decision procedures}{111}
+\contentsline {section}{\numberline {15}Semantic simplification}{122}
+\contentsline {subsection}{\numberline {15.1}Introduction}{122}
+\contentsline {subsection}{\numberline {15.2}``Intended'' and ``computational'' models}{122}
+\contentsline {subsection}{\numberline {15.3}Multiple representation functions}{124}
+\contentsline {section}{\numberline {16}Syntactic simplification}{135}
+\contentsline {subsection}{\numberline {16.1}Introduction}{135}
+\contentsline {subsection}{\numberline {16.2}Simplification sets}{136}
+\contentsline {section}{\numberline {17}Syntactic and semantic simplification}{142}
+\contentsline {section}{\numberline {18}Multiple contexts}{146}
+\contentsline {subsection}{\numberline {18.1}Introduction}{146}
+\contentsline {section}{\numberline {19}Metareasoning}{153}
+\contentsline {subsection}{\numberline {19.1}Introduction}{153}
+\contentsline {section}{\numberline {A}Open problems}{161}
+\contentsline {section}{\numberline {B}Syntax of commands}{162}
+\contentsline {subsection}{\numberline {B.1}admin}{162}
+\contentsline {subsection}{\numberline {B.2}context}{162}
+\contentsline {subsection}{\numberline {B.3}decide}{163}
+\contentsline {subsection}{\numberline {B.4}eval}{163}
+\contentsline {subsection}{\numberline {B.5}language}{164}
+\contentsline {subsection}{\numberline {B.6}meta}{165}
+\contentsline {subsection}{\numberline {B.7}nd}{165}
+\contentsline {subsection}{\numberline {B.8}parser}{166}
+\contentsline {subsection}{\numberline {B.9}proof}{167}
+\contentsline {subsection}{\numberline {B.10}rules}{167}

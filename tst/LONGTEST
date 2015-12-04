@@ -1,0 +1,12 @@
+comment ! TESTING THE GETFOL SYSTEM !
+probe all;
+
+comment ! FETCH TEST !
+    fetch TEST;
+
+comment ! SORTS !
+	fetch sort/partord.tst;
+	reset;
+	fetch sort/supsort.tst;
+	load sort/supsort.hgk;
+	reset;

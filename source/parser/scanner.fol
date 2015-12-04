@@ -1,0 +1,425 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: scan.fol
+;; Date: Wed Oct 20 10:48:14 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; *****************************************************************
+; *                                                               *
+; *                        the  scanner                           *
+; *                                                               *
+; *****************************************************************
+
+;;; the scanner 
+; 
+; *****************************************************************
+; *                                                               *
+; * The formal grammar defining the tokens to be parsified is     *
+; *                                                               *
+; *    <ID_TOK>      ::=   <char_iter> | IDDEL_CHAR               *
+; *    <char_iter>   ::=   ID_CHAR <char_iter>                    *
+; *                                                               *
+; *    <NUM_TOK>     ::=   NUM_CHAR <num_tok>                     *
+; *                                                               *
+; *    <DEL_TOK>     ::=   DEL_CHAR                               *
+; *                                                               *
+; *    <IGN_TOK>     ::=   IGN_CHAR                               *
+; *                                                               *
+; *    <ESC_TOK>     ::=   ESC_CHAR                               *
+; *                                                               *
+; *    <SPEC_TOK>    ::=   SPEC_CHAR                              *
+; *                                                               *
+; * Each token can be recognized by analyzing its first char      *
+; * The type of the first char of a token allows us to choose     *
+; * the appropriate scanning routine.                             *
+; * The scanning routines of the token possibly formed by an      *
+; * indeterminate number of chars must "look ahead" in the stream *
+; * in input to determinate the end of the token. So the stream   *
+; * input is simulated to be a stack, where no more than one PUSH *
+; * operation is allowed: when a scanning routine, reading (e.g.  *
+; * performing a POP of the stack), recognizes the end of the     *
+; * token, it PUSHes the just read char onto the stack.           *
+; *                                                               *
+; * Actually no SPEC_CHAR are taken into account, so no SPEC_TOK  *
+; * are provided of a scanning routine.                           *
+; *                                                               *
+; * The only character declared as ESC_CHAR is the backslash (\)  *
+; * which has the functionality of single escape character.       *
+; * It allows to deal the following character as is were an       *
+; * ID_CHAR regadless of its real type.                           *
+; * Examples:                                                     *
+; *                \+   --->  the ID_CHAR "+"                     *
+; *                \;   --->  the ID_CHAR ";"                     *
+; *                \\   --->  the ID_CHAR "\"                     *
+; *                                                               *
+; * Every char read is put in another stack, SCANBUFF, so that,   *
+; * if a parse-error occurs, the stack may filled with the        *
+; * remaining chars in the line and the whole content printed     *
+; * out.                                                          *
+; *                                                               *
+; *****************************************************************
+;
+; *****************************************************************
+; *                                                               *
+; *    The main purpose of this scanner is to produce tokens      *
+; *    which can then be assembled by the parser into more        *
+; *    complicated syntatic structures.  In addition TOKEN-SCAN   *
+; *    does two other things:  1) it keeps a record of the        *
+; *    input stream, allowing FOL to write a file which           *
+; *    reproduces any interactive session,  2) detailed           *
+; *    printing information is kept so that informative error     *
+; *    messages can be printed.                                   *
+; *                                                               *
+; *    The kinds of characters that can be scanned are            *
+; *                                                               *
+; *       0. identifiers                     IDCHAR               *
+; *       1. numbers (positive integers)     NUMCHAR              *
+; *       2. delimiter                       DELCHAR              *
+; *       3. ignored char                    IGNCHAR              *
+; *       4. iddelim                         IDDELCHAR            *
+; *       5. escape characters               ESCCHAR              *
+; *       6. special handling                SPECCHAR             *
+; *                                                               *
+; *    TOKEN-SCAN scans the next token and returns                *
+; *                                                               *
+; *          ( token . ( type . pos ) )                           *
+; *                                                               *
+; *    where                                                      *
+; *          token  is the token                                  *
+; *          type   is the type number of the token               *
+; *          pos    position in BUF of beginning of token         *
+; *                                                               *
+; *    NOTE: The iddelimiters are special delimiters              *
+; *    (no token can hold a delimiter in it), as they may be      *
+; *    regarded as tokens.                                        *
+; *    Examples of iddelimiters are <,>,=,+,-,*,/,etc.            *
+; *                                                               *
+; *****************************************************************
+;
+; main scanning routine
+;
+(DEFLAM TOKEN-SCAN ()
+ (LET ((init_pos (NEXT_POS-GET)))
+  (LET ((ch (CH-GET-NEXT)))
+   (LET ((ch_type (CHTYPE-GET ch)))
+    (IF (IGNTYPE? ch_type) (TOKEN-SCAN)
+     (tk_info-update-pos (IF (IDTYPE? ch_type) (ID-SCAN ch FALSE)
+                          (IF (NUMTYPE? ch_type) (NUM-SCAN ch)
+                           (IF (DELTYPE? ch_type) (DEL-SCAN ch)
+                            (IF (IDDELTYPE? ch_type) (IDDEL-SCAN ch)
+                             (IF (ESCTYPE? ch_type) (ESC-SCAN)
+                              (IF (SPECTYPE? ch_type) (SPEC-SCAN)
+  (BREAK "TOKEN-SCAN: I've scanned a character of unknown type !!!")))))))
+                         init_pos))))))
+
+;
+; ID_TOK scanner routine.
+;
+(DEFLAM ID-SCAN (CHAR ESCAPED)
+ (LET ((LIST (ID-SCAN&LIST-GET CHAR MTL ESCAPED)))
+  (tk_info-mk (intnam (CHR2SYM (REVERSE LIST))) 'IDTOKEN)))
+
+(DEFLAM ID-SCAN&LIST-GET (CHAR CHAR_LIST ESCAPED)
+ (LET ((ch_type (CHTYPE-GET CHAR)))
+  (IF (OR (IDTYPE? ch_type) (OR (NUMTYPE? ch_type) ESCAPED))
+   (ID-SCAN&LIST-GET (CH-GET-NEXT) (CONS CHAR CHAR_LIST) FALSE)
+   (IF (ESCTYPE? ch_type)
+    (ID-SCAN&LIST-GET (CH-GET-NEXT) CHAR_LIST TRUE)
+    (SEQ (CH-RESTORE CHAR) CHAR_LIST)))))
+
+; NUM_TOK scanner routine.
+;
+(DEFLAM NUM-SCAN (CHAR) (tk_info-mk (NUM-SCAN&VALUE-GET CHAR 0) 'NUMTOKEN))
+
+(DEFLAM NUM-SCAN&VALUE-GET (CHAR VALUE)
+ (IFN (NUMTYPE? (CHTYPE-GET CHAR))
+  (SEQ (CH-RESTORE CHAR) VALUE)
+  (NUM-SCAN&VALUE-GET (CH-GET-NEXT) (+ (* VALUE BASE) (- CHAR 48))))) 
+
+; DEL_TOK scanner routine.
+;
+(DEFLAM DEL-SCAN (CHAR)
+ (tk_info-mk (intnam (SYM-INTERN (ASCII CHAR))) 'DELTOKEN))
+
+; IDDEL_TOK scanner routine.
+; note that IDCHAR is returned because such delimiters are to be considered as
+; identifier tokens.
+;
+(DEFLAM IDDEL-SCAN (CHAR)
+ (tk_info-mk (intnam (SYM-INTERN (ASCII CHAR))) 'IDTOKEN))
+
+(DEFLAM ESC-SCAN () (ID-SCAN (CH-GET-NEXT) TRUE))
+
+(DEFLAM SPEC-SCAN ()
+ (BREAK "SPEC-SCAN: No semantic action has been yet associated to special chars"))
+
+
+;;;  documentation: low-level line-parsing primitives			
+; 
+; *****************************************************************
+; *                                                               *
+; *    This code implements a backupable scanner.  It does        *
+; *    this by using an array, %TOKENARRAY%, to store "tokens" as *
+; *    they are scanned.  Actually TOKEN-SCAN returns both a type *
+; *    and a value, where "value" is the atom scanned and         *
+; *    "type" is one of the following symbols:                    *
+; *                                                               *
+; *           IDTOKEN  if the value is an identifier              *
+; *           NUMTOKEN if the value is a non-negative integer     *
+; *           DELTOKEN if the value is a delimiter.               *
+; *                                                               *
+; *    Two global variables are used to keep track of which       *
+; *    token in the input stream we are presently looking         *
+; *    at:  %CURR_TOP_TKARRAY% points into %TOKENARRAY% at the    *
+; *    current token, %TOP_TKARRAY% is the last location          *
+; *    in TARRAY that has a valid token.                          *
+; *    %TOKENARRAY% is necessary because TOKEN-SCAN destroys      *
+; *    the input stream, and the FOL parser, being top down,      *
+; *    needs to back up.                                          *
+; *    The routine for accessing %TOKENARRAY% is the function     *
+; *    TOKEN-GET-NEXT which calls TOKEN-SCAN if not enough        *
+; *    tokens have been read.  In addition %TK% and %TKT% are     *
+; *    LISP accessible atoms which contain the last read          *
+; *    token and its type respectively.                           *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFLAM FLUSH ()
+ (SEQ
+  (SETQ %NEXT_POS%  0)
+  (SETQ %NEXT_CHAR% MTL)
+  (SETQ %TOP_SCANBUF% 0)
+  (SETQ %TOP_TKARRAY% 0)
+  (SETQ %CURR_TOP_TKARRAY% 0)
+  (SETQ %TK% MTL)
+  (SETQ %TKT% MTL)))
+
+
+(DEFLAM TOKEN-GET-NEXT ()
+ (IF (LT %CURR_TOP_TKARRAY% %TOP_TKARRAY%)
+  (SEQ
+   (SETQ %CURR_TOP_TKARRAY% (ADD1 %CURR_TOP_TKARRAY%))
+   (GETTUP %TOKENARRAY% %CURR_TOP_TKARRAY%))
+  (IF (GE %TOP_TKARRAY% (TOKENARRAY-DIMENSION))
+   (BREAK "TOKEN-GET-NEXT: %TOP_TKARRAY% out of range !!! ")
+   (SEQ
+    (SETTUP %TOKENARRAY% (ADD1 %TOP_TKARRAY%) (TOKEN-SCAN))
+    (SETQ %TOP_TKARRAY% (ADD1 %TOP_TKARRAY%))
+    (TOKEN-GET-NEXT)))))
+
+;
+;*************************************************************
+;*                                                           *
+;*                                                           *
+;* Scanner user interface                                    *
+;*                                                           *
+;*                                                           *
+;* SCANSTATUS-GET                                            *
+;*   Returns the pointer to the next element to be scanned.  *
+;*                                                           *
+;* SCANSTATUS-RESTORE                                        *
+;*   Restores the pointer to value of its argument.          *
+;*                                                           *
+;* TOKEN                                                     *
+;*   It scans the next token, it sets %TK% and %TKT%         *
+;*                                                           *
+;* CUR-TOKEN                                                 *
+;*   It returns %TK%, namely the next to parse token         *
+;*                                                           *
+;* CUR-TOKENTYP                                              *
+;*   It returns %TKT%, namely the type of the next to parse  *
+;*   tk                                                      *
+;*                                                           *
+;* NEXT-TOKEN                                                *
+;*   It scans the next token, it returns its argument        *
+;*   (NEXT-TOKEN (CUR-TOKEN)) parses the next token and      *
+;*   returns it                                              *
+;*                                                           *
+;* TK-GET&NTK-PARSE                                          *
+;*   The same as (NEXT-TOKEN (CUR-TOKEN)).                   *
+;*                                                           *
+;* PEEKV N                                                   *
+;*   Directly accesses the nth token without changing the    *
+;*   (it goes ahead up to N, reads and then restores scanner *
+;*    status.                                                *
+;*                                                           *
+;*************************************************************
+
+(DEFSUB SCANSTATUS-GET () %CURR_TOP_TKARRAY%)
+
+(DEFLAM SCANSTATUS-RESTORE (STATUS)
+ (SEQ
+  (SETQ %CURR_TOP_TKARRAY% (SUB1 STATUS))
+  (TOKEN)))
+
+(DEFLAM TOKEN ()
+ (LET ((tk_info (TOKEN-GET-NEXT)))
+  (SEQ
+   (SETQ %TKT% (tk_info-get-type  tk_info))
+   (SETQ %TK%  (tk_info-get-token tk_info)))))
+
+(DEFLAM NEXT-TOKEN      (X) (SEQ (TOKEN) X))  
+(DEFSUB TK-GET&NTK-PARSE () (NEXT-TOKEN %TK%)) 
+
+(DEFSUB CUR-TOKEN () %TK%)
+(DEFSUB CUR-TOKENTYP () %TKT%)
+
+(DEFLAM PEEKV (N)
+ (LET ((STATUS (SCANSTATUS-GET)))
+  (LET ((token (PEEKV1 N)))
+   (SEQ
+    (SCANSTATUS-RESTORE STATUS)
+    token))))
+
+(DEFLAM PEEKV1 (N)
+ (IF (INTEQ N 1) (tk_info-get-token (TOKEN-GET-NEXT))
+  (SEQ
+   (TOKEN-GET-NEXT)
+   (PEEKV1 (SUB1 N)))))
+
+
+;*************************************************************
+;*                                                           *
+;* Basic parsing routines                                    *
+;*                                                           *
+;* TK#                                                       *
+;*   Scans and returns its argument if possible, it aborts   *
+;*   otherwise.                                              *
+;*                                                           *
+;* TKC#                                                      *
+;*   Scans and returns its argument capitalized if possible, *
+;*   it aborts otherwise.                                    *
+;*                                                           *
+;* TK*@                                                      *
+;*   Scans and returns its argument if possible, FALSE       *
+;*   otherwise.                                              *
+;*                                                           *
+;* TKC*@                                                     *
+;*   Scans and returns its argument capitalized if possible, *
+;*   FALSE othewise.                                         *
+;*                                                           *
+;* REQ#                                                      *
+;*   It applies its first argument (a parsing routine).      *
+;*   It aborts if it returns FALSE.                          *
+;*                                                           *
+;* NATNUM@ (#)                                               *
+;*   Scans and returns a natnum if possible, otherwise FALSE *
+;*   (otherwise fails)                                       *
+;*                                                           *
+;* FOLSYM@ (#)                                               *
+;*   Scans and returns a folsym if possible, otherwise FALSE *
+;*   (otherwise fails). A folsym is any sequence of alpha-   *
+;*   numeric characters starting with a character.           *
+;*                                                           *
+;*                                                           *
+;*************************************************************
+
+
+(DEFLAM TK#    (X Y Z)  (IF (EQ %TK% X) (NEXT-TOKEN %TK%) (REMSG2 Y Z)) )
+(DEFLAM TKC#  (X Y)     (LET ((Z (CAPITALIZE %TK%)))
+          (IF (EQ Z X) (NEXT-TOKEN Z) (REMSG1 Y)) ) )
+
+(DEFLAM TK@        (X)  (IF (EQ %TK% X) (NEXT-TOKEN %TK%) FVAL) )
+(DEFLAM TK2@     (X Y)  (IF (EQ %TK% X) (NEXT-TOKEN %TK%) (TK@ Y)) )
+(DEFLAM TK3@   (X Y Z)  (IF (EQ %TK% X) (NEXT-TOKEN %TK%) (TK2@ Y Z)) )
+(DEFLAM TK4@ (X Y Z W)  (IF (EQ %TK% X) (NEXT-TOKEN %TK%) (TK3@ Y Z W)) )
+
+(DEFLAM TKC@        (X)  (LET ((Y (CAPITALIZE %TK%)))
+           (IF (EQ Y X) (NEXT-TOKEN Y) FVAL) ) )
+(DEFLAM TKC2@     (X Y)  (LET ((Z (CAPITALIZE %TK%)))
+           (IF (EQ Z X) (NEXT-TOKEN Z) (TKC@ Y)) ) )
+
+(DEFLAM REQ# (SFUN@ MSG1 MSG2)
+   (LET ((X (APPLY SFUN@ MTL))) (IF (IST X) X (REMSG2 MSG1 MSG2)) ) )
+
+(DEFLAM NATNUM@ ()     (IF (NUM_TKTYPE? %TKT%) (NEXT-TOKEN %TK%) FVAL) )
+(DEFLAM NATNUM# (MSG)  (REQ# (QUOTE NATNUM@) MSG (QUOTE "a <natnum>")) )
+(DEFLAM NATNUM#!()     (REQ# (QUOTE NATNUM@) "The scanner" "a <natnum>"))
+
+(DEFLAM FOLSYM@ ()     (IF (ID_TKTYPE? %TKT%) (NEXT-TOKEN %TK%) FVAL) )
+(DEFLAM FOLSYM# (MSG)  (REQ# (QUOTE FOLSYM@) MSG (QUOTE "an <folsym>")) )
+(DEFLAM FOLSYM#!()     (REQ# (QUOTE FOLSYM@) "The scanner" "A <folsym>"))
+
+
+; 
+;*************************************************************
+;*                                                           *
+;*  primitives for building list scanning functions          *
+;*  lists containing optional commas.                        *
+;*                                                           *
+;*  LISTSCAN!                                                *
+;*     It applies the same parsing FUN (in between commas)   *
+;*     until possible. It allows empty sequences.            *
+;*                                                           *
+;*  LISTSCAN#                                                *
+;*     It applies the first argument (which must succeed     *
+;*     otherwise HGKM-ABORT) and then the second a possibly empty * 
+;*     number of times.                                      *
+;*                                                           *
+;*  *REP#                                                    *
+;*     Scanning with repetitions,                            *
+;*                                                           *
+;*************************************************************
+
+(DEFLAM LISTSCAN! (F MSG1)
+  (LET ((X (APPLY F MTL)))
+  (IFN (IST X) FVAL (LISTSCN F F (LIST X) MSG1)) ) )
+
+(DEFLAM LISTSCAN# (F1 F2 MSG1 MSG2)
+  (LET ((X (APPLY F1 MTL)))
+  (IFN (IST X) (REMSG1 MSG1) (LISTSCN F1 F2 (LIST X) MSG2)) ) )
+
+(DEFLAM LISTSCN (F1 F2 Y MSG)
+  (IF  (IST (TK@ COMMA)) 
+       (LET ((X (APPLY F1 MTL)))
+       (IF (IST X) 
+           (LISTSCN F1 F2 (NCONC Y (LIST X)) MSG) 
+           (GERRM0 MSG " is needed after the comma.") ) )
+       (LET ((X (APPLY F2 MTL)))
+       (IFN (IST X) Y (LISTSCN F1 F2 (NCONC Y (LIST X)) MSG))) ) )
+
+(DEFLAM NATNUMREP# () (LISTSCAN# 'NATNUM#! 'NATNUM@ "A number" "number"))
+(DEFLAM FOLSYMREP# () (LISTSCAN# 'FOLSYM#! 'FOLSYM@  "A <folsym>" "<folsym>") )

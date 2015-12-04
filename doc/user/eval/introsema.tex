@@ -1,0 +1,253 @@
+\section{Semantic simplification}
+\label{sec-comp}
+
+The subsections \ref{sec-ss-intro}, \ref{sec-ss-model} and \ref{sec-ss-repr} 
+of this section have been taken from \cite{rww3}.
+
+
+\subsection{Introduction}
+\label{sec-ss-intro}
+
+{\GF} is intended to express a variety of methods of human reasoning.
+Though the word "reasoning" usually connotes a logical deductive process of 
+using facts and assertions to obtain conclusions, much of human intelligence 
+relies more upon observation than upon deduction.
+We look at a book. The book is seen to be "green", as an immediate observation,
+not as a deduction involving, say, analysis of wavelengths of light and 
+sensory receptors  in the eye. Similarly, humans cross streets without 
+conscious analysis of the traffic flow, add numbers without resorting to basic
+set theory, and play chess without considering each move in terms of the 
+geometry of the board. 
+
+Any system which hopes to express a variety of reasoning processes, therefore 
+needs a method of doing purely computational tasks.
+In {\GF}, the {\bf semantic interpretation mechanism}, which provides this 
+ability, consists of two parts:
+\begin{itemize}
+\item {\GF}'s {\bf semantic attachment mechanism} permits the user to define a
+      ``correspondence'' between the various constants (function symbols,
+      predicate constants, individual constants) of the language and
+      corresponding objects of the programming language {\HG}.
+\item facts about the {\HG} structure can be used directly in the proof
+      via the {\bf semantic simplification mechanism}, eliminating the 
+      necessity of a possibly complicated deduction.
+\end{itemize}
+For example, obvious attachments to the function symbol $+$ and to the 
+individual constants $17$, $34$, $51$ would allow to conclude $17+34=51$ in 
+one step, instead of computing $34$ successors of $17$.
+In order to explain this more clearly we first give an informal account of the 
+technical details.
+
+\subsection{``Intended'' and ``computational'' models}
+\label{sec-ss-model}
+
+The declarations made by a {\GF} user specify a first order language 
+$L=\langle P,F,C\rangle$, where $P$ is the list of {\predconst}s, $F$ the list 
+of {\funconst}s, and $C$ the list of {\indconst}s (see section \ref{sec-decl}).
+
+A model for such a language is a structure $M=\langle D,P',F',C'\rangle$ where
+$D$ is a set and $P'$,$F'$ and $C'$ are lists of predicates over $D$, functions 
+over $D$, and individuals of $D$ such that the arities of the symbols in $P$ and 
+$F$ match the arities of the predicates and functions at the correspondent 
+positions in $P'$ and $F'$.
+The idea here is that the language $L$ is used for making statements about 
+structures such as $M$ (what we call {\bf ``intended'' or ``standard'' model}). 
+In particular, when the user writes down a theory in {\GF}, he generally has 
+in mind some particular model for his language, and the axioms of his theory 
+are intended to express the properties of this particular model.
+
+The fact that {\GF} is really a {\HG} program running in a LISP 
+environment, inspires the following idea: some parts of a model for a {\GF} 
+language can often be expressed computationally in the sense that the elements 
+of $D$ can be represented by s-expressions, and the predicates and functions 
+on $D$ can be represented by {\HG} functions and predicates.
+It should then be possible to use the computational representation to aid 
+{\GF} deductions concerning the model.
+For example, suppose the theory we are interested in, is first order number 
+theory, and the model that we have in mind is the set of natural numbers 
+together with the operations of successor, addition and multiplication.
+The numerals have natural representations as {\HG} numbers, and the 
+functions in question have {\tt PLUS1}, {\tt PLUS}, {\tt TIMES} as their {\HG}
+counterparts.
+As mentioned above it should then be possible to use the computational 
+representation to provide swift deductions of such statements as $25+37=52$.
+
+The semantic attachment mechanism in {\GF} allows the user to set up these 
+computational representations of his subject matter, and the semantic
+interpretation mechanism allows to use these representations to aid deduction 
+in {\GF}.
+
+With the above overview in mind, let us proceed to the details.
+
+Given a language $L=\langle P,F,C\rangle$ and a model 
+$M=\langle D,P',F',C'\rangle$, we define an interpretation function $I$.
+For each {\term} $t$ of $L$ in which no free variable occurs, $I(t)$ is the 
+individual in $D$ which $t$ denotes.
+In particular we define the interpretation of an {\indconst} $c$ to be the 
+individual $c'$ in $D$, and where $f$ is a {\funconst}, and the interpretation 
+of {\term} $t_1,\ldots,t_n$ are defined, we inductively define the 
+interpretation of the {\term} 
+$f(t_1,\ldots,t_n)$ to be $f'(I(t_1),\ldots,I(t_n))$.
+We may extend the interpretation function to formulas (again without free 
+variables) over $L$ by defining $I(w)$ to be the object {\tt TRUE} exactly 
+when the formula $w$ is true of the model (for a technical definition 
+see \cite{kleene2}).
+
+When $f'$ is the function in a model corresponding to the {\funconst} $f$ in 
+$L$, we will also say that $f'$ is the interpretation of $f$, and similarly 
+for predconsts.
+
+Now we define a {\bf computational model} to be an object
+$K=\langle D',P'',F'',C''\rangle$, where it is understood that $D'$ is a set
+of s-expressions, and $P''$, $F''$ and $C''$ are lists of {\HG} predicates,
+functions and s-expressions respectively, with the appropriate restrictions on 
+arities.
+
+From the extensional point of view, a computational model is for a language
+just like a set-theoretic model for a language, except that we do not require
+that the functions and predicates concerned be total; that is functions and
+predicates may be undefined (non-terminating) for some elements
+of $D'$.
+
+We define an {\bf attachment map} $att$ from terms and formulas of $L$ into
+$K$ in a manner exactly analogous to the definition of $I$ given above.
+
+We have one last map to worry about, the map {\bf $rep$} which gives, for each
+object in the domain $D'$ of the computational model $K$, the object it
+represents in the domain $D$ of the model $M$.
+
+Now we may define precisely the meaning of attachments made in the {\GF}
+system: the attachment of an {\indconst} $c$ to an s-expression $c''$
+signifies that $c$ and $c''$ represent the same object in the model, that is
+to say, $I(c)=rep(c'')$.
+Similarly, the attachment of a {\funconst} $f$ to a {\HG} function $f''$
+signifies that the result of applying $f''$ to an s-expression $c''$ which
+represents an individual $c'$ in the model, is a s-expression which represents
+the individual $f'(c')$ in the model.
+The analogous statements hold for attachments to {\predconst}s.
+
+The above conditions are equivalent to the statement that the 
+diagram in figure \ref{fig-ss} commutes.
+
+\begin{figure}[htb]
+\begin{center}
+\setlength{\unitlength}{0.0125in}%
+\begin{picture}(288,260)(92,540)
+\thicklines
+\put(340,580){\oval(80,80)}
+\put(160,580){\oval(80,80)}
+\put(160,760){\oval(80,80)}
+\put(200,580){\vector( 1, 0){100}}
+\put(194,726){\vector( 1,-1){112}}
+\put(160,720){\vector( 0,-1){100}}
+\put(340,559){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm model}}}
+\put(340,577){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm of intended}}}
+\put(340,595){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm Domain }}}
+\put(160,562){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm sexpr}}}
+\put(160,580){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm {\HG}}}}
+\put(160,752){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm Terms}}}
+\put(160,770){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm {\GF}}}}
+\put(250,560){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm Representation}}}
+\put(280,660){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm I}}}
+\put(120,660){\makebox(0,0)[b]{\raisebox{0pt}[0pt][0pt]{\twlrm attachment}}}
+\end{picture}
+\end{center}
+\label{fig-ss}
+\caption{intended model - computational model mappings}
+\end{figure}
+
+
+\subsection{Multiple representation functions}
+\label{sec-ss-repr} 
+
+The semantic attachment mechanism allows several representation of the model 
+by {\HG} s-expressions to be in force at the same time.
+We will seek to motivate this aspect of the semantic attachment mechanism 
+by means of an example: consider a theory of chess with includes a general 
+theory of lists as a subtheory (this subtheory would be applied in arguments 
+about lists of pieces, lists of game positions and so on).
+The intended model of such a theory includes at least two kinds of objects: 
+chess positions and lists.
+Lists and positions form disjoint domains in the model, though it may be 
+possible to build lists of chess position.
+If we are going to build a computational representation of this model, we will
+need to represent positions and lists by s-expressions in such a way that no 
+s-expression represents both a list and a position.
+The natural representation of a chess position as an s-expression is as a 
+list of eight lists, each of which is a list of eight piece names (one of 
+which is "empty" or some such), and the natural representation of lists as 
+s-expressions is the direct representation as {\HG} lists.
+This representation scheme cannot be used, since it will not be possible to 
+decide whether a given list of eight lists of eight piece names represents a 
+chess board or a list of list of pieces. 
+That is to say, the map $rep$ will not be well defined. 
+It is of course not hard to solve this problem by the use of some slightly 
+fancier coding, but a general solution to the problem of disambiguating 
+computational representations is available.
+Suppose that the intended model of a {\GF} theory $T$ includes the disjoint 
+domains $D_1,\ldots,D_n$, and suppose further that we have a different coding 
+function for each of these domains.
+That is we have $n$ different {\bf representation functions} $rep_i$ which map 
+the domain of s-expressions into domain of the model, with the property that 
+the range of $rep_i$ is a subset of $D_i$.
+Then it is possible that a single s-expression codes two different objects 
+$d_i$, $d_j$ in the model, but as long as we know what coding function $rep_i$
+to apply, there is no ambiguity. 
+
+
+Then the definition of the $att$ map may be extended to take account of the 
+possibility of multiple representations in the following way: the domain of 
+the $att$ map will still consist of the set of {\GF} terms and formulas, but
+its range will now lie in the set of pairs of the form $\langle$ representation
+function, s-expression $\rangle$.
+
+The soundness condition for the $att$ map is now that, when 
+$att(t)=\langle rep, c'' \rangle$, we have $rep(c'')=I(t)$.
+In order to specify this new more complicated $att$ map, the user of the {\GF}
+system must give representation information concerning his attachments.
+
+Specifically, each representation function must be given a name and when the 
+attachment to an {\indconst} is given, the name of the associate 
+representation function must be given as well.
+Similarly, when the attachment $f''$ to a {\funconst} $f$ is specified, the 
+(names of the) representations of its arguments and of the value it returns 
+must be given, and when the attachment to a {\predconst} is specified, the 
+representations of its arguments must also be specified.
+
+The significance of specifying that the representations of the arguments and 
+value of the attachment $f''$ to a {\funconst} $f$ are 
+$R_1,\ldots,R_n$ and $R_{n+1}$ respectively, is that 
+$R_{n+1}(f''(c''_1,\ldots,c''_n))=f'(R_1(c''_1),\ldots,R_n(c''_n))$ 
+where $f'$ is the interpretation of $f$, whenever $c''_1$,..,$c''_n$ are 
+s-expressions in the domains of $R_1$,..,$R_n$.
+The same holds for attachments to {\predconst}, mutatis mutandis.
+Given the attachments with representation information for individual symbols,
+the map $att$ on the domain of terms and formulas is defined inductively in 
+the obvious way: if $f$ is attached to $f''$ and the declared representation 
+of the arguments of $f''$ are $R_1,\ldots,R_n$ and terms $t_1$,..,$t_n$ have 
+attachments with representations $R_1$,..,$R_n$ then 
+$att(f(t_1,\ldots,t_n))=f''(att(t_1),\ldots,att(t_n))$.
+Under this definition the diagram above commutes for each individual 
+representation function.
+
+Note that if the representation of the attachment of any term $t_i$ does not 
+match that of its place in the argument list, then 
+$f''(att(t_1),\ldots,att(t_n))$ cannot be expected to represent the 
+interpretation of $f(t_1,\ldots,t_n)$.
+The reason for this is that the correctness of a computation which purports to
+represent a mathematical function depends on the representation of the 
+arguments of the function as data objects.
+For example, no one would expect a floating point multiplication algorithm to 
+behave correctly if its arguments were encoded as integers rather than 
+floating point numbers.
+
+Finally, note that the attachment map, as well as the s-expressions which 
+represent functions, may be partial.
+The user is never required to provide an attachment for any {\GF} symbol, nor is
+any attachment to a {\funconst} or {\predconst} required to be complete.
+
+The semantic simplification mechanism will use whatever information is 
+available and if there will be insufficient information, it will return this 
+fact to the user. 
+
+

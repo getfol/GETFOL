@@ -1,0 +1,30 @@
+\gfcommand{term}{{\em term} verifier}
+\index{term}
+
+\gfsyntax{
+   term \ARG{term};
+}
+
+\gfdescription{
+   {\tt term}, {\tt awff} and {\tt wff} verify that their arguments
+   are terms, atomic formulas and well formed formulas respectively.
+   An error is signaled if an expression of the correct
+   syntactic category is not provided.
+}
+
+\gfrecap{
+Verifies whether the term `term' is well formed.
+}
+
+\gfexample+
+   ***** declare funconst f 1;
+   ***** declare funconst g 2;
+   ***** declare indvar x y;
+   ...
+   
+   ***** term g(f(x),y);
+   g(f(x),y) is a <term>.
+
+   ***** term g(x);
+   g expects 2 arguments
++

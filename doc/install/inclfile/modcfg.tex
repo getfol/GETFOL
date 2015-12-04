@@ -1,0 +1,30 @@
+\begin{boxverbatim}
+\begin{verbatim}
+;************************************************************************;
+;                                                                        ;
+;                    "DECIDE" MODULE CONFIGURATION FILE                  ;
+;                                                                        ;
+;************************************************************************;
+
+(MODULE-INIT 'DECIDE)
+(MODULE-SET-NAME 'DECIDE "DECIDE")
+(MODULE-SET-SRCDIR 'DECIDE (PATHNAME-CONCAT %HOME-DIR% "fol" "decide"))
+(MODULE-SET-OBJDIR 'DECIDE (PATHNAME-CONCAT %HOME-DIR% "o"))
+(MODULE-SET-MODE 'DECIDE 'COMPILED)
+
+; adding the files to the module
+;
+(MODULE-ADD-FILE 'DECIDE "vdecide.cl"   ""         'INTERPRETED)
+(MODULE-ADD-FILE 'DECIDE "decide.hgk"   "decideh"  'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "taut.hgk"     "tauth"    'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "tauteq.hgk"   "tauteqh"  'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "monadic.hgk"  "monadich" 'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "cmdecide.fol" "cmdecidf" 'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "decide.fol"   "decidef"  'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "ptaut.fol"    "ptautf"   'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "taut.fol"     "tautf"    'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "tauteq.fol"   "tauteqf"  'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "monadic.fol"  "monadicf" 'COMPILED)
+(MODULE-ADD-FILE 'DECIDE "idecide.fol"  ""         'INTERPRETED)
+\end{verbatim}
+\end{boxverbatim}

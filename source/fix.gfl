@@ -1,0 +1,9 @@
+;; PATCH (adolfo@frege.mrg.dist.unige.it)
+;; FACT@ and the context module assume that definitions are installed.
+;; Since definitions are not installed at the moment, the following functions
+;; have been defined to keep changes to the code at a minimum.
+
+(DEFLAM DEFNREF@ () (NOP))
+(DEFLAM defns-del () (NOP))
+(DEFLAM defns-set (DEFNS) (NOP))
+(DEFLAM defns-get () MTL)

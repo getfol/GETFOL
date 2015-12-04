@@ -1,0 +1,45 @@
+\gfcommand{reset}{{\GF} reset}
+\index{reset}
+
+\gfsyntax{
+  reset;
+}
+
+\gfdescription{
+  Resets the whole {\GF} system.
+}
+
+\gfrecap{
+  Resets the whole GETFOL system.
+}
+
+\gfexample+
+   ***** namecontext c; nameproof p;
+   You have named the current context: c
+   You have named the current proof: p
+   
+   ***** show whereami;
+   You are now using context: c
+   You are now using the proof: p
+   
+   ***** declare sentconst A;
+   A has been declared to be a Sentconst
+   ***** assume A;
+   1   A     (1)
+   ***** show proof;
+   1   A     (1)
+   ***** makecontext c1;
+   You have created the empty context: c1
+   ***** switchcontext c1;
+   You are now using context: c1
+   You are switching to a proof with no name.
+   
+   ***** reset;
+   Resetting the whole GETFOL-system
+   
+   ***** show whereami;
+   You are now using an unnamed context.
+   You are now using an unnamed proof.
+   
+   ***** show proof;
++

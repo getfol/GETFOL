@@ -1,0 +1,120 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:29:19 MET 1993
+;;
+;; This GETFOL file (termif.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;************************************************************************
+;*                                                                      *
+;*                        TERMIF SUBSTITUTION                           * 
+;*                                                                      *
+;* These routines are useful to perform rewriting of TERMIFs.           * 
+;* TERMIFs are rewritten exploiting the following rule :                *
+;*                                                                      *
+;*     P(...,trmif (wff trm1 trm2),...) =>                              *
+;*              if wff then P(...,trm1,...) else P(...,trm2,...)        *
+;*                                                                      *
+;* If two termifs are found with congruent wffs then they are           *
+;* substituted by means of a single step of rewriting :                 *	
+;*                                                                      *
+;*     P(trmif (wffa trm1 trm2),....,trmif (wffb trm3 trm4)) =>         *
+;*              if wffa then P(trm1,....,trm3) else P(trm2,...,trm4)    *
+;*                                                                      *
+;*     where (EQUALEXP wffa wffb) = TRUE ;                              *
+;*                                                                      *
+;* (termif-search term_list)                                            *
+;*    this function returns the first trmif found scanning term_list),  *
+;*    MTL if no termif is found.                                        *
+;* (termif-subst pred if_term term)                                     *
+;* (termif-subst* term_list cond THENFLAG)                              *
+;*    these functions substitute with term every occurrence of termifs  *
+;*    in pred whose ifof is congruent with (ifof if_term).              *
+;* (termif-rewrite pred)                                                *
+;*    it returns atomic formula pred rewriting every occurrence of      *
+;*    termif. If there aren't termif occurrences, termif-rewrite        *
+;*    returns fail.                                                     *
+;*                                                                      *
+;* These routines are called by :                                       *
+;*  (tautren wff) (file tautren.fol) and (nnf-rewrite wff) (nnf.fol)    *
+;*                                                                      *
+;************************************************************************
+
+(DEFLAM termif-search (term_list)
+ (IF (MTL? term_list) MTL
+  (LET ((first_trm (FIRST term_list)))
+   (IF (TERMIF first_trm) first_trm
+    (IF (FUNAPPL first_trm)
+     (termif-search (funappl-get-args first_trm)) 
+     (termif-search (REST term_list)))))))
+
+
+(DEFLAM termif-subst (pred cond THENFLAG)
+ (predappl-mak (predappl-get-pred pred) 
+               (termif-subst* (predappl-get-args pred) cond THENFLAG)))  
+
+(DEFLAM termif-subst* (term_list cond THENFLAG)
+ (IF (MTL? term_list) MTL
+  (LET ((first_trm (FIRST term_list)))
+   (IF (AND (TERMIF first_trm)
+            (EQUALEXP (ifof first_trm) cond)) 
+    (LCONS (IF (IST THENFLAG) (thenof first_trm) (elseof first_trm))
+           (termif-subst* (REST term_list) cond THENFLAG)) 
+    (IF (FUNAPPL first_trm)
+     (LCONS (funappl-mak (funappl-get-fun first_trm)
+                         (termif-subst* (funappl-get-args first_trm)
+                                        cond THENFLAG))
+            (termif-subst* (REST term_list) cond THENFLAG))
+     (LCONS first_trm (termif-subst* (REST term_list)
+                                     cond THENFLAG))))))) 
+
+(DEFLAM termif-rewrite (pred)
+ (LET ((termif-found (termif-search (predappl-get-args pred)))) 
+  (IF (MTL? termif-found) (mk-fail)
+   (mkwffif (ifof termif-found)
+            (substexp termif-found (thenof termif-found) pred)
+            (substexp termif-found (elseof termif-found) pred)))))
+
+
+
+

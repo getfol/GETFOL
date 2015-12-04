@@ -1,0 +1,381 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:23:24 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: faax.rp
+;; Date: Wed Oct 20 10:47:19 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; ***********************************************************************
+; *                                                                     *
+; *  input and printing of axioms                                       *
+; *                                                                     *
+; ***********************************************************************
+;
+;axiom references
+; ***********************************************************************
+; *                                                                     *
+; *  SYNTAX                                                             *
+; *   (AXREF@)                                                          *
+; *   (SUBSTAX@)                                                        *
+; *                                                                     *
+; *                                                                     *
+; *  DESCRIPTION                                                        *
+; *   AXREF@ parses:                                                    *
+; *    AXNAM                                                            *
+; *    OPT[ ALT[ SENTPAR | PREDPAR | FUNPAR] :                          *
+; *         OPT[ lambda REP[ <var> OPT[ , ] ] . ]                       *
+; *    ALT[ WFF | TERM ]                                                *
+; *                                                                     *
+; *   Of course to a SENTPAR or a PREDPAR must correspond a WFF and to a*
+; *   FUNPAR a  TERM                                                    *
+; *   The idea of AXREF@ is that any axiom that contains a parameter    *
+; *   is to be considered an axiom schema                               *
+; *   (see Mendelson and Kleene (Introduction to Metamatematics) for    *
+; *   the proof of the soundness and completness                        *
+; *   of the approach). Each use of this axiom can so be instantiated.  *
+; *   The PREDPAR (or FUNPAR) can be assigned any WFF (TERM) whose number*
+; *   of (lambda) vars exceeds its arity (if this does not happen we    *
+; *   have error). The extra lambda vars act as universally generalized *
+; *   parameters of the entire axiom. The other vars get converted on   *
+; *   substitution.                                                     *
+; *                                                                     *
+; *  NOTES                                                              *
+; *   There is a very interesting problem. Let's suppose we have the    *
+; *   following axiom "ax1 : q(a,b)", where q is a predpar and and b    *
+; *   indvars. Now let's suppose we want to make the following          *
+; *   substitution: "[q: lambda n a . n>a]". Since the substitution is  *
+; *   sequential we get b>b (try it!) . Maybe it could be more          *
+; *   interesting (or sound) obtaining a>b (parallel substitution).     *
+; *                                                                     *
+; *   Note that if the axiom is actually a theorem (defined to be a     *
+; *   theorem with the FOL command THEOREM) the substitution cannot be  *
+; *   made (in FOL we can have only axiom schemas but NOT theorem       *
+; *   schemas).                                                         *
+; *                                                                     *
+; *                                                                     *
+; ***********************************************************************
+;
+; ***********************************************************************
+; * SYNTAX                                                              *
+; *  AXREF@ ()                                                          *
+; *                                                                     *
+; * NOTES                                                               *
+; *  AXREF parses an axiom label and a list of instantiation expression.*
+; *  An instantiation expression is composed by a parameter a colon and *
+; *  a wff or a term.                                                   *
+; *  If succeeds AXREF returns a fact that is the instantiation of the  *
+; *  axiom by the instantiation expressions.                            *
+; *                                                                     *
+; ***********************************************************************
+
+
+(DEFLAM AXREF@ ()
+ (LET ((S (SCANSTATUS-GET)))
+ (LET ((AXLABEL (FOLSYM@)))
+  (IF (ISF AXLABEL) FVAL
+   (LET ((AXIOM (axioms-get-axiom AXLABEL) ))
+   (IF (ISF AXIOM) (SEQ (SCANSTATUS-RESTORE S) FVAL)
+    (LET ((WTSUBSTREP (WTSUBSTREP@) ))
+    (IF (ISF WTSUBSTREP)
+     (fact-mak AXLABEL (axiom-get-wff AXIOM) Emptydeplist
+          (reason-mak 'AXIOM (ras1-mak (axiom_ra-mak AXIOM))))
+     (fact-mak AXLABEL
+        (wfftrmsubst (axiom-get-wff AXIOM) WTSUBSTREP MTL)
+   Emptydeplist
+   (reason-mak 'AXIOMINSTANTIATION
+          (ras2-mak (axiomschema_ra-mak AXIOM)
+               (wtsubstrep_ra-mak WTSUBSTREP))))))))))))
+
+
+; ***********************************************************************
+; * (WTSUBSTREP@)                                                       *
+; * (WTSUBST@)  	                                                *
+; * (TSUBST@)                                                           *
+; * (WSUBST@)                                                           *
+; *                                                                     *
+; * WTSUBSTREP@ parses a sequence of substitution expressions, and      *
+; * returns the list of substitutions.                                  *
+; *             					        	*
+; * WTSUBST@ parses a substitution expression and returns the  	        *
+; * corresponding substitution.	       	                                *
+; *                                                                     *
+; * TSUBST@ parses a substitution expression for a <funpar>, i.e.      	*
+; * the sequence:                                                       *
+; *                                                                     *
+; *       <funpar> : lambda <indvar> ... <indvar> . <term>              *
+; *                                                                     *
+; * WSUBST@ parses a substitution expression for a <predpar> or an     	*
+; * <sentpar>, i.e. one of the sequence:                                *
+; *                                                                     *
+; *      <predpar> : lambda <indvar> ... <indvar> . <wff>               *
+; *      <sentpar> : lambda <indvar> ... <indvar> . <wff>               * 
+; *                                                                     *
+; *                                                                     *
+; ***********************************************************************
+
+(DEFLAM WTSUBSTREP@ ()
+ (LISTSCAN! 'WTSUBST@ "<predpar> or a <funpar>"))
+
+(DEFLAM WTSUBST@ ()
+ (LET ((TSUBST (TSUBST@)))
+  (IF (IST TSUBST) TSUBST (WSUBST@))))
+
+(DEFLAM TSUBST@ ()
+ (LET ((FUNPAR (FUNPAR@)))
+  (IF (ISF FUNPAR) FVAL
+   (LET ((LAMBDATERM (LAMBDATERM#)))
+    (wtsubst-mak FUNPAR LAMBDATERM)))))
+
+(DEFLAM WSUBST@ ()
+ (LET ((WFFPAR (SENTPAR_OR_PREDPAR@)))
+  (IF (ISF WFFPAR) FVAL
+   (wtsubst-mak WFFPAR (LAMBDAWFF#)))))
+
+; ***********************************************************************
+; *                                                                     *
+; * (SENTPAR_OR_PREDPAR@)                                               *
+; *                                                                     *
+; *  SENTPAR_OR_PREDPAR@ parses a sentential parameter <sentpar> or a   *
+; *  predicative parameter <predpar>.                                   *
+; *                                                                     *
+; ***********************************************************************
+
+(DEFLAM SENTPAR_OR_PREDPAR@ ()
+ (OBJ*@ (LIST (sentpar-ls) (predpar-ls))))
+
+
+; ***********************************************************************
+; *                                                                     *
+; * (LAMBDATERM#)                                                       *
+; * (LAMBDAWFF#)                                                        *
+; *                                                                     *
+; * LAMBDATERM# parses a <term> preceeded by a "lambda", a list of      *
+; *   <indvar>s  and a period. It returns a lambda structure that       *
+; *   contains a list of variables and the term.                        *     
+; *                                                                     * 
+; * LAMBDAWFF# parses a <wff> optionally preceeded by a "lambda",       *
+; *   a list of <indvar>s  and a period. It returns a lambda            *
+; *   structure that contains a list of variables (the empty list if    *
+; *   the "lambda" is not parsed) and the <wff>.                        *
+; *                                                                     *
+; ***********************************************************************
+
+(DEFLAM LAMBDATERM# ()
+ (SEQ
+  (TK# COLON   "A substitution" "a colon ")
+  (TK# 'lambda "A lambda expression" "a lambda")
+  (LET ((VARS (INDVARREP#) ))
+   (SEQ
+    (TK# DOT  "A lambda expression" "a period")
+    (LET ((TERM (TERM#)))
+     (lambda-mak VARS TERM))))))
+
+(DEFLAM LAMBDAWFF# ()
+ (SEQ
+  (TK# COLON   "A substitution list" "a colon ")
+  (LET ((LAMBDA (TK@ 'lambda)))
+   (IF (IST LAMBDA)
+    (LET ((VARS (INDVARREP#)))
+     (SEQ)
+      (TK# DOT  "A lambda expression" "a period")
+      (lambda-mak VARS (WFF#)))
+    (lambda-mak MTL (WFF#))))))
+
+
+; ***********************************************************************
+; *                                                                     *
+; * (lambda-mak <indvar-list> <exp>)                                    *
+; * (wtsubst-mak <parsym> <lambda>)                                     *
+; *                                                                     *
+; * lambda-mak: returns the list of its arguments, that is the lambda   *
+; *   structure composed of them.                                       *
+; *                                                                     *
+; * wtsubst-mak: returns the list of its argurmets, that is the         *
+; *   structure composed of them                                        *
+; *                                                                     *
+; ***********************************************************************
+(DEFLAM lambda-mak (VARS EXP)
+ (CONS VARS EXP))
+
+(DEFLAM wtsubst-mak (PAR LAMBDA)
+ (CONS PAR LAMBDA))
+
+;substitution routines for axioms
+; ***********************************************************************
+; *                                                                     *
+; *  SYNTAX                                                             *
+; *   (wfftrmsubst wff SUBSTAX VARS)                                    *
+; *   (wfftrmsubst1 wtpar wfftrm wff VARS)                              *
+; *   (wtsubst1 wfftrm VARS ARGS)                                       *
+; *                                                                     *
+; *  NOTES                                                              *
+; *   wfftrmsubst1 substitutes the parsed wff or term in the predpar.   *
+; *   It does the SUBTRACT because the vars which come from the lambda  *
+; *   are mute and must be substituted by those which are arguments of  *
+; *   the APPLPAR.                                                      *
+; *   wtsubst1 substitutes in wfftrm to any var in VARS the relative    *
+; *   var (of APPLPAR) in wff. The lenght of vars is equal to the       *
+; *   number of the args of wtpar (for how VARS has been constructed).  *
+; *   What must be done is to get wfftrm and substitute it to wtpar     *
+; *   after having substituted all its vars with those which are        *
+; *   arguments of wtpar in wff (this is why a part of the wff gets     *
+; *   passed to this function and called ARGS). ARGS results to be a    *
+; *   pair of pairs where the fits element of the pair is the new       *
+; *   variable which is to be substituted in wfftrm.                    *
+; *   Note that, implementatively, in wtsubst1 I stop the recursion on  *
+; *   (CDR VARS) since ARGS is not a list but a pair of pairs.          *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM wfftrmsubst (wff SUBSTAX BOUNDVARS)
+ (IF (MTL? SUBSTAX) (mkforalls wff (REVERSE BOUNDVARS))
+  (LET ((wtparsub (CAR SUBSTAX) ))
+  (LET ((wtpar    (wtparsub-get-wtpar  wtparsub))
+        (wfftrm   (wtparsub-get-wfftrm wtparsub))
+        (VARS     (wtparsub-get-vars   wtparsub)) )
+  (IF (SENTPAR wtpar)
+   (wfftrmsubst (substexp wtpar wfftrm wff)
+                (CDR SUBSTAX) (UNION VARS BOUNDVARS))
+   (LET ((ARITY (arity wtpar) ))
+   (IF (GT ARITY (LENGTH VARS))
+     (FERRM0 ": There are not enough lambda vars")
+     (wfftrmsubst (wfftrmsubst1 wtpar wfftrm wff (PRELIST VARS ARITY))
+                  (CDR SUBSTAX) (UNION (SUFLIST VARS ARITY) BOUNDVARS))
+    )) ) )) ) )
+
+;making multiple foralls
+(DEFLAM mkforalls (wff INDVARS)
+     (IF (MTL? INDVARS) wff
+         (mkforalls (mkforall (CAR INDVARS) wff) (CDR INDVARS))) )
+
+
+(DEFLAM wfftrmsubst1 (wtpar wfftrm wff VARS)
+ (IF (SIMPLE wff) wff
+  (IF (EQ (appl-get-functor wff) wtpar)
+   (wtsubst1 wfftrm VARS
+               (applywfftrmsubst1 wtpar wfftrm (appl-get-args wff) VARS))
+   (IF (QUANTWFF wff)
+    (LET ((bvar (bvarof wff) ))
+     (IF (IS-FREE1 bvar wfftrm VARS)
+      (LET ((newlab (newlabel-mak (outnam bvar))))
+       (LET ((newvar (indsym-declare 'Indvar newlab (sort bvar)
+                      (indsym_sact-mak newlab))))
+        (LET ((newwff (substexp bvar newvar (matrix wff)) ))
+         (LET ((newwff (wfftrmsubst1 wtpar wfftrm newwff VARS) ))
+          (mkquant (quantof wff) newvar newwff)))))
+      (mkquant (quantof wff) bvar
+                      (wfftrmsubst1 wtpar wfftrm (matrix wff) VARS))))
+    (appl-mak (appl-get-functor wff)
+              (applywfftrmsubst1 wtpar wfftrm (appl-get-args wff) VARS))))))
+
+(DEFLAM applywfftrmsubst1 (wtpar wfftrm wffstrms VARS)
+   (IF (MTL? wffstrms) MTL
+   (CONS (wfftrmsubst1 wtpar wfftrm (CAR wffstrms) VARS)
+         (applywfftrmsubst1 wtpar wfftrm (CDR wffstrms) VARS) )))
+
+(DEFLAM wtsubst1 (wfftrm VARS ARGS)
+ (IF (MTL? (CDR VARS))
+     (substexp (CAR VARS) (CAR ARGS) wfftrm)
+     (wtsubst1
+      (substexp (CAR VARS) (CAR ARGS) wfftrm)
+           (CDR VARS) (CDR ARGS)) ) )
+
+
+;;; theories
+; ***********************************************************************
+; *                                                                     *
+; *  SYNTAX                                                             *
+; *   (THEORYREF@)                                                      *
+; *   (and_of_axioms THEORY)                                            *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM THEORYREF@ ()
+ (LET ((S (SCANSTATUS-GET)))
+ (LET ((THLABEL (FOLSYM@)))
+  (IF (ISF THLABEL) FVAL
+   (LET ((THEORY (theories-get-theory THLABEL) ))
+     (IF (ISF THEORY) (SEQ (SCANSTATUS-RESTORE S) FVAL)
+       (fact-mak THLABEL
+         (and_of_axioms (theory-get-axlabels THEORY)) Emptydeplist
+	 (reason-mak 'THEORY (ras1-mak (theory_ra-mak THEORY)))
+      )) )) ) ))
+
+(DEFLAM and_of_axioms (AXLABELS)
+  (IF (MTL? (CDR AXLABELS))
+      (axiom-get-wff (axioms-get-axiom (CAR AXLABELS)))
+      (mkand
+        (axiom-get-wff (axioms-get-axiom (CAR AXLABELS)))
+        (and_of_axioms (CDR AXLABELS)) ) ) )
+
+
+;;;
+; ***********************************************************************
+; *                                                                     *
+; *  printing of axioms and theories                                    *
+; *                                                                     *
+; ***********************************************************************
+;
+
+(DEFLAM axiom-print (AXIOM)
+ (SEQ
+  (CRLF)
+  (HGKM-PRINC (axiom-get-label AXIOM))
+  (HGKM-PRINC " : ")
+  (printexp (axiom-get-wff AXIOM))
+  (CRLF) ))
+
+(DEFLAM theorylabel-print (THLABEL)
+  (SEQ
+    (CRLF)
+    (HGKM-PRINC THLABEL)
+    (CRLF) ) )
+

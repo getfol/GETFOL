@@ -1,0 +1,202 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: scan.hgk
+;; Date: Wed Oct 20 10:48:16 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+; FOL scanner arrays definition. FOL has only monodimensional 
+; arrays (tuples)
+;
+; *****************************************************************
+; *                                                               *
+; *    FOL needs three arrays to perform scanning and parsing     *
+; *    These are                                                  *
+; *                                                               *
+; *    %CHRTAB% containing the character types.                   *
+; *                                                               *
+; *    %SCANBUFFER% for storing already read characters and       *
+; *    retrieving and printing them if an error occurs            * 
+; *    Its dimension is given by SCANBUFFER-DIMENSION and its     *
+; *    value fixes an upper-bound to the number of the chars that *
+; *    may be present in the line of a FOL command.               *
+; *                                                               *
+; *    %TOKENARRAY% for storing already scanned tokens            * 
+; *    Its dimension is given by TOKENARRAY-DIMENSION and its     *
+; *    value fixes an upper-bound to the number of the tokens that*
+; *    may be parsified by a FOL parsing routine.                 *
+; *                                                               *
+; *****************************************************************
+;
+(DEFMAC SCANBUFFER-DIMENSION () 3001)
+(DEFMAC TOKENARRAY-DIMENSION () 1501)
+
+;;;  chrtab-init : initializes %CHRTAB% for the scanner
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (chrtab-init <char_type_list> )                          *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      FOL assumes that there is tuple, %CHRTAB%, that will be  *
+; *      used as a dispatch table by the scanner.                 *
+; *      chrtab-init takes a list of the character types and      *
+; *      initializes this array.  The array is of length 128.     *
+; *      If L holds more than 128 characters the last ones are    *
+; *      ignored.                                                 *
+; *      Actually the list in input is ASCIICHR that is defined   *
+; *      in the file asciitab.fol.                                *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB chrtab-init (L)  (chrtab-init1 1 128 L))
+
+(DEFLAM chrtab-init1 (N M L)
+ (IF (OR (MTL? L) (GT N M)) (NOP)
+  (SEQ
+   (SETTUP %CHRTAB% N (CAR L))
+   (chrtab-init1 (ADD1 N) M (CDR L)))))
+
+
+;
+; character types management primitives
+;
+(DEFSUB IGNTYPE?   (TYPE) (EQ TYPE 'IGNCHAR  ))
+(DEFSUB IDTYPE?    (TYPE) (EQ TYPE 'IDCHAR   ))
+(DEFSUB NUMTYPE?   (TYPE) (EQ TYPE 'NUMCHAR  ))
+(DEFSUB DELTYPE?   (TYPE) (EQ TYPE 'DELCHAR  ))
+(DEFSUB IDDELTYPE? (TYPE) (EQ TYPE 'IDDELCHAR))
+(DEFSUB ESCTYPE?   (TYPE) (EQ TYPE 'ESCCHAR  ))
+(DEFSUB SPECTYPE?  (TYPE) (EQ TYPE 'SPECCHAR ))
+
+(DEFSUB CHTYPE-GET (CHAR) (GETTUP %CHRTAB% (ADD1 CHAR)))
+
+
+; scanner "look-ahead" management routines
+;
+; Note that we need to read ahead at most one character, that is,
+; two consecutive pop operations are not allowed. So when a pop operation is
+; performed the character is stored in the global variable %NEXT_CHAR%.
+; The global variable %NEXT_POS% holds the position of the top characther in
+; the line.
+
+(DEFLAM CH-GET-NEXT ()
+ (LET ((CHAR (IFN (MTL? %NEXT_CHAR%)
+              (LET ((TEMP %NEXT_CHAR%))
+               (SEQ (SETQ %NEXT_CHAR% MTL) TEMP))
+              (HGKM-CHI))))
+  (SEQ
+   (SETQ %NEXT_POS% (IFN (INTEQ CHAR TAB) (ADD1 %NEXT_POS%)
+                   (PLUS (DIFFERENCE 8 (REMAINDER %NEXT_POS% 8)) %NEXT_POS%)))
+   (SCANBUF-PUSH CHAR)
+   (IF (INTEQ CHAR LF) (SETQ %NEXT_POS% 0) (NOP))
+   CHAR)))
+
+(DEFLAM CH-RESTORE (ch)
+ (SEQ
+  (SETQ %NEXT_POS% (SUB1 %NEXT_POS%))
+  (SETQ %NEXT_CHAR% ch)
+  (SCANBUF-POP)))
+
+(DEFSUB NEXT_POS-GET () %NEXT_POS%)
+
+(DEFLAM LINE-RESET ()
+ (SEQ
+  (SETQ %NEXT_POS% 0)
+  (SETQ %NEXT_CHAR% MTL)))
+
+
+;
+; Management primitives of Internal Names.
+; Actually this feature is not fully exploited as setintnam is called nowhere.
+;
+(DEFLAM intnam (X) (LET ((P (getintnam X))) (IF (IST P) P X)) )
+(DEFLAM getintnam (X) (GETPROP X (QUOTE INTNAM)))
+(DEFLAM setintnam (X IN) 
+ (SEQ	
+  (SETPROP X IN (QUOTE INTNAM))
+  (SETQ %INTNAMLIST% (CONS (CONS X IN) %INTNAMLIST%)) ) )
+
+; token information management routines.
+;
+(DEFSUB tk_info-mk (TOK TYP) (CONS TOK (CONS TYP MTL)))
+(DEFSUB tk_info-get-token (tk_info) (CAR tk_info))
+(DEFSUB tk_info-get-type (tk_info) (CADR tk_info))
+(DEFSUB tk_info-get-pos (tk_info) (CDDR tk_info))
+(DEFLAM tk_info-update-pos (tk_info pos)
+ (SEQ (SETCDR (CDR tk_info) pos) tk_info))
+
+
+; tokens types management primitives
+;
+(DEFSUB ID_TKTYPE?   (TYPE) (EQ TYPE 'IDTOKEN ))
+(DEFSUB NUM_TKTYPE?  (TYPE) (EQ TYPE 'NUMTOKEN))
+(DEFSUB DEL_TKTYPE?  (TYPE) (EQ TYPE 'DELTOKEN))
+
+;
+; %SCANBUFFER% management routines.
+;
+(DEFLAM SCANBUF-PUSH (CHAR)
+ (SEQ
+  (SETQ %TOP_SCANBUF% (ADD1 %TOP_SCANBUF%))
+  (SETTUP %SCANBUFFER% %TOP_SCANBUF% CHAR)))
+
+(DEFLAM SCANBUF-POP ()
+ (LET ((TOP %TOP_SCANBUF%))
+  (SEQ
+   (SETQ %TOP_SCANBUF% (SUB1 %TOP_SCANBUF%))
+   (GETTUP %SCANBUFFER% TOP))))
+  
+(DEFSUB SCANBUF-GET-TOP () (GETTUP %SCANBUFFER% %TOP_SCANBUF%))
+ 
+(DEFSUB SCANBUF-GET-TOP_POS () %TOP_SCANBUF%)
+ 
+(DEFSUB SCANBUF-FILL () (SCANBUF-FILL1 (CH-GET-NEXT)))
+
+(DEFLAM SCANBUF-FILL1 (CHAR)
+ (IF (OR (INTEQ CHAR CR)
+         (OR (INTEQ CHAR LF)
+             (INTEQ CHAR (SYM-GETCHRFIRST SEMI)))) (NOP)
+  (SCANBUF-FILL1 (CH-GET-NEXT))))

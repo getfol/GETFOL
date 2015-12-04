@@ -1,0 +1,41 @@
+\begin{boxverbatim}
+\begin{verbatim}
+;************************************************************************;
+;                                                                        ;
+;                      FOL SYSTEM CONFIGURATION FILE                     ;
+;                                                                        ;
+;************************************************************************;
+
+(SYS-INIT 'FOL)
+(SYS-SET-NAME 'FOL "FOL")
+(SYS-SET-RELEASE 'FOL "July 1991")
+(SYS-SET-VERSION 'FOL "2")
+(SYS-SET-FIXFILE 'FOL (PATHNAME-CONCAT %HOME-DIR% "fol" "fix.fol"))
+(SYS-SET-DEBUGFILE 'FOL (PATHNAME-CONCAT %HOME-DIR% "fol" "debug.fol"))
+(SYS-SET-MODE 'FOL 'COMPILED)
+
+; loading the module configuration files
+(LOAD (PATHNAME-CONCAT %HOME-DIR% "fol" "system"   "system.cfg"))
+(LOAD (PATHNAME-CONCAT %HOME-DIR% "fol" "language" "language.cfg"))
+(LOAD (PATHNAME-CONCAT %HOME-DIR% "fol" "proof"    "proof.cfg"))
+                                .
+                                .
+; adding the modules to the system
+(SYS-ADD-MODULE 'FOL 'SYSTEM)
+(SYS-ADD-MODULE 'FOL 'LANGUAGE)
+(SYS-ADD-MODULE 'FOL 'PROOF)
+                                .
+                                .
+                                .
+(SYS-SET-BANNER 'FOL "
+;*************************************************************************;
+;                                                                         ;
+;                    +------------------------------+                     ;
+;                    |             FOL              |                     ;
+;                    +------------------------------+                     ;
+;                                                                         ;
+                                    .
+                                    .
+                                    .
+\end{verbatim}
+\end{boxverbatim}

@@ -1,0 +1,264 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdss.fol
+;; Date: Wed Oct 20 10:44:57 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                       cmdss.fol                                *
+;*                                                                *
+;*                                                                *
+;* This  file  contains  the  routines  for the  parsing  of the  *
+;* commands for the description of the Simulation Structure.      *
+;* These commands are DECREP,ATTACH,REPRESENT,HARDWARE.           *
+;*                                                                *
+;* The only external routines used in this file are the routines  *
+;* ending in "check&mak". These routines perform additional       *
+;* checks on the symbols and attachments parsed and if everything *
+;* succedes the Simulation Structure is actually updated. These   *
+;* routines are in ss.fol.                                        *
+;*                                                                *
+;******************************************************************
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  DECREP                                                        *
+;*                                                                *
+;* (mknewcommand (QUOTE DECREP) (QUOTE FOL) (QUOTE DECREP#) MTL)  *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+;;; The syntax of a DECREP command.
+
+; < DECREP COMMAND > := DECREP <folsym> ,..,<folsym> ;
+
+(DEFLAM DECREP#()
+ (LET ((x (FOLSYMREP#))) 
+  (SEQ 
+   (ENDL) 
+   (reps-check&mak x))))
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  ATTACH                                                        *
+;*                                                                *
+;* (mknewcommand (QUOTE ATTACH) (QUOTE FOL) (QUOTE ATTACH#) MTL)  *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+;
+;;; The syntax of a ATTACH command.
+
+; < ATTACH COMMAND > := ATTACH < attachment body > ;
+
+
+; < attachment body >:= ALT[< individual  attachment > |
+;                           < sentential  attachment > |
+;                           < predicative attachment > |
+;                           < functional  attachment > ]
+
+; < individual attachment >  := < INDCONST >  ALT[TO|DAR]
+;                               < indrepinfo > < sexpr >  
+; < sentential attachment >  := < SENTCONST > TO ALT[T|NIL|UNDEF&] 
+; < predicative attachment > := < PREDCONST > TO < predrepinfo >  < atom >
+; < functional attachment >  := < FUNCONST > TO  < funrepinfo > < atom >   
+
+; < indrepinfo >  := "[" < repnam > "]" 
+; < predrepinfo > := OPT["[" < repnamrep >"]" ]
+; < funrepinfo >  := OPT["[" < repnamrep > = < repnam > "]"]
+
+
+(DEFLAM ATTACH# ()
+ (LET ((indconst (ALPHA-INDCONST@)))
+  (IF (IST indconst) (IND-ATT#  indconst)
+   (LET ((sentconst (SENTCONST@)))
+    (IF  (IST sentconst) (SENT-ATT# sentconst)
+     (LET ((predconst(PREDCONST@)))
+      (IF (IST predconst) (PRED-ATT# predconst)
+       (LET ((funconst (FUNCONST@)))
+        (IF (IST funconst) (FUN-ATT# funconst)
+         (REMSG1 "A constsym"))))))))))
+
+(DEFLAM IND-ATT# (indconst)
+ (IF (IST (TKC@ (QUOTE DAR)))
+  (LET ((replabel (INDREPINFO#)))
+   (LET ((sexpr (sexpr#)))
+    (SEQ
+     (ENDL)
+     (ind-int&prefnam-check&mak indconst replabel sexpr))))
+  (SEQ
+   (TKC# (QUOTE TO) "TO or DAR")
+   (LET ((replabel (INDREPINFO#)))
+    (LET ((sexpr (sexpr#)))
+     (SEQ
+      (ENDL)
+      (ind-int-check&mak indconst replabel sexpr)))))))
+
+(DEFLAM INDREPINFO#()
+ (IF (IST (TK@ LSQB))
+  (LET ((repnam (REPNAM#)))
+   (SEQ 
+    (TKC# RSQB "A rightsquare bracket")
+    repnam))
+  %DEFDEFREP%))
+
+(DEFLAM SENT-ATT# (sentconst)
+ (SEQ
+  (TKC# (QUOTE TO) "TO")
+  (LET ((sexpr (sexpr#)))
+   (SEQ
+    (ENDL)
+    (sent-int-check&mak sentconst  %TRUTHREP% sexpr)))))
+
+(DEFLAM PRED-ATT# (predconst)
+ (SEQ
+  (TKC# (QUOTE TO) "TO")
+  (LET ((pred-replist (PREDREPINFO# predconst)))
+   (LET ((atom (CAR (atom@))))
+    (IF (MTL? atom)
+     (REMSG1 "An atomic s-expression")
+     (IFN (FUNCTION? atom)
+      (GERRM0 atom "is not an HGKM function")
+      (SEQ
+       (ENDL)
+       (pred-int-check&mak predconst pred-replist atom))))))))
+
+(DEFLAM PREDREPINFO# (predconst)
+ (IF (IST (TK@ LSQB))
+  (LET ((replist (REPNAMREP#)))
+   (SEQ
+    (TK# RSQB "A rigthsquare bracket" "is required here")
+    (repinfo-mak replist %TRUTHREP%)))
+  (repinfo-mak (Def-replist-mak (arity predconst)) %TRUTHREP%)))
+
+(DEFLAM FUN-ATT# (funconst)
+ (SEQ
+  (TKC# (QUOTE TO) "TO ")
+  (LET ((fun-replist (FUNREPINFO# funconst)))
+   (LET ((atom (CAR (atom@))))
+    (IF (MTL? atom)
+     (REMSG1 "An atomic s-expression ")
+     (IFN (FUNCTION? atom)
+      (GERRM0 atom "is not an HGKM function")
+      (SEQ
+       (ENDL)
+       (fun-int-check&mak funconst fun-replist atom))))))))
+
+(DEFLAM FUNREPINFO# (funconst)
+ (IF (IST (TK@ LSQB))
+  (LET ((replist (REPNAMREP#)))
+   (SEQ    
+    (TK# (QUOTE =) "= " "is required here") 
+    (LET ((repout (REPNAM#)))
+     (SEQ
+      (TK# RSQB "A rigthsquare bracket" " is required here" )
+      (repinfo-mak replist repout)))))
+  (repinfo-mak (Def-replist-mak (arity funconst)) %DEFDEFREP% )))
+
+    
+
+; *********************************************************************
+; *								       *
+; * 		HARDWARE					       *
+; * 								       *
+; * (mknewcommand (QUOTE HARDWARE) (QUOTE FOL) (QUOTE REPRESENT#) MTL) *
+; * 								       *
+; **********************************************************************
+
+; syntax of a HARDWARE command
+
+; < HARDWARE command > := HARDWARE < INDCONST > ALT[TO|DAR] 
+;                         OPT["[" < repnam > "]"]    < sexpr > ;     
+
+; It makes an attachment with evaluation
+
+(DEFLAM HARDWARE# ()
+ (LET ((indconst (ALPHA-INDCONST#)))
+  (IF (IST (TKC@ (QUOTE DAR)))
+   (LET ((replabel (INDREPINFO#)))
+    (LET ((sexpr (sexpr#)))
+     (SEQ
+      (ENDL)
+; TO BE REDONE! THERE IS A PROBLEM WITH quotit
+; AND IT IS NOT CLEAR THE SENSE OF "dar" IN HARDWARE
+      (hardware-dar-check&mak indconst replabel sexpr))))
+   (SEQ
+    (TKC# (QUOTE TO) "TO or DAR ")
+    (LET ((replabel (INDREPINFO#)))
+     (LET ((sexpr (sexpr#)))
+      (SEQ
+       (ENDL)
+       (hardware-to-check&mak indconst replabel sexpr))))))))
+
+; *********************************************************************
+; *								       *
+; * 		REPRESENT					       *
+; * 								       *
+; * (mknewcommand (QUOTE REPRESENT) (QUOTE FOL) (QUOTE REPRESENT#) MTL)*
+; * 								       *
+; **********************************************************************
+
+; syntax of a REPRESENT command
+
+; < REPRESENT command > := REPRESENT "{" REP1[<sortsym>] "}" AS < repnam >;  
+
+(DEFLAM REPRESENT#()
+ (SEQ
+  (TK# CULB "An { " " is required here")
+  (LET ((sortlist (SORTREP#)))
+   (SEQ
+    (TK# CURB "An } " " is required here")
+    (TKC# (QUOTE AS) "AS ")
+    (LET ((repnam (REPNAM#)))
+     (SEQ
+      (ENDL)
+      (represent-check&mak sortlist repnam)))))))

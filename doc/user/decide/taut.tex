@@ -1,0 +1,43 @@
+\gfcommand{taut}{tautological first order decider}
+\index{taut}
+
+\gfsyntax{
+  taut \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+
+\gfdescription{
+  The class of formulae decided by {\tt taut} is the set of first order
+  formulas provable using only the introduction and elimination rules for 
+  the sentential connectives plus the following rule ({\em congruence-rule}):\\
+  %
+  \[
+      \fraz{\forall x A(x)}{\forall y A(y)}
+  \]
+}
+
+\gfrecap{
+The class of formulae decided by `taut' is the set of first order formulas
+provable using only the introduction and elimination rules for the 
+sentencial connectives plus the following rule (congruence rule)::
+              +------------------------------------+
+              | forall x. A(x) imp forall y. A(y)  |
+              +------------------------------------+
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   ***** declare predconst P 1;
+   ***** declare indconst c;
+
+   ***** taut (A imp (P(c) imp A));
+   1   A imp (P(c) imp A)
+
+   ***** declare indvar x y [S1];
+   ***** declare indvar z [S2];
+
+   ***** taut forall x.P(x) iff forall y.P(y);
+   2   forall x.P(x) iff forall y.P(y);
+   ***** taut forall x.P(x) iff forall z.P(z);
+   TAUT couldn't prove that forall x. P(x) iff forall z. P(z)
+   is a tautology.
++

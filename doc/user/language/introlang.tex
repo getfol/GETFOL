@@ -1,0 +1,390 @@
+\section{Language}
+\label{sec-lang}
+\label{sec-decl}
+
+
+A {\GF} language is a first-order language.
+Its terms, atomic formulae, and
+well-formed formulae are built from primitive symbols representing
+variables, constants, functions, predicates,
+connectives and quantifiers. The various syntactic categories of expressions,
+corresponding to the different logical categories, are
+recursively defined in terms of each other,
+these definitions determining the written syntax of the
+language\footnote{By written syntax we mean the syntax of the
+expressions as they are typed rather than as they are represented
+internally.}.
+
+Each primitive symbol has a {\bf syntype}
+which corresponds to its
+logical status. Symbols of certain {\bf syntype}s
+must also have other associated
+information (such as their arity) which together with the {\bf syntype}
+determines
+how the symbol is to be used in the construction of compound expressions.
+
+As every {\GF} language is a first-order language there are certain
+logical symbols (such as connectives and quantifiers)
+which are predefined. The other primitive
+symbols of a language must be user defined by means of declarations 
+(see the command {\bf declare}) which
+specify a symbol together with its {\bf syntype}
+(and any other information
+required).
+
+\subsection{{\GF} symbols}
+
+{\GF} commands accept symbols that we will identify with
+{\em sym}. The {\GF} scanner recognizes different {\em types} of
+characters: {\em identifiers}, {\em numbers} (positive integers),
+{\em escape characters},
+{\em delimiters} and special delimiters that 
+may be regarded as tokens: {\em identifier-delimiters}.
+{\GF} symbols {\em sym}s are sequences of {\em identifiers}
+and {\em numbers}. Identifiers are for instance:
+\begin{verbatim}
+                       a b c d
+                       A B C D
+                       ! " # $ % &
+\end{verbatim}    %%% $ (fake emacs' hilite mode)
+{\em delimiters} are used to separate symbols.
+Some delimiters are:
+\begin{verbatim}
+                       ( ) , . : ; [ ] 
+\end{verbatim}
+{\em identifier-delimiters} may be used to separate
+symbols or may identify a particular token, as for instance
+\begin{verbatim}
+                       < > = + - * / ? @ 
+\end{verbatim}
+Escape characters turn a character into an identifier.
+The character $\backslash$ is {\GF}'s escape character.
+
+Types are assigned to characters in the file {\tt asciitab.fol}
+in the {\tt fol} directory.
+
+An example:
+\begin{verbatim}
+***** declare sentconst a!b;
+a!b has been declared to be a Sentconst
+***** declare sentconst a_b;
+a_b has been declared to be a Sentconst
+***** declare sentconst a-b;
+a has been declared to be a Sentconst
+- has been declared to be a Sentconst
+b has been declared to be a Sentconst
+***** declare sentconst c/d;
+c has been declared to be a Sentconst
+/ has been declared to be a Sentconst
+d has been declared to be a Sentconst
+
+***** declare sentconst e\f;
+ef has been declared to be a Sentconst
+\end{verbatim}
+
+\subsection{{\GF} special symbols}
+
+The following strings are treated as special symbols:
+
+\begin{itemize}
+\item The logical connectives:
+{\tt not, and, or, imp, iff, wffif, trmif, forall, exists};
+\item The sentential constants for truth and falsity:
+{\tt FALSE, TRUE}; 
+\item The equality predicate symbol: {\tt =};
+\item Sorts: {\tt UNIVERSAL}, {\tt NATNUMSORT};
+\item Numerals: {\tt 1}, {\tt 2}, {\tt 3}, ...;
+\item Representations: {\tt UNIVERSALREP}, {\tt NATNUMREP};
+\item Natural numbers: {\tt 1}, {\tt 2} {\tt 3}, ...;
+\item Various: {\tt TRUTHSORT}, {\tt TRUTHREP}, {\tt NOTNAMED\&}, {\tt UNDEF\&};
+\end{itemize}
+
+
+
+Using these symbols not in ``reading mode",
+that is modifying their meaning,
+is very dangerous. The behavior
+of the system becomes unpredictable.
+
+
+
+
+
+
+\subsection{Syntypes of primitive symbols}
+
+The different {\bf syntype}s of primitive symbols are:
+
+\gap
+\begin{center}
+\fbox{
+\parbox{15cm}{
+\begin{itemize}
+
+\item {\indvar} --- individual variables.
+
+\item {\indpar} --- individual parameters.
+
+\item {\indconst} --- individual constants.
+
+\item {\funpar} --- function parameters.
+
+\item {\funconst} --- function constants.
+
+\item {\predpar} --- predicate parameters.
+
+\item {\predconst} --- predicate constants.
+
+\item {\sentpar} --- sentential parameters.
+
+\item {\sentconst} --- sentential constants.
+
+\item {\sentconn} --- sentential connectives.
+
+\item {\quant} --- quantifiers.
+
+\end{itemize}
+}}
+\end{center}
+
+\gap
+Some of the above {\bf syntype}s are grouped together into hybrid syntactic
+categories according to the role they play
+in defining logical expressions.
+
+\gap
+\begin{center}
+\fbox{
+\parbox{15cm}{
+{\indsym} ::= {\indvar} \I {\indpar} \I {\indconst}
+
+{\funsym} ::= {\funpar} \I {\funconst}
+
+{\predsym} ::= {\predpar} \I {\predconst}
+
+{\sentsym} ::= {\sentpar} \I {\sentconst}
+}}
+\end{center}
+
+\subsection{Logical expressions}
+
+The various categories of compound logical expressions are defined
+recursively in terms of each other and in terms of the categories of
+primitive symbols. The most important categories, from a logical point of
+view, are: {\wff} (the category of well-formed formulae), {\awff} (the
+category of atomic formulae) and {\term} (the category of terms).
+
+The following definition gives the 
+grammar of expressions accepted by {\GF}. In all cases $n$
+is a natural number $\geq 1$.
+Superscripts of
+---$^n$, ---$^P$, ---$^I$ are used with certain categories,
+the categories of operator symbols, to specify other properties which the
+permitted symbols must possess; the three superscripts require
+respectively: that the
+symbol has arity $n$, that the symbol is a unary prefix operator, that the
+symbol is a binary infix operator. Operator symbols and their associated
+properties are treated in full in section \ref{opsym}.
+
+\gap
+\begin{center}
+\fbox{
+\parbox{15cm}{
+{\wff} ::= {\bf (} {\wff} {\bf )} \I {\connappl} \I {\quantwff}
+\I {\wffif} \I {\awff}
+
+{\connappl} ::= {\sentconn}$^{P}$ {\wff} \I {\wff}$_1$
+{\sentconn}$^{I}$ {\wff}$_2$
+
+{\quantwff} ::= {\quantprefix} {\wff}
+
+{\quantprefix} ::= {\quant} {\indvar}$_1$ ... {\indvar}$_n$ {\bf .}
+
+{\wffif} ::= {\bf wffif} {\wff}$_1$ {\bf then} {\wff}$_2$ {\bf else}
+{\wff}$_3$
+
+{\awff} ::= {\sentsym} \I {\predappl}
+
+{\predappl} ::= {\predsym}$^{P}$ {\term} \I
+                {\term}$_1$ {\predsym}$^{I}$ {\term}$_2$ \I
+                {\predsym}$^n${\bf (} {\term}$_1$ [{\bf ,}] ...
+                [{\bf ,}] {\term}$_n$ {\bf )}
+
+{\term} ::= {\bf (} {\term} {\bf )} \I {\funappl} \I {\termif} \I {\indsym}
+
+{\termif} ::= {\bf trmif} {\wff} {\bf then} {\term}$_1$ {\bf else}
+{\term}$_2$
+
+{\funappl} ::= {\funsym}$^{P}$ {\term} \I
+               {\term}$_1$ {\funsym}$^{I}$ {\term}$_2$ \I
+               {\funsym}$^n${\bf (} {\term}$_1$ [{\bf ,}] ...
+               [{\bf ,}] {\term}$_n$ {\bf )}
+}}
+\end{center}
+
+\subsection{Operator symbols}
+\label{opsym}
+
+The primitive symbols of the categories  {\funsym},
+\predsym, {\sentconn} are operator symbols; each operator
+symbol has an associated arity which is a natural number $\geq 1$.
+\funsym$^n$, \predsym$^n$, and \sentconn$^n$ are used to denote the
+subclasses of {\funsym}, {\predsym} and {\sentconn} of operators with
+arity $n$.
+
+An operator symbol with arity $1$ must be defined to be prefix. \funsym$^P$,
+\predsym$^P$, and \sentconn$^P$ are used to denote the categories of prefix
+operators, these are subclasses of \funsym$^1$, \predsym$^1$, and
+\sentconn$^1$ respectively.
+
+An operator symbol with arity $2$ may be defined to be infix. \funsym$^I$,
+\predsym$^I$, and \sentconn$^I$  are used to denote the categories of infix
+operators, these will be
+subclasses of \funsym$^2$, \predsym$^2$, and \sentconn$^2$ respectively.
+
+The use of prefix and infix operators allows the following ambiguous
+expressions:
+
+
+\begin{enumerate}
+
+\item {\term}$_1$ {\funsym}$^I_1$ {\term}$_2$ {\funsym}$^I_2$ {\term}$_3$
+
+\item {\wff}$_1$ {\sentconn}$^I_1$ {\wff}$_2$ {\sentconn}$^I_2$ {\wff}$_3$
+
+\item {\funsym}$^P$ {\term}$_1$ {\funsym}$^I$ {\term}$_2$
+
+\item {\sentconn}$^P$ {\wff}$_1$ {\sentconn}$^I$ {\wff}$_2$
+
+\item {\quantprefix} {\wff}$_1$ {\sentconn}$^I$ {\wff}$_2$~\footnote{This is
+a special case as a {\quantprefix} behaves like a prefix operator.}
+
+\end{enumerate}
+
+These ambiguities are avoided through the assignment of additional
+information to certain operator symbols declared to be prefix or infix.
+Each symbol in \funsym$^P$ and \sentconn$^P$ must
+have an associated prefix binding priority (a natural number
+$\geq 1$)\footnote{In fact each prefix and infix {\predsym} also has
+associated binding priorities but this information is redundant as
+ambiguities can not arise.}, this
+will be denoted by prbp(---). Each symbol in \funsym$^I$ and \sentconn$^I$
+must have two associated binding priorities: the left binding
+priority and the right binding priority (both natural numbers $\geq 1$);
+these will be denoted by lbp(---) and rbp(---) respectively.
+
+The five ambiguous cases above are disambiguated in the following way:
+
+\begin{enumerate}
+
+\item If rbp({\funsym}$^I_1$) $>$ lbp({\funsym}$^I_2$)
+then the expression is parsed as:
+
+({\term}$_1$ {\funsym}$^I_1$ {\term}$_2$) {\funsym}$^I_2$ {\term}$_3$
+
+Otherwise, if
+rbp({\funsym}$^I_1$) $\leq$ lbp({\funsym}$^I_2$)
+then the expression is parsed as:
+
+{\term}$_1$ {\funsym}$^I_1$ ({\term}$_2$ {\funsym}$^I_2$ {\term}$_3$)
+
+\item If rbp({\sentconn}$^I_1$) $>$ lbp({\sentconn}$^I_2$)
+then the expression is parsed as:
+
+({\wff}$_1$ {\sentconn}$^I_1$ {\wff}$_2$) {\sentconn}$^I_2$ {\wff}$_3$
+
+Otherwise, if
+rbp({\sentconn}$^I_1$) $\leq$ lbp({\sentconn}$^I_2$)
+then the expression is parsed as:
+
+{\wff}$_1$ {\sentconn}$^I_1$ ({\wff}$_2$ {\sentconn}$^I_2$ {\wff}$_3$)
+
+\item If prbp({\funsym}$^P$) $>$ lbp({\funsym}$^I$)
+then the expression is parsed as:
+
+({\funsym}$^P$ {\term}$_1$) {\funsym}$^I$ {\term}$_2$
+
+Otherwise, if
+rbp({\sentconn}$^I_1$) $\leq$ lbp({\sentconn}$^I_2$)
+then the expression is parsed as:
+
+{\wff}$_1$ {\sentconn}$^I_1$ ({\wff}$_2$ {\sentconn}$^I_2$ {\wff}$_3$)
+
+\item If prbp({\sentconn}$^P$) $>$ lbp({\sentconn}$^I$)
+then the expression is parsed as:
+
+({\sentconn}$^P$ {\wff}$_1$) {\sentconn}$^I$ {\wff}$_2$
+
+Otherwise, if
+prbp({\sentconn}$^P$) $\leq$ lbp({\sentconn}$^I$)
+then the expression is parsed as:
+
+{\sentconn}$^P$ ({\wff}$_1$ {\sentconn}$^I$ {\wff}$_2$)
+
+\item If $1000 >$ lbp({\sentconn}$^I$)
+then the expression is parsed
+as \footnote{1000 is the default prefix binding
+priority.}:
+
+({\quantprefix} {\wff}$_1$) {\sentconn}$^I$ {\wff}$_2$
+
+Otherwise, if
+$1000 \leq$ lbp({\sentconn}$^I$)
+then the expression is parsed as:
+
+{\quantprefix}  ({\wff}$_1$ {\sentconn}$^I$ {\wff}$_2$)
+
+\end{enumerate}
+
+
+\subsection{The logical symbols}
+\label{sec-log-symb}
+
+The logical symbols are hardwired into the system.
+The two categories {\quant} and {\sentconn}
+consist entirely of logical constants and are thus fixed in advance for each
+language.
+
+\gap
+\begin{center}
+\fbox{
+\parbox{15cm}{
+{\quant} ::= {\bf forall} \I {\bf exists}
+
+
+{\sentconn} ::= {\bf not} \I
+                {\bf and} \I {\bf or} \I {\bf imp} \I {\bf iff}
+}}
+\end{center}
+
+The logical connectives are all operator symbols
+of arity 2 and declared as infix with the exception of {\bf not}
+which has arity 1 and is prefix. The binding priorities of these symbols are
+given in the table below.
+
+\begin{center}
+\begin{tabular}{|l|c|c|ccc|} \hline
+\multicolumn{1}{|c}{Symbol} &
+\multicolumn{1}{c}{Arity} &
+\multicolumn{1}{c}{Type} &
+\multicolumn{1}{c}{prbp} & lbp & rbp \\ \hline
+{\bf not} & 1 & prefix & 1000 & n/a & n/a \\ \hline
+{\bf and} & 2 & infix & n/a  & 750 & 755 \\ \hline
+{\bf or} & 2 & infix & n/a  & 740 & 745 \\ \hline
+{\bf imp} & 2 & infix & n/a  & 730 & 735 \\ \hline
+{\bf iff} & 2 & infix & n/a  & 720 & 725 \\ \hline
+\end{tabular}
+\end{center}
+
+The two truth values {\tt TRUE} and {\tt FALSE} and the equality
+predicate, {\tt =}, are also logical symbols, {\tt TRUE} and
+{\tt FALSE} belong to the category {\sentconst} and {\tt =} belongs to the
+category {\predconst}; however, the categories {\sentconst} and
+{\predconst} are not fixed
+(because other primitive symbols in these categories
+can be user declared).
+
+The equality predicate, {\tt =}, has arity 2 and is declared as infix.
+
+
+

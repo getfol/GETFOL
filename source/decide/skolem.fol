@@ -1,0 +1,179 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:29:15 MET 1993
+;;
+;; This GETFOL file (skolem.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*************************************************************************
+;*                                                                       *
+;*                       skolem.fol                                      *
+;*                                                                       *
+;*************************************************************************
+
+;*************************************************************************
+;*                                                                       *
+;* DESCRIPTION                                                           *
+;*                                                                       *
+;*  Given a formula alpha in negative-normal-form, it returns a formula  *
+;*  beta such that :                                                     *
+;*                  |- alpha <==> |- beta                                *
+;*                                                                       *
+;*  in which all the universal quantifiers have been deleted and for     *
+;*  each universal bound var, it substitues :                            *
+;*  - a costant, if it is not in the scope of existential quantifiers    *
+;*  - a function, if it is in the scope of existential quantifiers       *
+;*    whose arity is equal to the number of existential quantifiers.     *
+;*    The arguments are the existential bound vars.                      *
+;*                                                                       *
+;* SYNTAX :                                                              *	
+;*                                                                       *
+;*  (skolemize wff)                                                      *
+;*  (skolemize1 wff skolem_list xlist)                                   *
+;*                                                                       *
+;*  where:                                                               *
+;*  wff is the formula to skolemize,                                     *
+;*  skolem_list is the alist of indconsts and funconsts so far created,  * 
+;*  xlist is the list of the met existential bound vars.                 *
+;*                                                                       *
+;*  Before the skolemizing process, the add-frees routine eliminates the *
+;*  eventual free vars being in the wff, initializing the skolem_list    *
+;*  with a skolem constants for each free var.                           *
+;*  If no free var exists then skolem_list is empty.                     *
+;*  It can be considered an implicit universal closure                   *
+;*  (see the add-frees routine).                                         *
+;*                                                                       *
+;*  skolemize1 analyses the formula:                                     *
+;*  - if wff is a predicate, the substbindings routine substitues the    *
+;*    skolem indconst or funconst being in skolem_list;                  *
+;*  - if wff is a universal quantified formula, a new indconst or        *
+;*    funconst will be created and added to skolem_list;                 * 
+;*    before doing it the deleting of eventual existential bound var     *
+;*    previously met is performed.                                       *
+;*  - if wff is an existential quantified formula, the xlist list is     *
+;*    updated with the existential bound var.                            *
+;*    A check on the being of the same named universal var in            *
+;*    skolem_list will be performed.                                     * 
+;*    If the test succeeds the old pair containing universal var will be *
+;*    deleted (see alist-del routine in extended.hgk file).              *
+;*                                                                       *
+;*************************************************************************
+
+(DEFLAM skolemize (wff)
+ (SEQ (folsym_counter-reset)
+      (skolemize1 wff (add-frees (frees wff) MTL) MTL)))
+
+(DEFLAM add-frees (free_vars skolem_list)
+ (IF (MTL? free_vars) skolem_list 
+  (LET ((first_free (FIRST free_vars)))
+   (IF (INDPAR first_free) 
+    (add-frees (REST free_vars) skolem_list)
+    (add-frees (REST free_vars) 
+     (alist-cons skolem_list
+      (alistelement-mak first_free (indconst-create (sort first_free)))))))))
+
+(DEFLAM skolemize1 (wff skolem_list xlist)
+ (IF (SIMPLE wff) wff
+  (IF (PREDAPPL wff) (substbindings wff skolem_list)
+   (IF (NEG wff) 
+    (IF (OR (SIMPLE (body wff)) (PREDAPPL (body wff)))
+     (mknot (skolemize1 (body wff) skolem_list xlist))
+     (error-trap 'NOTNNF 'SKOLEMIZE))
+    (IF (CONJ wff)
+     (mkand (skolemize1 (lfand wff) skolem_list xlist)
+            (skolemize1 (rtand wff) skolem_list xlist))
+     (IF (DISJ wff)
+      (mkor (skolemize1 (lfor wff) skolem_list xlist)
+            (skolemize1 (rtor wff) skolem_list xlist))
+      (IF (FORALL wff)
+       (LET ((new_xlist (HGKM-DELETE (bvarof wff) xlist)))
+        (skolemize1 (matrix wff)
+         (skolem-add (bvarof wff) new_xlist skolem_list) new_xlist))
+       (IF (EXISTS wff) 
+        (mkexists (bvarof wff)
+         (skolemize1 (matrix wff)
+                     (alist-del skolem_list (bvarof wff))
+                     (IF (HGKM-MEMBER (bvarof wff) xlist) 
+		      xlist
+		      (LCONS (bvarof wff) xlist))))
+        (IF (CONNAPPL wff)
+         (error-trap 'NOTNNF 'SKOLEMIZE)
+         (REMSG1 "<wff> with unknown syntax. Fatal error !!!"))))))))))
+
+
+;*************************************************************************
+;*                                                                       *
+;* skolem-add (bvar list_X_vars skolem_list)                             *
+;*                                                                       * 
+;* where list_X_vars is the list of the met existential bound vars.      *
+;* It updates the skolem_list alist.                                     *
+;* The new terms are created by indconst-create and funconst-create      *
+;* routines. (see skolem.hgk )                                           *
+;* The skolem_list alist has the following form :                        *
+;*                                                                       *
+;*  ((< var > . < sym >) ,..., (< var > . < sym >))                      *
+;*                                                                       *
+;* where < var > is the universal var that should be substitued by       *
+;* its indconst or funconst < sym >.                                     *
+;* The substitution is performed by substbindings routine                *
+;* in skolemize routine (see amf.hgk file).                              *
+;* For the building of skolem_list alist the following routines being in *
+;* extended.hgk file are used:                                           *
+;*                                                                       *
+;* - alist-cons : builds the alist                                       *
+;* - alist-del  : deletes an element from the alist                      *
+;* - alistelement-mak : builds a pair                                    *
+;*                                                                       *
+;*************************************************************************
+
+(DEFLAM skolem-add (bvar list_X_vars skolem_list)
+ (IF (MTL? list_X_vars)
+  (alist-cons skolem_list
+             (alistelement-mak bvar (indconst-create (sort bvar))))
+  (alist-cons skolem_list
+              (alistelement-mak bvar 
+              (funappl-mak (funconst-create list_X_vars (sort bvar))
+                           list_X_vars)))))
+ 
+
+

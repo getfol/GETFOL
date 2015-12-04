@@ -1,0 +1,170 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: symls.fol
+;; Date: Wed Oct 20 10:46:17 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                                                                *
+;*                      symls.fol                                 *
+;*                                                                *
+;*                                                                *
+;* This file contains the high level primitives to access the     *
+;* language of the current context. The first part contains the   *
+;* primitives returning the label space of all the symbols of a   *
+;* given synttype in the current context.                         *
+;* The second part contains the primitives to verify whether a    *
+;* label is used in the current language.                         *
+;* The third part concerns the extraction of classes of symbols   *
+;* from a given symls.                                            *
+;*                                                                *
+;******************************************************************
+
+
+
+;******************************************************************
+;*                                                                *
+;* PART 1: returning the label spaces of syntactic cathegories of *
+;* symbols in the current language.                               *
+;*                                                                *
+;******************************************************************
+
+(DEFSUB sentconn-ls  () (cur-symls-get-ls 'Sentconn))
+(DEFSUB quant-ls     () (cur-symls-get-ls 'Quant))
+(DEFSUB ifwff-ls     () (cur-symls-get-ls 'Ifwff))
+(DEFSUB iftrm-ls     () (cur-symls-get-ls 'Iftrm))
+
+(DEFSUB sentconst-ls () (cur-symls-get-ls 'Sentconst))
+(DEFSUB sentpar-ls   () (cur-symls-get-ls 'Sentpar))
+(DEFSUB indconst-ls  () (cur-symls-get-ls 'Indconst))
+(DEFSUB indpar-ls    () (cur-symls-get-ls 'Indpar))
+(DEFSUB indvar-ls    () (cur-symls-get-ls 'Indvar))
+(DEFSUB funconst-ls  () (cur-symls-get-ls 'Funconst))
+(DEFSUB funpar-ls    () (cur-symls-get-ls 'Funpar))
+(DEFSUB predconst-ls () (cur-symls-get-ls 'Predconst))
+(DEFSUB predpar-ls   () (cur-symls-get-ls 'Predpar))
+
+(DEFSUB indsym-ls ()
+ (APPEND (indconst-ls) (indpar-ls) (indvar-ls)))
+
+(DEFSUB symbol-ls ()
+ (APPEND
+  (sentconn-ls) (quant-ls) (ifwff-ls) (iftrm-ls)
+  (sentconst-ls) (sentpar-ls) (indconst-ls) (indpar-ls) (indvar-ls)
+  (funconst-ls) (funpar-ls) (predconst-ls) (predpar-ls)))
+
+
+
+;******************************************************************
+;*                                                                *
+;* PART 2: verifying the use of labels in the current label space *
+;*                                                                *
+;*                                                                *
+;* (SYMLABEL? label) returns true iff label is the label for a    *
+;* symbol in the current language.                                *
+;*                                                                *
+;* (symlabel-get labels) takes a list as argument, and returns    *
+;* first element which is a label of a symbol in the current      *
+;* language. If there is not such element it returns MTL.         *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM SYMLABEL? (LABEL)
+ (LABEL-IN-LS LABEL (symbol-ls)))
+
+(DEFLAM symlabel-get (LABELS)
+ (ls-get-used_label LABELS (symbol-ls)))
+
+
+
+;**********************************************************************
+;*                                                                    *
+;* PART 3: extracting lists of symbols of the same cathegory from a   *
+;* given label space.                                                 *
+;*                                                                    *
+;* Each of the primitives below takes in input a symls and returns a  *
+;* list of symbols of a certain cathegory contained in the symls.     *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM symls-get-sentconsts (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Sentconst)))
+(DEFLAM symls-get-sentpars (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Sentpar)))
+
+(DEFLAM symls-get-indconsts (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Indconst)))
+(DEFLAM symls-get-indpars (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Indpar)))
+(DEFLAM symls-get-indvars (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Indvar)))
+
+(DEFLAM symls-get-funconsts (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Funconst)))
+(DEFLAM symls-get-funpars (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Funpar)))
+
+(DEFLAM symls-get-predconsts (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Predconst)))
+(DEFLAM symls-get-predpars (SYMLS)
+ (ls-get-all_objs (symls-get-ls SYMLS 'Predpar)))
+
+(DEFLAM symls-get-sentsyms (SYMLS)
+ (APPEND (symls-get-sentconsts SYMLS) (symls-get-sentpars SYMLS)))
+
+(DEFLAM symls-get-indsyms (SYMLS)
+ (APPEND (symls-get-indconsts SYMLS) (symls-get-indvars SYMLS)
+	 (symls-get-indpars SYMLS)))
+
+(DEFLAM symls-get-funsyms (SYMLS)
+ (APPEND (symls-get-funconsts SYMLS) (symls-get-funpars SYMLS)))
+
+(DEFLAM symls-get-predsyms (SYMLS)
+ (APPEND (symls-get-predconsts SYMLS) (symls-get-predpars SYMLS)))
+
+(DEFLAM symls-get-sorts (SYMLS)
+ (syms-get-sorts (symls-get-predconsts SYMLS)))
+

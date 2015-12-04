@@ -1,0 +1,424 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:35:57 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: amf.fol
+;; Date: Wed Oct 20 10:44:46 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*************************************************************************
+;*                                                                       *
+;*                      amf.fol                                          *
+;*                                                                       *
+;* PART 1:   ROUTINES TO BUILD THE UNION OF TWO AMFS                     *
+;*                                                                       *
+;* PART 1:   ROUTINES TO BUILD THE MTREE OF AN AMF                       *
+;*                                                                       *
+;* PART 2:   MATCHING ROUTINES                                           *
+;*                                                                       *
+;*************************************************************************
+
+
+;*************************************************************************
+;*                                                                       *
+;* PART 1:   ROUTINES TO BUILD THE UNION OF TWO AMFS                     *
+;*                                                                       *
+;*************************************************************************
+
+;amf-union returns the union of amf1 and amf2
+
+(DEFLAM amf-union (amf1 amf2) 
+ (LET ((mtree (COPY (amf-get-mtree amf2))))
+              ; because of side-effects in mtree-union
+  (SEQ 
+   (mtree-union (amf-get-mtree amf1) mtree)
+   (amf-mak  mtree (UNION (amf-get-mrn amf1) (amf-get-mrn amf2))))))
+
+; mtree-union incorporates the formulas in mtree1 into
+; mtree2. If mtree1 contains a formula pair <F t1> and
+; mtree2 contains a formula pair with <F t> then the	  
+; resulting match-tree will contain <F t>. 		  
+; It returns novalue and side-effects mtree2		  
+; The repeated use of COPY guarantees that distinct 	  
+; match trees do not share list structure.		  
+
+(DEFLAM mtree-union (mtree1 mtree2)
+ (SEQ
+  (IF (CLNOD-EMPTY? (mtree-get-cl mtree1)) (NOP)
+   (IFN (CLNOD-EMPTY? (mtree-get-cl mtree2))
+    (mtree-set-cl mtree2 
+     (clnod-union (mtree-get-cl mtree1) (mtree-get-cl mtree2)))
+    (mtree-set-cl mtree2 (COPY (mtree-get-cl mtree1)))))
+  (IF (OVLNOD-EMPTY? (mtree-get-ovl mtree1)) (NOP)
+   (IFN (OVLNOD-EMPTY? (mtree-get-ovl mtree2))
+    (mtree-set-ovl mtree2
+     (ovlnod-union (mtree-get-ovl mtree1)(mtree-get-ovl mtree2)))
+    (mtree-set-ovl mtree2 (COPY (mtree-get-ovl mtree1)))))
+  (IF (NVLNOD-EMPTY? (mtree-get-nvl mtree1)) (NOP)
+   (IFN (NVLNOD-EMPTY? (mtree-get-nvl mtree2))
+    (mtree-set-nvl mtree2
+     (nvlnod-union (mtree-get-nvl mtree1)(mtree-get-nvl mtree2)))
+    (mtree-set-nvl mtree2 (COPY (mtree-get-nvl mtree1)))))))
+
+
+; clnod-union combines two clnods It returns a
+; new clnod2 containing all the elements in clnod1
+; clnod2 is locally modified by side-effect
+ 
+(DEFLAM clnod-union (clnod1 clnod2)
+ (IF (CLNOD-EMPTY? clnod1) clnod2
+  (LET ((clnod (clnod-get-cnod clnod2(cnod-get-sym (clnod-get-first clnod1)))))
+   (IF (IST clnod)
+    (SEQ 
+     (IF (LEAF? (cnod-get-info (clnod-get-first clnod1))) (NOP)
+      (mtree-union (cnod-get-info (clnod-get-first clnod1))
+       (cnod-get-info clnod)))
+     (clnod-union (clnod-get-rest clnod1) clnod2))
+    (clnod-union (clnod-get-rest clnod1)
+     (clnod-cons clnod2 (COPY (clnod-get-first clnod1))))))))
+
+(DEFLAM ovlnod-union (ovlnod1 ovlnod2)
+ (IF (OVLNOD-EMPTY? ovlnod1) ovlnod2
+  (LET ((ovlnod (ovlnod-get-ovnod ovlnod2
+                 (ovnod-get-sym (ovlnod-get-first ovlnod1)))))
+   (IF (IST ovlnod)
+    (SEQ 
+     (IF (LEAF? (ovnod-get-info (ovlnod-get-first ovlnod1)))(NOP)
+      (mtree-union (ovnod-get-info (ovlnod-get-first ovlnod1))
+       (ovnod-get-info ovlnod)))
+     (ovlnod-union (ovlnod-get-rest ovlnod1) ovlnod2))
+    (ovlnod-union (ovlnod-get-rest ovlnod1)
+     (ovlnod-cons ovlnod2 (COPY (ovlnod-get-first ovlnod1))))))))
+
+(DEFLAM nvlnod-union (nvlnod1 nvlnod2)
+ (IF (NVLNOD-EMPTY? nvlnod1) nvlnod2
+  (LET ((nvlnod (nvlnod-get-nvnod nvlnod2
+                 (nvnod-get-sym (nvlnod-get-first nvlnod1)))))
+   (IF (IST nvlnod)
+    (SEQ 
+     (IF (LEAF? (nvnod-get-info (nvlnod-get-first nvlnod1)))(NOP)
+      (mtree-union (nvnod-get-info (nvlnod-get-first nvlnod1))
+       (nvnod-get-info nvlnod)))
+     (nvlnod-union (nvlnod-get-rest nvlnod1) nvlnod2))
+    (nvlnod-union (nvlnod-get-rest nvlnod1)
+     (nvlnod-cons nvlnod2 (COPY (nvlnod-get-first nvlnod1))))))))
+
+
+;*************************************************************************
+;*                                                                       *
+;* PART 2:   ROUTINES TO BUILD THE MTREE OF AN AMF                       *
+;*                                                                       *
+;*************************************************************************
+
+(DEFLAM mtree-build&setleaf(lhs-rule leaf vars&pars)
+ (LET ((occlist (vars&pars2occlist vars&pars))
+       (mtree (mtree-mak-empty)))
+  (SEQ
+   (mtree-setleaf (mtree-build mtree lhs-rule occlist) leaf)
+   mtree)))
+
+; mtree-build scans symbols of exp and adds branches to mtree as follow:
+; - if it finds a constant symbol c (that is everything that is not in 
+;   occlist), it sets current clnod as : ((c . emptynode)).
+; - if it finds a old variable symbol x (that is a symbol that is already 
+;   occurred), it sets current ovlnod as : ((x . emptynode)),
+; - if it finds a new variable symbol x (that is a symbol that is not already
+;   occurred), it sets current nvlnod as : ((x . emptynode)),
+; Each call does return the current level of the mtree
+; (the level corresponding to the current atomic symbol)
+; The last call returns the level where the leaf has to be attached. 
+; mtree is modified by side-effect.
+(DEFLAM mtree-build (mtree exp occlist)
+ (IF (SIMPLE exp)
+  (LET ((occel (occlist-get-occel occlist exp)))
+   (IF (ISF occel)
+    (LET ((cnod (cnod-mak (COPY exp) (mtree-mak-empty))))
+     (SEQ
+      (mtree-set-cl mtree (clnod-cons (clnod-mak-empty) cnod))
+      (cnod-get-info cnod)))
+    (IF (IST (occel-get-test occel))
+     (LET ((ovnod (ovnod-mak (occel-get-sym occel) (mtree-mak-empty))))
+      (SEQ
+       (mtree-set-ovl mtree (ovlnod-cons (ovlnod-mak-empty) ovnod))
+       (ovnod-get-info ovnod)))
+     (LET ((nvnod (nvnod-mak exp (mtree-mak-empty))))
+      (SEQ
+       (occel-set-test occel TRUE)
+       (mtree-set-nvl mtree (nvlnod-cons (nvlnod-mak-empty) nvnod))
+       (nvnod-get-info nvnod))))))
+  (LET ((mtree1 (mtree-build mtree (appl-get-functor exp) occlist)))
+   (applymtree-build mtree1 (appl-get-args exp) occlist))))
+
+(DEFLAM applymtree-build (mtree args occlist)
+ (IF (MTL? args) mtree
+  (LET ((mtree1 (mtree-build mtree (FIRST args) occlist)))
+   (applymtree-build mtree1 (REST args) occlist))))
+
+(DEFLAM mtree-setleaf (nodinfo leaf)
+ (SEQ
+  (SETCAR nodinfo (CAR leaf))
+  (SETCDR nodinfo (CDR leaf))))
+
+;*************************************************************************
+;*                                                                       *
+;* PART 3:   MATCHING ROUTINES                                           *
+;*                                                                       *
+;*************************************************************************
+
+; The matching routines return a pair 
+; CAR) reports success of the match if it is TRUE failure if it is FALSE
+; CDR) is the remainder of the tree if CAR is TRUE (is a leaf if mtree
+;      is finished)
+;      is the number of matches which expmatch actually found if CAR is FALSE
+
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *								  *
+; *     (expmatch exp mtree n i)                                  *
+; *     (ovl-expmatch exp ovlnod n i)                             *
+; *     (nvl-expmatch exp nvlnod n i)                             *
+; *								  *
+; *     (simplexpmatch exp mtree n i)                             *
+; *     (cl-simplexpmatch exp clnod n i)                          *
+; *     (ovl-simplexpmatch exp ovlnod n i)                        *
+; *     (nvl-simplexpmatch exp nvlnod n i)                        *
+; *								  *
+; *     (quantwffmatch quantff mtree n i)                         *
+; *     (cl-quantwffmatch quantff clnod n i)                      *
+; *     (bindmatch var matrix nvlnod n i)                         *
+; *     (ovl-quantwffmatch quantwff ovlnod n i)                   *
+; *     (nvl-quantwffmatch quantwff nvlnod n i)                   *
+; *                                                               *
+; *     (compexpmatch exp mtree n i)                              *
+; *     (cl-compexpmatch exp clnod n i)                           *
+; *     (ovl-compexpmatch exp ovlnod n i)                         *
+; *     (nvl-compexpmatch exp nvlnod n i)                         *
+; *     (args-compexpmatch args arg mtree j n i)                  *
+; *                                                               *
+; *****************************************************************
+
+; expmatch ("expression-match") looks for the nth match in the
+; match tree mtree for the expression exp.For any sub-expression of exp , the
+; initial call to expmatch has n=1,i=0 (i counts up the number of matches
+; found). Each successive call to expmatch increases n by 1.
+; Note that the tree mtree is generally "longer" than the expression exp.
+
+(DEFLAM expmatch (exp mtree n i)
+ (IF (SIMPLE exp)(simplexpmatch exp mtree n i)  
+  (IF (QUANTWFF exp)(quantwffmatch exp mtree n i)
+   (compexpmatch exp mtree n i))))
+
+
+(DEFLAM ovl-expmatch(exp ovlnod n i)
+ (IF (OVLNOD-EMPTY? ovlnod) (mpfail-mak i)
+  (LET ((ovnod   (ovlnod-get-first ovlnod))
+        (ovlnod1 (ovlnod-get-rest  ovlnod)))
+   (IFN (OR (PREDPAR (ovnod-get-sym ovnod)) (FUNPAR (ovnod-get-sym ovnod)))
+    (LET ((bind (bindings-get-bind (ovnod-get-sym ovnod))))
+     (IF (EQUALEXP exp (bind-get-new bind))
+      (IF (EQUAL n (ADD1 i))  ; succ
+       (mpsucc-mak (ovnod-get-info ovnod))
+       (ovl-expmatch exp ovlnod1 n (ADD1 i)))
+      (ovl-expmatch exp ovlnod1 n i)))
+     (ovl-expmatch exp ovlnod1 n i)))))
+
+(DEFLAM nvl-expmatch (exp nvlnod n i)
+ (IF (NVLNOD-EMPTY? nvlnod) (mpfail-mak i)
+  (LET ((nvnod (nvlnod-get-first nvlnod))
+        (nvlnod1 (nvlnod-get-rest nvlnod)))
+   (IFN (OR (PREDPAR (nvnod-get-sym nvnod)) (FUNPAR (nvnod-get-sym nvnod)))
+    (IF (SUPERSORT (sort (nvnod-get-sym nvnod)) exp) 
+     (IF (EQUAL n (ADD1 i));succ
+      (SEQ
+       (bindings-add (bind-mak (nvnod-get-sym nvnod) exp))
+       (mpsucc-mak (nvnod-get-info nvnod)))
+      (nvl-expmatch exp nvlnod1 n (ADD1 i)))
+     (nvl-expmatch exp nvlnod1 n i))
+    (nvl-expmatch exp nvlnod1 n i)))))
+
+
+(DEFLAM simplexpmatch (exp mtree n i)
+ (LET ((mp (cl-simplexpmatch exp (mtree-get-cl mtree) n i)))
+  (IF (MPSUCC mp) mp ;success with clnod
+   (LET ((mp1 (ovl-simplexpmatch 
+               exp (mtree-get-ovl mtree) n (mpfail-get-int mp))))
+    (IF (MPSUCC mp1) mp1 ; success with ovnod
+     (nvl-simplexpmatch exp (mtree-get-nvl mtree) n (mpfail-get-int mp1)))))))
+
+(DEFLAM cl-simplexpmatch (exp clnod n i)
+ (IF (CLNOD-EMPTY? clnod) (mpfail-mak i)
+  (LET ((cnod (clnod-get-cnod clnod exp)))
+   (IF (ISF cnod) (mpfail-mak i); failure
+    (IF (EQUAL n (ADD1 i)) ; succ
+     (mpsucc-mak (cnod-get-info cnod))
+     (mpfail-mak (ADD1 i))))))) ; partial succ
+
+(DEFLAM ovl-simplexpmatch (exp ovlnod n i)(ovl-expmatch exp ovlnod n i))
+(DEFLAM nvl-simplexpmatch (exp nvlnod n i)(nvl-expmatch exp nvlnod n i))
+
+
+(DEFLAM quantwffmatch (quantwff mtree n i)
+ (LET ((mp (cl-quantwffmatch quantwff (mtree-get-cl mtree) n i)))
+  (IF (MPSUCC mp) mp ;success with clnod
+   (LET ((mp1 (ovl-quantwffmatch 
+               quantwff (mtree-get-ovl mtree) n (mpfail-get-int mp))))
+    (IF (MPSUCC mp1) mp1 ; success with ovnod
+     (nvl-quantwffmatch 
+      quantwff (mtree-get-nvl mtree) n (mpfail-get-int mp1)))))))
+
+(DEFLAM cl-quantwffmatch (quantwff clnod n i)
+ (IF (CLNOD-EMPTY? clnod)
+  (mpfail-mak i)
+  (LET ((cnod (clnod-get-cnod clnod (quantof quantwff))))
+   (IF (ISF cnod) (mpfail-mak i) ; failure
+    (bindmatch (bvarof quantwff) 
+     (matrix quantwff) (mtree-get-nvl (cnod-get-info cnod)) n i)))))
+
+; IS-MG-INS takes into account the generalized sort information.
+; If the first argument is SysMostgeneral the IS-MG-INS succeeds,
+; otherwise it behaves like IS-MG. Note that SysMostgeneral should
+; not be provided as the second argument.
+;
+(DEFLAM bindmatch (var matrix nvlnod n i)
+ (IF (NVLNOD-EMPTY? nvlnod)
+  (mpfail-mak i)
+  (LET ((nvnod (nvlnod-get-first nvlnod))
+        (nvlnod1 (nvlnod-get-rest nvlnod)))
+   (IF (IS-MG-INS (sort (nvnod-get-sym nvnod)) (sort var))
+    (SEQ
+     (bindings-add (bind-mak (nvnod-get-sym nvnod) var))
+     (LET ((mp (expmatch matrix (nvnod-get-info nvnod) n i)))
+      (IF (MPSUCC mp) mp
+       (SEQ
+        (bindings-del-binds (nvnod-get-sym nvnod));???
+        (bindmatch var matrix nvlnod1 n (mpfail-get-int mp))))))
+    (bindmatch var matrix nvlnod1 n i)))))
+
+(DEFLAM ovl-quantwffmatch (quantwff ovlnod n i)
+ (ovl-expmatch quantwff ovlnod n i))
+
+(DEFLAM nvl-quantwffmatch (quantwff nvlnod n i)
+ (nvl-expmatch quantwff nvlnod n i))
+
+
+(DEFLAM compexpmatch (exp mtree n i)
+ (LET ((mp (cl-compexpmatch exp (mtree-get-cl mtree) n i)))
+  (IF (MPSUCC mp) mp ;success with clnod
+   (LET ((mp1 (ovl-compexpmatch 
+               exp (mtree-get-ovl mtree) n (mpfail-get-int mp))))
+    (IF (MPSUCC mp1) mp1 ; success with ovnod
+     (nvl-compexpmatch exp (mtree-get-nvl mtree) n (mpfail-get-int mp1)))))))
+
+; args-compexpmatch looks for the nth match of the arguments of 
+; a compound expression to the match tree mtree.
+; args is the arguments list;
+; arg is the number of the corrent argument to match;
+; j counts the matches of the arg-element of args to the top level nodes 
+;   of mtree;
+; i counts the matches made between the last of args and (the rest of) mtree 
+
+(DEFLAM args-compexpmatch (args arg mtree j n i)
+ (IF (EQUAL arg (LENGTH args))(expmatch (HGKM-NTH arg args) mtree n i)
+  (LET ((mp (expmatch (HGKM-NTH arg args) mtree j 0)))
+   (IFN (MPSUCC mp) (mpfail-mak 0)
+    (LET ((mp1 (args-compexpmatch args (ADD1 arg)(mpsucc-get-info mp) 1 n i)))
+     (IF (MPSUCC mp1) mp1
+      (args-compexpmatch args arg mtree (ADD1 j) n (mpfail-get-int mp1))))))))
+
+
+(DEFLAM cl-compexpmatch (exp clnod n i)
+ (IF (CLNOD-EMPTY? clnod)
+  (mpfail-mak i)
+  (LET ((cnod (clnod-get-cnod clnod (appl-get-functor exp))))
+   (IF (ISF cnod) (mpfail-mak i) ; failure
+    (args-compexpmatch (appl-get-args exp) 1 (cnod-get-info cnod) 1 n i)))))
+
+(DEFLAM ovl-compexpmatch (exp ovlnod n i)
+ (IF (OVLNOD-EMPTY? ovlnod) (mpfail-mak i)
+  (LET ((ovnod   (ovlnod-get-first ovlnod))
+        (ovlnod1 (ovlnod-get-rest  ovlnod)))
+   (LET ((bind (bindings-get-bind (ovnod-get-sym ovnod))))
+    (IFN (OR (PREDPAR (bind-get-new bind))(FUNPAR (bind-get-new bind)))
+     (IF (EQUALEXP exp (bind-get-new bind))
+      (IF (EQUAL n (ADD1 i))  ; succ
+       (mpsucc-mak (ovnod-get-info ovnod))
+       (ovl-compexpmatch exp ovlnod1 n (ADD1 i)))
+      (ovl-compexpmatch exp ovlnod1 n i))
+     (IFN (EQUAL (appl-get-functor exp) (bind-get-new bind))
+      (ovl-compexpmatch exp ovlnod1 n i)
+      (LET ((mp (args-compexpmatch 
+                 (appl-get-args exp) 1 (ovnod-get-info ovnod) 1 n i)))
+       (IF (MPSUCC mp) mp
+        (ovl-compexpmatch exp ovlnod1 n (mpfail-get-int mp))))))))))
+
+(DEFLAM nvl-compexpmatch (exp nvlnod n i)
+ (IF (NVLNOD-EMPTY? nvlnod) (mpfail-mak i)
+  (LET ((nvnod (nvlnod-get-first nvlnod))
+        (nvlnod1 (nvlnod-get-rest nvlnod)))
+   (IFN (OR (PREDPAR (nvnod-get-sym nvnod)) (FUNPAR (nvnod-get-sym nvnod)))
+    (IF (SUPERSORT (sort (nvnod-get-sym nvnod)) exp) 
+     (IF (EQUAL n (ADD1 i)) ;succ
+      (SEQ
+       (bindings-add (bind-mak (nvnod-get-sym nvnod) exp))
+       (mpsucc-mak (nvnod-get-info nvnod)))
+      (nvl-compexpmatch exp nvlnod1 n (ADD1 i)))
+     (nvl-compexpmatch exp nvlnod1 n i))
+    (IFN (AND (OR 
+               (AND (FUNAPPL exp)(FUNPAR (nvnod-get-sym nvnod)))
+               (AND (PREDAPPL exp)(PREDPAR (nvnod-get-sym nvnod))))
+         (EQUAL (arity  (appl-get-functor exp))(arity (nvnod-get-sym nvnod))))
+     (nvl-compexpmatch exp nvlnod1 n i)
+     (SEQ
+      (bindings-add (bind-mak (nvnod-get-sym nvnod) (appl-get-functor exp)))
+      (LET ((mp (args-compexpmatch
+                 (appl-get-args exp) 1 (nvnod-get-info nvnod) 1 n i)))
+       (IF (MPSUCC mp) mp
+        (nvl-compexpmatch exp nvlnod1 n (mpfail-get-int mp))))))))))

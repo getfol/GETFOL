@@ -1,0 +1,58 @@
+\gfcommand{ande}{and elimination rule}
+\index{ande}\index{ae}
+
+\gfsyntax{
+   ande \ALT ae \ARG{fact} \OPT{,} 1 \ALT 2; \\
+   ande \ALT ae \ARG{fact} \OPT{,} 1 \ALT 2 1 \ALT 2 \SEQ;
+}
+
+\gfdescription{
+   \[
+      \con E  \ \ 
+      \fraz{A \con B}
+           {A}
+      \ \ 
+      \fraz{A \con B}
+           {B}
+   \]
+
+   The wff of \ARG{fact} must be a conjunction.
+   A proof line is deduced whose wff is the left conjunct (if 1 \ALT 2 is 1)
+   or the right conjunct (if 1 \ALT 2 is 2). The fact inherits \ARG{fact}'s
+   dependencies.
+
+   In the second form, the command is applied to a fact whose wff is a
+   recursive conjunction of wffs, {\it e.g.} {\tt A and ((B and C) and D)}.
+   The sequence ``1 \ARG 2 1 \ARG 2 \SEQ" picks up the appropriate subformula.
+}
+
+\gfrecap{
+Applies and elimination rule.
+The formula given as arguments must be a conjunction.
+A proof line is deduced whose wff is the left conjunct (if the number is 1)
+or the right conjunct (if the number is 2). The fact inherits
+the dependencies of `fact'.
+In the second form, the command is applied to a fact whose wff is a
+recursive conjunction of wffs, eg. `A and ((B and C) and D)'.
+The sequence `1 | 2 1 | 2 ...' picks up the appropriate subformula.
+}
+
+\gfexample+
+   ***** declare sentconst A B C D;
+   ***** assume A and ((B and C) and D);
+   1  A and ((B and C) and D)  (1)
+
+   ***** ande 1 1;
+   2   A  (1)
+
+   ***** ande 1 2 1;
+   3  B and C  (1)
+
+   ***** ande 1 2 1 2;
+   4  C  (1)
++
+
+\gfnotes{
+   A proof line derived by executing the second form can always be derived by
+   a sequence of executions of commands in the first form.
+}

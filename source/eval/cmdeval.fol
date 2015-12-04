@@ -1,0 +1,134 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:35:59 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdeval.fol
+;; Date: Wed Oct 20 10:44:52 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;****************************************************************************
+;*                                                                          *
+;*                                                                          *
+;*                       cmdeval.fol                                        *
+;*                                                                          *
+;*                                                                          *
+;* This  file  contains  the  routines  for the parsing of the EVAL and LET *
+;* commands.                                                                *
+;*                                                                          *
+;* The external routines used in this file are in simpset.*, simplify.fol,  *
+;* eval.fol, rewrite.fol.                                                   *
+;*                                                                          *
+;****************************************************************************
+
+;**********************************************************************
+;*                                                                    *
+;*  EVAL                                                              *
+;*                                                                    *
+;* (mknewcommand (QUOTE EVAL) (QUOTE FOL) (QUOTE EVAL#) MTL)          *
+;*                                                                    *
+;**********************************************************************
+
+;;; The syntax of a EVAL command.
+
+; < EVAL COMMAND > := EVAL ALT[<wff>|<fact>|<term>] BY <simpset-expr>;
+
+(DEFLAM EVAL# ()
+ (LET ((exp (EXPGET#))
+       (labs (IF (IST (TKC@ (QUOTE BY)))
+              (SIMPSETEXPR#)
+              (LIST (QUOTE LOGICTREE)))))
+  (SEQ
+   (ENDL)
+   (eval exp labs))))
+
+(DEFLAM eval (exp labs)
+ (SEQ
+  (usedsimps-ini)
+  (LET ((exp1 (IF (TERM exp)
+               (mng-get-exp (expeval exp (simplabs2amf labs)))
+               (expeval exp (simplabs2amf labs)))))
+   (IF (EQUAL exp1 exp)
+    (EVAL-printexp exp ": No simplification is possible") 
+    (LET ((wff (IF (TERM exp) (mkequ exp exp1)                
+                (IF (EQ True exp1) exp
+                 (IF (EQ False exp1) (mknot exp)
+                  (mkiff exp exp1))))))
+     (proof-add-line 
+      wff 
+      (facts-union-dep (simplabs2facts (usedsimps-get)))
+      (reason-mak 'EVAL (ras2-mak (exp_ra-mak exp)
+				  (simpsetlabels_ra-mak labs)))))))))
+; *********************************************************************
+; *								       *
+; * 		LET     					       *
+; * 								       *
+; * (mknewcommand (QUOTE LET) (QUOTE FOL) (QUOTE LET#) MTL)            *
+; * 								       *
+; **********************************************************************
+
+; syntax of a LET command
+
+; < LET command > := LET < indconst > ALT[ TO | DAR ]   
+;                    OPT[ "[" < repnam > "]" ] < term > ; 
+
+(DEFLAM LET# ()
+ (LET ((indconst (ALPHA-INDCONST#)))
+  (IF (IST (TKC@ (QUOTE DAR)))
+   (LET ((replabel (INDREPINFO#)))
+    (LET ((term (TERM#)))
+     (SEQ
+      (ENDL)
+      (let-dar-check&mak indconst replabel term))))
+   (SEQ    
+    (TKC# (QUOTE TO) "TO or DAR ")
+    (LET ((replabel (INDREPINFO#)))
+     (LET ((term (TERM#)))
+      (SEQ
+       (ENDL)
+       (let-to-check&mak indconst replabel term))))))))

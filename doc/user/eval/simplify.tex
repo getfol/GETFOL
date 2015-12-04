@@ -1,0 +1,120 @@
+\gfcommand{simplify}{semantic simplification}
+\index{simplify}
+\label{sec-simplify}
+
+\gfsyntax{
+  simplify \ARG{wff} \ALT \ARG{fact} \ALT \ARG{term};
+}
+
+\gfdescription{
+  If \ARG{term} is provided as argument, three steps are performed:\\
+  %
+  \begin{itemize}
+  \item 
+    the interpretation of \ARG{term} in the computational model is computed;
+  \item a preferred name for the interpretation is found;
+  \item the equality of \ARG{term} with the preferred name is asserted as the next
+    line of the proof.
+    No action is taken if \ARG{term} has no interpretation in the computational
+    model (has an undefined interpretation) or a preferred name for its
+    interpretation does not exist.
+  \end{itemize}
+  %
+  If {\em wff} is provided as an argument, two steps are performed:
+  %
+  \begin{itemize}
+  \item the interpretation of {\em wff} in the computational model is computed 
+    (in this case the interpretation will be {\tt TRUE}, {\tt FALSE} or an 
+    undefined truth value)
+  \item if the interpretation of {\em wff} is {\tt TRUE}, {\em wff} 
+    is asserted as the next line of the proof, if it is {\tt FALSE} 
+    the negation of {\em wff} is asserted.
+  \end{itemize}
+  %
+  When \ARG{fact} is provided as argument, the simplify command works on the wff
+  of \ARG{fact}.
+}
+
+\gfrecap{
+  If `term' is provided as argument, three steps are performed:
+      * the interpretation of `term' in the computational model is computed;
+      * a preferred name for the interpretation is found;
+      * the equality of $term$ with the preferred name is asserted as the next
+        line of the proof. No action is taken if `term' has no interpretation
+        in the computational model (has an undefined interpretation) or a
+        preferred name for its interpretation does not exist.
+  If `wff' is provided as an argument, two steps are performed:
+      * the interpretation of `wff' in the computational model is computed 
+        (in this case the interpretation will be `TRUE', `FALSE' or an 
+        undefined truth value)
+      * if the interpretation of `wff' is `TRUE', `wff' is asserted as the next
+        line of the proof, if it is `FALSE' the negation of `wff' is asserted.
+  When `fact' is provided as argument, the simplify command works on the wff
+  of `fact'.
+}
+
+\gfexample+
+   ***** declare indconst a b c;
+   ***** decrep REP;
+   ***** attach a dar [REP]a;
+   a attached to 'a
+   a is the preferred name of a
+   ***** attach b dar [REP]b;
+   b attached to 'b
+   b is the preferred name of b
+   ***** attach c to [REP]c;
+   c attached to 'c
+   ***** declare funconst F 1;
+   F has been declared to be a Funconst
+   ***** DEFLAM F(x) (IF (EQ x (QUOTE a)) (QUOTE b) 
+                         (IF (EQ x (QUOTE b)) (QUOTE c)
+                          (QUOTE UNDEF&)));
+   ***** attach F to [REP=REP]F;
+   F attached to F
+   ***** simplify F(a);
+   1   F(a) = b    
+   ***** simplify F(b);
+   F(b) : No simplification is possible.
+   ***** simplify F(c);
+   F(c) : No simplification is possible.
+   ***** declare predconst P 1;
+   P has been declared to be a Predconst
+   ***** DEFLAM P(x) (IF (EQ x (QUOTE a)) TRUE 
+                         (IF (EQ x (QUOTE b)) FALSE 
+                          (QUOTE UNDEF&)));
+   ***** attach P to [REP]P;
+   P attached to P
+   ***** simplify P(a);
+   2   P(a)  
+   ***** simplify P(b);
+   3   not P(b)    
+   ***** simplify P(c);
+   P(c) : No simplification is possible.
+   ***** extension UNIVERSAL by {a b c};
+   Now the extension of UNIVERSAL is fixed to be : (a b c)
+   ***** declare indvar x;
+   UNIVERSAL is a sort
+   x has been declared to be an Indvar
+   ***** simplify exists x.F(x)=b;
+   4   exists x. (F(x) = b)
+   ***** simplify forall x.P(x);
+   5   not forall x. P(x) 
++
+
+\gfnotes{
+  In the case of sorts with extensions (see the command {\tt extension} in section 
+  \ref{sec-sort}) quantification is considered as {\bf bounded quantification}.
+  In other words, let $P$ be a predicate and $x$ an indvar of sort $S$, where
+  $S$ has extension $\{s_1,\ldots,s_n\}$.
+  Then the following equivalences hold:
+  $$ 
+  \forall x P(x)\liff (P(s_1) \con \ldots \con P(s_n))
+  $$
+  $$
+  \exists x P(x)\liff (P(s_1) \dis \ldots \dis P(s_n))
+  $$
+  %
+  The command explicitly unfolds universal/existential statements into 
+  their propositional equivalents. 
+}
+

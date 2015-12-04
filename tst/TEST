@@ -1,0 +1,95 @@
+comment ! TESTING THE GETFOL SYSTEM !
+probe all;
+
+comment ! DECIDERS !
+	comment !
+	  fetch decide/agatha.tst;
+	  reset;
+	!
+	comment !
+	  fetch decide/andrews.tst;
+	  reset;
+	!
+	fetch decide/decide.tst;
+	reset;
+	fetch decide/monad.tst;
+	reset;
+	fetch decide/monadeq.tst;
+	reset;
+	fetch decide/pltier.tst;
+	reset;
+	fetch decide/ptaut.tst;
+	reset;
+	comment !
+	  fetch decide/stroller.tst;
+	  reset;
+	  fetch decide/strols.tst;
+	  reset;
+	  fetch decide/strols2.tst;
+	  reset;
+	!
+	fetch decide/taut.tst;
+	reset;
+	fetch decide/tauteq.tst;
+	reset;
+comment ! EVAL !
+	fetch eval/attach.tst;
+	reset;
+	fetch eval/eval.tst;
+	reset;
+	fetch eval/exteval.tst;
+	reset;
+	fetch eval/extsimpl.tst;
+	reset;
+	fetch eval/grid.tst;
+	reset;
+	fetch eval/gridrev.tst;
+	reset;
+	fetch eval/rewrite1.tst;
+	reset;
+	fetch eval/rewrite2.tst;
+	reset;
+	fetch eval/rewrite3.tst;
+	reset;
+	fetch eval/simpl1.tst;
+	reset;
+	fetch eval/simpl2.tst;
+	reset;
+	fetch eval/sorts.tst;
+	reset;
+	fetch eval/tarith.tst;
+	reset;
+
+comment ! IO !
+	fetch io/scan.tst;
+	reset;
+
+comment ! LANGUAGE !
+	fetch lang/copylex.tst;
+	reset;
+	fetch lang/declare.tst;
+	reset;
+	fetch lang/exp1.tst;
+	reset;
+	fetch lang/exp2.tst;
+	reset;
+
+comment ! META !
+	fetch meta/mattach.tst;
+	reset;
+	fetch meta/min.tst;
+	reset;
+
+comment ! ND !
+	fetch nd/if.tst;
+	reset;
+	fetch nd/str.tst;
+	reset;
+
+comment ! PROOF !
+	fetch proof/axiom.tst;
+	reset;
+	fetch proof/reason.tst;
+	reset;
+	fetch proof/thm.tst;
+	reset;

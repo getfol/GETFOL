@@ -1,0 +1,41 @@
+\gfcommand{assertsimp}{simpset command}
+\index{assertsimp}
+
+\gfsyntax{
+  assertsimp \ARG{simplabel}; 
+}
+
+\gfdescription{
+  It generates a proof step for each formula contained in the rewrite rules
+  of \ARG{simplabel}, which cannot be a builtin simpset.
+}
+
+\gfrecap{
+It generates a proof step for each formula contained in the rewrite rules
+of `simplabel', which cannot be a builtin simpset.
+}
+
+\gfexample+
+   ***** declare indconst a b;
+   ***** declare predconst q r 1;
+   ***** declare indvar x;
+   ***** setbasicsimp s1 at wffs {q(a), forall x.(q(x) iff r(x))};
+   ***** assume a=b;
+   1   a = b     (1)
+   ***** assume q(b);
+   2   q(b)     (2)
+   ***** setbasicsimp s2 at facts {1,2};
+   ***** setbasicsimp s2 at facts {1};
+   s2 is already the label of a simpset
+   ***** setcompsimp s4 at s1 uni s2;
+   ***** assertsimp s1;
+   3   q(a)     
+   4   forall x. (q(x) iff r(x))     
+   ***** assertsimp s2;
+   s2 does not contain any wff to assert.
+   ***** assertsimp s4;
+   5   q(a)
+   6   forall x. (q(x) iff r(x))
+   ***** assertsimp LOGICTREE;
+   LOGICTREE is the label of a builtin simpset, you can't assert it.
++

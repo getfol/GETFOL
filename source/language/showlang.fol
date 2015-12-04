@@ -1,0 +1,470 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:52:31 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: showlang.fol
+;; Date: Wed Oct 20 10:46:04 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; *****************************************************************
+;
+; This file contains the primitives to show the language.
+;
+; *****************************************************************
+
+
+;;;  SHOWSYM  :  show an <folsym>
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SHOWSYM <folsym> )                                      *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This gives the information on <folsym>.                  *
+; *      The information depends on whether <folsym> is           *
+; *      undeclared, <simpsym> or <applsym>.                      *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SHOWSYM (SYM) 
+ (IF (SENTSYM SYM)
+  (SSENTSYM SYM)
+  (IF (INDSYM SYM)
+   (SINDSYM SYM)
+   (IF (FUNSYM SYM)
+    (SFUNSYM SYM)
+    (IF (PREDSYM SYM)
+     (SPREDSYM SYM)
+     (SLOGICSYM SYM))))))
+
+
+
+
+;;;  SSENTSYM  :  show a <sentsym>
+; 
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SSENTSYM <sentsym> )                                    *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This gives the information on <sentsym>.                 *
+; *                                                               *
+; * EXAMPLE                                                       *
+; *                                                               *
+; * S is declared to be a Sentconst.                              *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SSENTSYM (SYM) 
+ (SEQ 
+  (CRLF) 
+  (printname SYM)
+  (HGKM-PRINC " is declared to be a ")
+  (HGKM-PRINC (syntype SYM))
+  (CRLF)))
+
+
+;;;  SINDSYM  :  show an <indsym>
+; 
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SINDSYM <indsym> )                                      *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This gives the information on <indsym>.                  *
+; *                                                               *
+; *      EXAMPLE for a <indconst>                                 *
+; *                                                               *
+; * i1 is declared to be an Indconst of sort NATNUM.              *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFLAM SINDSYM (SYM) 
+ (SEQ 
+  (CRLF) 
+  (printname SYM)
+  (HGKM-PRINC " is declared to be an ")
+  (HGKM-PRINC (syntype SYM)) 
+  (HGKM-PRINC " of sort ")
+  (printname (sort SYM)) 
+  (HGKM-PRINC ".")
+  (CRLF)))
+
+
+;;;  Show an <applsym>
+; 
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SFUNSYM <funsym> )                                      *
+; *      (SPREDSYM <predsym> )                                    *
+; *      (SLOGCSYM <logicsym> )                                   *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This gives the information on <applsym>.                 *
+; *                                                               *
+; * EXAMPLE                                                       *
+; *                                                               *
+; * + is declared to be a Funconst of arity 2.                    *
+; *                                                               *
+; * The FMAPs for + are                                           *
+; *        NATNUM * REAL ==> REAL                                 *
+; *        REAL * REAL ==> REAL                                   *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SFUNSYM (SYM) 
+ (LET ((FMAPS (fmaps SYM))) 
+  (SEQ 
+   (CRLF) 
+   (printname SYM)
+   (HGKM-PRINC " is declared to be a ")
+   (HGKM-PRINC (syntype SYM)) 
+   (HGKM-PRINC " of arity ")
+   (HGKM-PRINC (arity   SYM)) 
+   (HGKM-PRINC ".")
+   (CRLF) 
+   (CRLF) 
+   (IF (EQUAL (LENGTH FMAPS) 1)
+    (SEQ 
+     (HGKM-PRINC "The only FMAP for ")
+     (printname SYM) 
+     (HGKM-PRINC " is ")
+     (PRINTFMAP (CAR FMAPS)) 
+     (HGKM-PRINC "."))
+    (SEQ 
+     (HGKM-PRINC "The FMAPs for ")
+     (printname SYM) 
+     (HGKM-PRINC " are ")
+     (CRLF)
+     (CRLF)
+     (PRINTFMAPS FMAPS) 
+     (HGKM-PRINC ".")))
+   (CRLF))))
+
+(DEFLAM PRINTFMAPS (FMAPS)
+ (IF (EQUAL (LENGTH FMAPS) 1) 
+  (PRINTFMAP (CAR FMAPS))
+  (SEQ 
+   (PRINTFMAP (CAR FMAPS))
+   (HGKM-PRINC ", ")
+   (CRLF)
+   (CRLF)
+   (PRINTFMAPS (CDR FMAPS)))))
+
+(DEFLAM PRINTFMAP (FMAP)
+ (SEQ
+  (PRINTARGS (fmap-get-args FMAP))
+  (HGKM-PRINC " ==> ")
+  (printname (fmap-get-out FMAP))))
+
+(DEFLAM PRINTARGS (ARGLIST)
+ (SEQ
+  (printname (CAR ARGLIST))
+  (IF (MTL? (CDR ARGLIST))
+   (NOP)
+   (SEQ
+    (HGKM-PRINC " * ")
+    (PRINTARGS (CDR ARGLIST))))))
+
+
+
+(DEFLAM SPREDSYM (SYM) 
+ (IF (IS-SORT SYM)
+  (SEQ
+   (CRLF) 
+   (printname SYM)
+   (HGKM-PRINC " is declared to be a sort.")
+   (CRLF))
+  (IF (AND (PREDCONST SYM) (UNARY SYM))
+   (SEQ 
+    (CRLF) 
+    (printname SYM)
+    (HGKM-PRINC " is declared to be a Predconst of arity 1.")
+    (CRLF)
+    (CRLF)
+    (printname SYM)
+    (HGKM-PRINC " is NOT declared to be a sort.")
+    (CRLF))
+   (SEQ 
+    (CRLF) 
+    (printname SYM)
+    (HGKM-PRINC " is declared to be a ")
+    (HGKM-PRINC (syntype SYM)) 
+    (HGKM-PRINC " of arity ")
+    (HGKM-PRINC (arity SYM)) 
+    (HGKM-PRINC ".")
+    (CRLF)))))
+
+
+(DEFLAM SLOGICSYM (SYM)
+ (SEQ
+  (CRLF) 
+  (printname SYM)
+  (HGKM-PRINC " is a logical symbol.")
+  (CRLF)))
+
+
+;;;  SHOWTYP   : shows all symbols of a syntype.
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SHOWTYP TYP)                                            *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This shows the symbols declared to be TYP.               *
+; *                                                               *
+; *      EXAMPLE for Funconst                                     *
+; *                                                               *
+; * The only symbol declared to be a Funconst is                  *
+; *                                                               *
+; *     +                                                         *
+; *                                                               *
+; * The symbols declared to be Funconsts are                      *
+; *                                                               *
+; *     + *                                                       *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SHOWTYP (TYP) 
+ (LET ((LS (cur-symls-get-ls TYP)))
+  (IF (MTL? LS)
+   (SEQ
+    (CRLF)
+    (HGKM-PRINC "No symbol is declared to be an ")
+    (HGKM-PRINC TYP)
+    (HGKM-PRINC ".")
+    (CRLF))
+   (IF (MTL? (CDR LS))
+    (SEQ 
+     (CRLF) 
+     (IF (HGKM-MEMQ TYP '(Indconst Indpar Indvar))
+      (HGKM-PRINC "The only symbol declared to be an ")
+      (HGKM-PRINC "The only symbol declared to be a "))
+     (HGKM-PRINC TYP)
+     (HGKM-PRINC " is ")
+     (printname (lse-get-obj (ls-get-first LS)))
+     (CRLF))
+    (SEQ
+     (CRLF) 
+     (HGKM-PRINC "The symbols declared to be ")
+     (HGKM-PRINC TYP)
+     (HGKM-PRINC "s are")
+     (CRLF) 
+     (CRLF) 
+     (HGKM-PRINC "    ")
+     (printnames (ls-get-all_objs LS))
+     (CRLF))))))
+
+
+;;;  SHOWSORT  : shows all sorts
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SHOWSRT)                                                *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This shows the symbols declared to be sorts.             *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SHOWSRT ()
+ (LET ((L (sorts)))
+  (IF (MTL? L)
+   (SEQ
+    (CRLF)
+    (HGKM-PRINC "No symbol is declared to be a sort.")
+    (CRLF))
+   (IF (MTL? (CDR L))
+    (SEQ 
+     (CRLF) 
+     (HGKM-PRINC "The only symbol declared to be a sort is ")
+     (printname (CAR L))
+     (CRLF))
+    (SEQ
+     (CRLF) 
+     (HGKM-PRINC "The symbols declared to be sorts are")
+     (CRLF) 
+     (CRLF) 
+     (HGKM-PRINC "    ")
+     (printnames L)
+     (CRLF))))))
+
+
+;;;  SHOWMGS   : shows moregeneral sorts
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SHOWMGS <sort> )                                        *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This shows the sorts moregeneral than SORT.              *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SHOWMGS (SORT)
+ (LET ((L (smg SORT)))
+  (IF (MTL? L)
+   (SEQ
+    (CRLF)
+    (HGKM-PRINC "No sort is strictly moregeneral than ")
+    (printname SORT)
+    (HGKM-PRINC ".")
+    (CRLF))
+   (IF (MTL? (CDR L))
+    (SEQ 
+     (CRLF) 
+     (HGKM-PRINC "The only sort strictly moregeneral than ")
+     (printname SORT)
+     (HGKM-PRINC " is ")
+     (printname (CAR L))
+     (CRLF))
+    (SEQ
+     (CRLF) 
+     (HGKM-PRINC "The sorts strictly moregeneral than ")
+     (printname SORT)
+     (HGKM-PRINC " are")
+     (CRLF)
+     (CRLF)
+     (HGKM-PRINC "    ")
+     (printnames L)
+     (CRLF))))))
+
+
+;;;  SHOWLGS   : shows strictly lessgeneral sorts
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SHOWLGS SORT)                                           *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This shows the sorts lessgeneral than SORT.              *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SHOWLGS (SORT)
+ (LET ((L (slg SORT)))
+  (IF (MTL? L)
+   (SEQ
+    (CRLF)
+    (HGKM-PRINC "No sort is strictly lessgeneral than ")
+    (printname SORT)
+    (HGKM-PRINC ".")
+    (CRLF))
+   (IF (MTL? (CDR L))
+    (SEQ 
+     (CRLF) 
+     (HGKM-PRINC "The only sort strictly lessgeneral than ")
+     (printname SORT)
+     (HGKM-PRINC " is ")
+     (printname (CAR L))
+     (CRLF))
+    (SEQ
+     (CRLF) 
+     (HGKM-PRINC "The sorts strictly lessgeneral than ")
+     (printname SORT)
+     (HGKM-PRINC " are")
+     (CRLF)
+     (CRLF)
+     (HGKM-PRINC "    ")
+     (printnames L)
+     (CRLF))))))
+
+
+
+
+;;;  SHOWMEM : shows <indsym>'s declared to be of <sort>.
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SHOWMEM SORT)                                           *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *      This shows <indsym>'s declared to be of <sort>.          *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SHOWMEM (SORT)
+ (LET ((L (indsyms-of-sort SORT)))
+  (IF (MTL? L)
+   (SEQ
+    (CRLF)
+    (HGKM-PRINC "No <indsym> is declared to be of sort ")
+    (printname SORT)
+    (HGKM-PRINC ".")
+    (CRLF))
+   (IF (MTL? (CDR L))
+    (SEQ 
+     (CRLF) 
+     (HGKM-PRINC "The only <indsym> declared to be of sort ")
+     (printname SORT)
+     (HGKM-PRINC " is ")
+     (printname (CAR L))
+     (CRLF))
+    (SEQ
+     (CRLF) 
+     (HGKM-PRINC "The <indsym>'s declared to be of sort ")
+     (printname SORT)
+     (HGKM-PRINC " are")
+     (CRLF)
+     (CRLF)
+     (HGKM-PRINC "    ")
+     (printnames L)
+     (CRLF))))))
+
+

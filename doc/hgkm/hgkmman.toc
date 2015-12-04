@@ -1,0 +1,35 @@
+\contentsline {section}{\numberline {1}Introduction}{1}
+\contentsline {subsection}{\numberline {1.1}Basic concepts}{1}
+\contentsline {subsection}{\numberline {1.2}Remarks about notation}{1}
+\contentsline {section}{\numberline {2}Basic {{\ptt HGKM}}}{3}
+\contentsline {subsection}{\numberline {2.1}Data structures}{3}
+\contentsline {subsubsection}{\numberline {2.1.1}Truth values and equality predicate}{3}
+\contentsline {subsubsection}{\numberline {2.1.2}Symbols}{4}
+\contentsline {subsubsection}{\numberline {2.1.3}Integers}{4}
+\contentsline {subsubsection}{\numberline {2.1.4}Characters}{5}
+\contentsline {subsubsection}{\numberline {2.1.5}Strings}{6}
+\contentsline {subsubsection}{\numberline {2.1.6}Pairs}{6}
+\contentsline {subsubsection}{\numberline {2.1.7}Lists}{7}
+\contentsline {subsection}{\numberline {2.2}Evaluation of forms}{8}
+\contentsline {subsubsection}{\numberline {2.2.1}Eval and apply}{11}
+\contentsline {subsection}{\numberline {2.3}Special forms}{11}
+\contentsline {subsubsection}{\numberline {2.3.1}First level constructors}{11}
+\contentsline {subsubsection}{\numberline {2.3.2}First level recognizers}{13}
+\contentsline {subsection}{\numberline {2.4}Error handling}{14}
+\contentsline {subsection}{\numberline {2.5}Input-output}{14}
+\contentsline {subsubsection}{\numberline {2.5.1}Opening and closing channels}{14}
+\contentsline {subsubsection}{\numberline {2.5.2}Input output specifying channels}{15}
+\contentsline {subsubsection}{\numberline {2.5.3}Input output with implicit channels}{16}
+\contentsline {section}{\numberline {3}Extended {{\ptt HGKM}}}{17}
+\contentsline {subsection}{\numberline {3.1}Truth values}{17}
+\contentsline {subsection}{\numberline {3.2}Symbols}{17}
+\contentsline {subsection}{\numberline {3.3}Integers}{18}
+\contentsline {subsection}{\numberline {3.4}Characters}{18}
+\contentsline {subsection}{\numberline {3.5}Strings}{18}
+\contentsline {subsection}{\numberline {3.6}Lists}{19}
+\contentsline {subsection}{\numberline {3.7}Arrays}{20}
+\contentsline {subsection}{\numberline {3.8}Ordered lists of integers}{20}
+\contentsline {subsection}{\numberline {3.9}Associative lists}{21}
+\contentsline {subsection}{\numberline {3.10}Extending the evaluation syntax}{21}
+\contentsline {subsection}{\numberline {3.11}Extending the input output}{22}
+\contentsline {section}{\numberline {A}Some notes about implementation}{22}

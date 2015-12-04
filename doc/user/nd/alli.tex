@@ -1,0 +1,147 @@
+\gfcommand{alli}{universal quantification introduction rule}
+\index{alli}\index{ug}
+
+\gfsyntax{
+   alli \ALT ug \ARG{fact} \OPT{\OPT{,} \ARG{indvar1} \ALT \ARG{indpar1} :} 
+                           \ARG{indvar11}
+                           \OPT{\OPT{,} \ARG{indvar2} \ALT \ARG{indpar2} :}
+                           \ARG{indvar22} \SEQ;
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \forall  I  
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      \fraz{A}
+      {\forall x A^{a}_{x}}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   There is the usual ND restriction on the application of this rule, namely
+   the newly quantified variable must not appear free in any of the 
+   dependencies of \ARG{fact}.
+
+   Several simultaneous universal generalizations on \ARG{fact}'s wff
+   can be carried out with this command.
+   Each element of the substitution list may be either an individual variable
+   (e.g. {\tt x}) or a pair.
+   The pair elements are two individual variables ({\tt y:x}) or an individual
+   parameter and an individual variable ({\tt a:x}).
+   For each element in the substitution list a new universal quantifier is put
+   at the front of \ARG{fact}'s wff. 
+   In the case of pairs of the kind {\tt a:x},  the variable {\tt x} is
+   substituted for all occurrences of the individual parameter {\tt a}
+   which are not within the scope of the universal quantification of {\tt x}. 
+   The individual parameter {\tt a} must not occur within the scope of a
+   quantifier binding {\tt x}, otherwise an error message is returned. 
+
+   The dependencies of the new created proof line are the same as those of
+   \ARG{fact}.
+
+   The rule with sorts must also satisfy the following restriction.
+   Let us first consider a substitution list whose only substitution is
+   {\tt a:x} or {\tt y:x}, where {\tt x} is a variable of sort {\tt Sx}.
+   Then the sorted rule is applicable only if {\tt a} and {\tt y} are terms
+   of sort weakly more general than {\tt Sx}.
+   In the general case, the specified condition must hold for all the
+   substitutions of the substitution list.
+}
+
+\gfrecap{
+   Applies introduction of universal quantification.
+   The usual natural deduction's restrictions apply.
+}
+
+\gfexample+
+   ***** comment ! An example with generalization from individual parameters
+                   to quantified variables !
+        
+   ***** declare predconst P 1;
+   ***** declare indvar x;
+   ***** declare indpar a;
+   [...]
+
+   ***** assume P(a);
+   1   P(a)     (1)
+   ***** alli 1 a:x;
+   alli 1 a:x;
+   Some variables appear free in the assumptions.
+   ***** impi 1 1;
+   2   P(a) imp P(a)
+   ***** alli 2 a:x;
+   3   forall x.(P(x) imp P(x))
+   ***** alli 2 x;
+   4   forall x.(P(a) imp P(a))
+    
+     
+   ***** comment ! The same example when substituting more than one variable !
+     
+   ***** reset;
+   ***** declare predconst Q 2;
+   ***** declare indvar x y;
+   ***** declare indpar a b;
+   [...]
+
+   ***** assume Q(a b);
+   1   Q(a,b)     (1)
+   ***** impi 1 1;
+   2   Q(a,b) imp Q(a,b)
+   ***** alli 2 a:x b:y;
+   3   forall x y. (Q(x,y) imp Q(x,y))
+
+
+   ***** comment ! An example with generalization from free variables
+                   to quantified variables !
+
+   ***** reset;
+   ***** declare predconst P 1;
+   ***** declare indvar x;
+   [...]
+
+   ***** assume P(x);
+   1   P(x)     (1)
+   ***** impi 1 1;
+   2   P(x) imp P(x)
+   ***** alli 2 x:x;
+   3   forall x.(P(x) imp P(x))
+   ***** alli 2 x;
+   4   forall x.(P(x) imp P(x))
+     
+
+   ***** comment ! An example of non applicability of generalization from
+                   individual parameters to quantified variables with sorts !
+      
+   ***** declare predconst P 1;
+   ***** declare indvar x [Sx];
+   ***** declare indpar a [Sa];
+   [...]
+
+   ***** assume P(a);
+   1   P(a)     (1)
+
+   ***** alli 1 a:x;
+   alli 1 a:x;
+   Some variables appear free in the assumptions.
+
+   ***** impi 1 1;
+   2   P(a) imp P(a)
+
+   ***** alli 2 a:x;
+   alli 2 a:x
+   A <var> cannot be replaced by one with more general sort
+
+   ***** moregeneral Sa < Sx >;
+
+   ***** alli 2 a:x;
+   3   forall x. (P(x) imp P(x))
++
+
+
+\gfnotes{
+   The rule is often called ``universal generalization".
+}

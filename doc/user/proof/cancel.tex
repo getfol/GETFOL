@@ -1,0 +1,33 @@
+\gfcommand{cancel}{proof lines elimination}
+\index{cancel}
+
+\gfsyntax{
+   cancel \OPT{\ARG{label}};
+}
+
+\gfdescription{
+   Cancels all the proof lines in the current proof starting from 
+   the one with label \ARG{label}. 
+   If \ARG{label} is not specified then it cancels the last asserted 
+   proof line.
+}
+
+\gfrecap{
+Cancels all the proof lines in the current proof starting from the one
+labelled `label'.
+If `label' is not specified then it cancels the last asserted proof line.
+}
+
+\gfexample+
+   ***** show proof;
+   1   A     (1)
+   2   B     (2)
+   3   C     (3)
+   4   D     (4)
+   ***** cancel;
+   1   A     (1)
+   2   B     (2)
+   3   C     (3)
+   ***** cancel 2;
+   1   A     (1)
++

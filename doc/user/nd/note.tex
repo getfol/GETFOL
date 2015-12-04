@@ -1,0 +1,66 @@
+\gfcommand{note}{falsity rule in classical logic}.
+\index{note}\index{ne}
+
+\gfsyntax{
+   note \ALT ne \ARG{fact1} \OPT{,} \ARG{wff}; \\
+   note \ALT ne \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \\ \\ 
+      \bot_c 
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      {[\neg A]}\\
+      \vdots\\
+      \bot\\
+      \hline\\
+      A 
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   The wff of \ARG{fact1} must be {\tt FALSE} and \ARG{wff} must be a negation
+   of the form $\neg A$.
+   The wff derived is $A$.
+   It depends on all the dependencies of \ARG{fact1} less the dependencies of
+   all those facts whose wff is equal to \ARG{wff} ($\neg A$) (in the first) 
+   form or \ARG{fact1}'s wff (in the second form).
+}
+
+\gfrecap{
+   The wff of `fact1' must be `FALSE' and `wff' must be a negation
+   of the form `not A'.
+   The wff derived is `A'.
+   It depends on all the dependencies of `fact1' less the dependencies of
+   all those facts whose wff is equal to `wff' (`not A') (in the first) 
+   form or the formula of `fact1' (in the second form).
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   [...]
+
+   ***** assume not A not not A;
+   1   not A     (1)
+   2   not (not A)     (2)
+
+   *****  falsei 1 2;
+   3   FALSE     (1 2)
+
+   *****  note 3 not A;
+   4   A     (2)
+
+   *****  impi 2 4;
+   5   (not (not A)) imp A 
++
+
+\gfnotes{
+   This rule implements ``reductio ad absurdum''. 
+   Any proof using only the ND commands but not this rule is valid
+   intuitionistically. 
+}

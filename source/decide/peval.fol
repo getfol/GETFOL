@@ -1,0 +1,132 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:29:04 MET 1993
+;;
+;; This GETFOL file (peval.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*******************************************************************
+;*                                                                 *
+;* SYNTAX                                                          *
+;*      (PEVAL wff SUBSTS)                                         *
+;*                                                                 *
+;* where no quantifiers are in wff.                                *
+;*                                                                 *
+;* DESCRIPTION                                                     *
+;*                                                                 *
+;* PEVAL partially evaluates wff wrt the (partial) substitution    *
+;* SUBSTS.                                                         *
+;* The function does not analyze internal structure of PREDAPPL,   *
+;* but are treated as sentential constants applying substitution   *
+;* subst to them ...                                               *
+;*                                                                 *
+;* e.g.  (PEVAL "P(x,y)" "((P(x,y) . True))") = True ;             *
+;*                                                                 *
+;* the list of substitutions SUBSTS, is an a-list containing the   * 
+;* value to assign to propositional constituents.                  *
+;*                                                                 *
+;* e.g. ((P(x,y) . TRUE) (A . FALSE) (Q(f(x)) . TRUE) ....)        *
+;*                                                                 *
+;*******************************************************************
+
+(DEFLAM PEVAL (wff SUBSTS)
+ (IF (OR (SIMPLE wff) (PREDAPPL wff))
+  (LET ((sub (HGKM-ASSOC wff SUBSTS)))
+   (IF (MTL? sub) wff (sub-get-subing sub)))
+  (IF (NEG wff)
+   (LET ((w (PEVAL (body wff) SUBSTS))) 
+    (IF (TRUTH w) (mkfalsity)
+     (IF (FALSITY w) (mktruth)
+      (mknot w)))) 
+   (IF (DISJ wff)
+    (LET ((w1 (PEVAL (lfor wff) SUBSTS)))
+     (IF (FALSITY w1) (PEVAL (rtor wff) SUBSTS)
+      (IF (TRUTH w1) (mktruth)
+       (LET ((w2 (PEVAL (rtor wff) SUBSTS)))
+        (IF (FALSITY w2) w1
+         (IF (TRUTH w2) (mktruth)
+          (mkor w1 w2)))))))
+    (IF (CONJ wff)
+     (LET ((w1 (PEVAL (lfand wff) SUBSTS)))
+      (IF (FALSITY w1) (mkfalsity)
+       (IF (TRUTH w1) (PEVAL (rtand wff) SUBSTS)
+        (LET ((w2 (PEVAL (rtand wff) SUBSTS)))
+         (IF (FALSITY w2) (mkfalsity)
+          (IF (TRUTH w2) w1 (mkand w1 w2)))))))
+     (IF (IMP wff)
+      (LET ((w1 (PEVAL (hypot wff) SUBSTS)))
+       (IF (FALSITY w1) (mktruth)
+        (IF (TRUTH w1) (PEVAL (concl wff) SUBSTS)
+         (LET ((w2 (PEVAL (concl wff) SUBSTS)))
+          (IF (FALSITY w2) (mknot w1)
+           (IF (TRUTH w2) (mktruth) (mkimp w1 w2)))))))
+      (IF (IFF wff)
+       (LET ((w1 (PEVAL (lfiff wff) SUBSTS)))
+        (IF (FALSITY w1) (PEVAL (mknot (rtiff wff)) SUBSTS)
+         (IF (TRUTH w1) (PEVAL (rtiff wff) SUBSTS)
+          (LET ((w2 (PEVAL (rtiff wff) SUBSTS)))
+           (IF (FALSITY w2) (mknot w1)
+            (IF (TRUTH w2) w1 (mkiff w1 w2)))))))
+       (IF (WFFIF wff)
+        (LET ((w1 (PEVAL (ifof wff) SUBSTS)))
+         (IF (FALSITY w1) (PEVAL (elseof wff) SUBSTS)
+          (IF (TRUTH w1) (PEVAL (thenof wff) SUBSTS)
+           (LET ((w2 (PEVAL (thenof wff) SUBSTS)))
+            (IF (FALSITY w2)
+             (LET ((w3 (PEVAL (elseof wff) SUBSTS)))
+              (IF (FALSITY w3) (mkfalsity)
+               (IF (TRUTH w3) (mknot w1) (mkand (mknot w1) w3))))
+             (IF (TRUTH w2)
+              (LET ((w3 (PEVAL (elseof wff) SUBSTS)))
+               (IF (TRUTH w3) (mktruth)
+                (IF (FALSITY w3) w1 (mkor w1 w3))))
+              (LET ((w3 (PEVAL (elseof wff) SUBSTS)))
+               (IF (TRUTH w3) (mkor w1 w2)
+                (IF (FALSITY w3) (mkimp w1 w2)
+                 (mkwffif w1 w2 w3))))))))))
+        (IF (QUANTWFF wff)
+         (error-trap 'NOTPROP 'PTAUT)
+         (REMSG1 "PEVAL: <wff> with unknown syntax. Fatal error !!!"))))))))))
+
+
+

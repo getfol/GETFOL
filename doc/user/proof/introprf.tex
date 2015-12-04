@@ -1,0 +1,18 @@
+\section{Multiple proofs}
+\label{sec-proof}
+
+\subsection{Introduction}
+
+In {\GF} the user can build multiple distinct proofs (sequences of proof lines).
+All the proofs within a context (see section \ref{sec-cxt}) share the language,
+the  axioms, and the computational model of the context.
+However, proofs (in the same context) differ by their proof lines. A proof  line
+belongs to one and only  one proof.
+The proof you are working in is the {\em current  proof}.
+When you enter the system the current proof does not contain proof lines and has
+no name (the {\em un-named} proof).
+If you want to leave the proof to build another one, you have to give it a name
+(by the command {\tt nameproof}).
+This allows us to refer to it later on.
+You can create a new proof by using {\tt makeproof}, and  switch to it by using
+{\tt switchproof}. The proof you switch to becomes then the current proof.

@@ -1,0 +1,635 @@
+\newcommand{\syndes}[2]{\item[\parbox{\textwidth}{#1}]\hfill #2}
+\newcommand{\module}[1]{\subsection{#1}}
+
+\section{Syntax of commands}
+
+\module{admin}
+
+\begin{description}
+\syndes{
+   comment \ARG{separator} \OPT{\ARG{text}} \ARG{separator}
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   deflam \ARG{funname} \ARG{var-list} \ARG{form};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   deflam \ARG{funname} \ARG{var-list} \ARG{form};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   echo \ARG{separator} \OPT{\ARG{text}} \ARG{separator}
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   hgk \ARG{s-expr};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   hgk \ARG{s-expr};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   know natnums \OPT{\ARG{natnum1}, \SEQ \ARG{natnumN}};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   load \ARG{file};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   resetprompt;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   setprompt to \ARG{s-expr};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   setprompt to \ARG{s-expr};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   show \ARG{option};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{context}
+
+\begin{description}
+\syndes{
+  copycontext \ARG{ctx-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	copylex	\ARG{ctx-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  makecontext \ARG{ctx-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  namecontext \ARG{ctx-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  reset;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  switchcontext \ARG{ctx-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{decide}
+
+\begin{description}
+\syndes{
+  decide \ARG{wff}  \OPT{by \ARG{fact1} \ARG{fact2} \SEQ} using 
+  \OPT{\{ \ARG{rewriter} \SEQ \}} \ARG{decider};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  monad \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  monadeq \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  ptaut \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  taut \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  tauteq \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{eval}
+
+\begin{description}
+\syndes{
+  assertsimp \ARG{simplabel}; 
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  attach \ARG{indconst}  to \ALT dar [ rep ] \ARG{sexpr};\\
+  attach \ARG{sentconst} to T \ALT NIL \ALT UNDEF;\\
+  attach \ARG{funconst} \ALT \ARG{predconst} to \ARG{atom};\\
+  attach \ARG{funconst}  to [ \ARG{rep1}, \SEQ, \ARG{repN} = \ARG{repM} ]
+  \ARG{atom};\\
+  attach \ARG{predconst} to [ \ARG{rep1}, \SEQ, \ARG{repN} ] \ARG{atom};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  decrep \ARG{replabel1} \OPT{\SEQ \ARG{replabelN}};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  eval \ARG{wff} \ALT \ARG{fact} \ALT \ARG{term} \OPT{by \ARG{simpexpr}};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  hardware \ARG{indconst} to \ALT dar \ARG{sexpr};\\
+  hardware \ARG{indconst} to \ALT dar [ \ARG{rep} ] \ARG{sexpr};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  let \ARG{\indconst} to \ALT dar [ \ARG{rep} ] \ARG{term};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  represent \{ \ARG{sort1}, \SEQ, \ARG{sortN} \} as \ARG{rep} \ALT \ARG{*};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  rewrite \ARG{wff} \ALT \ARG{fact} \ALT \ARG{term} \OPT{by \ARG{simpexpr}};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  setbasicsimp \ARG{simplabel} at wffs \{ \ARG{wff1} \SEQ \ARG{wffN} \};\\
+  setbasicsimp \ARG{simplabel} at facts \{ \ARG{fact1} \SEQ \ARG{factN} \};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  simplify \ARG{wff} \ALT \ARG{fact} \ALT \ARG{term};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{language}
+
+\begin{description}
+\syndes{
+   awff \ARG{awff};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   declare \OPT{\ARG{sentsym} \ALT \ARG{indsym}} \ARG{sym1} \SEQ \ARG{symN}; \\
+   declare \OPT{\ARG{funsym}  \ALT \ARG{predsym}} \ARG{sym1} \SEQ \ARG{symN}
+   \ARG{arity};\\
+   declare \OPT{\ARG{funsym} \ALT \ARG{predsym}} \ARG{sym1} \SEQ \ARG{symN}
+   1 \OPT{[ pre \OPT{= \ARG{prbp}} ]};\\
+   declare \OPT{\ARG{funsym} \ALT \ARG{predsym}} \ARG{sym1} \SEQ \ARG{symN}
+   2 \OPT{[ inf \OPT{= \ARG{lbp} \ARG{rbp}} ] };
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  declare sort \ARG{sym1} \SEQ \ARG{symN};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  declare indconst \ALT indpar \ALT indvar \ARG{sym1} \SEQ \ARG{symN}
+  [ \ARG{sortsym} ]; \\
+  declare funconst \ALT funpar \ARG{sym1} \SEQ \ARG{symN}
+  ( \ARG{sortsym1} \SEQ \ARG{sortsymN} ) = \ARG{sortsym};\\
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  extension \ARG{sort} by \ARG{extexpr};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  moregeneral \ARG{sort1} < \ARG{sort2}, \SEQ, \ARG{sortN} >;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  mostgeneral \ARG{sym};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  setfmap \ARG{funsym} ( \ARG{sym1} \SEQ \ARG{symN} ) = \ARG{sym};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   term \ARG{term};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   wff \ARG{wff};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{meta}
+
+\begin{description}
+\syndes{
+   mattach \ARG{indconst} to \ALT dar \OPT{[rep]}
+   \ARG{cname}:\ARG{pname}:\ARG{sort}:\ARG{object};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  reflect \ARG{M-fact} \ARG{arg1} \ARG{arg2} \SEQ \ARG{argN};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{nd}
+
+\begin{description}
+\syndes{
+   alle \ALT us \ARG{fact} \OPT{,} \ARG{term1} \ARG{term2} \SEQ;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   alli \ALT ug \ARG{fact} \OPT{\OPT{,} \ARG{indvar1} \ALT \ARG{indpar1} :} 
+                           \ARG{indvar11}
+                           \OPT{\OPT{,} \ARG{indvar2} \ALT \ARG{indpar2} :}
+                           \ARG{indvar22} \SEQ;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   ande \ALT ae \ARG{fact} \OPT{,} 1 \ALT 2; \\
+   ande \ALT ae \ARG{fact} \OPT{,} 1 \ALT 2 1 \ALT 2 \SEQ;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   andi \ALT ai \ARG{fact1} \OPT{,} \ARG{fact2}; \\
+   andi \ALT ai \ARG{fact11}
+                \OPT{conj \ALT cj \ARG{fact12} conj \ALT cj \ARG{fact13} \SEQ}
+                \OPT{,}
+                \ARG{fact21}
+                \OPT{conj \ALT cj \ARG{fact22} conj \ALT cj \ARG{fact23} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   assume \ARG{wff1} \OPT{\OPT{,} \ARG{wff2} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   existe \ALT es \ARG{fact}  \OPT{,} \ARG{indvar1} \ALT \ARG{indpar1}
+                  \OPT{,} \ARG{indvar2} \ALT \ARG{indpar2} \SEQ;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  existi \ARG{fact}
+   \OPT{\OPT{,} \ARG{term1} :} \ARG{indvar1} \OPT{occ \ARG{n11} \ARG{n12} \SEQ}
+   \OPT{\OPT{,} \ARG{term2} :} \ARG{indvar2} \OPT{occ \ARG{n21} \ARG{n22} \SEQ}
+   \SEQ;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   falsee \ALT fe \ARG{fact1} \OPT{,} \ARG{wff};\\
+   falsee \ALT fe \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   falsei \ALT fi \ARG{fact1} \OPT{,} \ARG{fact2}; 
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   iffe \ALT ie \ARG{fact} \OPT{,} 1 \ALT 2;
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   iffi \ALT ii \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   impe \ALT mp \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   impi \ALT ded  \ARG{fact1} \OPT{, \ALT imp} \ARG{fact};\\
+   impi \ALT ded  \ARG{wff} \OPT{, \ALT imp} \ARG{fact};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   note \ALT ne \ARG{fact1} \OPT{,} \ARG{wff}; \\
+   note \ALT ne \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   noti \ALT ni \ARG{fact1} \OPT{,} \ARG{wff}; \\
+   noti \ALT ni \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   ore \ALT oe \ARG{fact1} \OPT{,} \ARG{fact2} \OPT{,} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   ori \ALT oi \ARG{fact} \OPT{,} \ARG{wff} \OPT{,} \OPT{lr \ALT rl};\\
+   ori \ALT oi \ARG{fact} \OPT{,} \ARG{fact1} \ALT \ARG{wff1} 
+       disj \ALT dj \ARG{fact2} \ALT \ARG{wff2} disj \ALT dj \SEQ
+       \OPT{,} \OPT{lr \ALT rl};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  subst \ARG{fact1} \OPT{with} \ARG{fact2};\\
+  subst \ARG{fact1} \OPT{with} \ARG{fact2} \OPT{right \ALT left};\\
+  subst \ARG{fact1} \OPT{with} \ARG{fact2} 
+                    \OPT{occ \ARG{n1} \ARG{n2} \SEQ} \OPT{right \ALT left};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{parser}
+
+\begin{description}
+\syndes{
+  backup \ARG{file} open;\\
+  backup \ARG{file} close;  
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{done;}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   fetch \ARG{file} \OPT{from \ARG{mark1}} \OPT{to \ARG{mark2}};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   mark \ARG{sym};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   probe;\\
+   probe \ARG{activity};\\
+   probe all;\\
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   unprobe \ARG{activity};\\
+   unprobe all;
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{proof}
+
+\begin{description}
+\syndes{
+  axiom \ARG{sym} : \ARG{wff};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   cancel \OPT{\ARG{label}};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  copyproof \ARG{prf-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   label fact \ARG{sym};\\
+   label fact \ARG{sym} = \ARG{label};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   makeproof \ARG{prf-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+   nameproof \ARG{prf-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  switchproof \ARG{prf-name};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  theorem \ARG{sym} \ARG{hook};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+  theory \ARG{thlabel} : \ARG{wff1} \OPT{\ARG{wff2} \SEQ};\\
+  theory \ARG{thlabel} : \ARG{axlabel1} : \ARG{wff}
+                         \OPT{\ARG{axlabel2} : \ARG{wff} \SEQ};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+
+\module{rules}
+
+\begin{description}
+\syndes{
+	contract \ALT ctc  \ARG{fact} by \ARG{assumption1} \SEQ  \ARG{assumptionN}; 
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	cut \ARG{fact1} \ARG{fact2};\\
+	cut \ARG{fact1} \ARG{fact2} \OPT{keep \ARG{assumption1} \SEQ
+	\ARG{assumptionN}};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	termife \ARG{fact1} \ARG{fact2} \ARG{termif}; \\
+	termife \ARG{fact1} \ARG{fact2} \ARG{termif} \OPT{occ \ARG{n1} \ARG{n2}
+	\SEQ}; 
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	termifen \ARG{fact1} \ARG{fact2} \ARG{termif}; \\
+	termifen \ARG{fact1} \ARG{fact2} \ARG{termif} \OPT{occ \ARG{n1} \ARG{n2}
+	\SEQ}; 
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	termifi \ARG{fact1} \ARG{fact2} \ARG{wff} \ARG{term1} \ARG{term2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	weaken \ALT wk \ARG{fact} by \ARG{fact1} \SEQ \ARG{factN};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	wffife \ARG{fact1} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	wffifen \ARG{fact1} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\syndes{
+	wffifi \ARG{wff} \ARG{fact1} \ARG{fact2};
+}
+{}
+%3rd-begin%3rd-end
+
+\end{description}
+

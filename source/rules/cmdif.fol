@@ -1,0 +1,235 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 1.001
+;; This file is a GETFOL source file: cmdif.fol
+;; Date: Thu Nov 11 14:42:40 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; ********************************************************************
+; *                                                                  *
+; * This file contains all the scanning and parsing routines for     *
+; * if rules, and related proof theoretic FOL commands.              *
+; *                                                                  *
+; ********************************************************************
+;
+; TERMIFE: Term if elimination command
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   termife <fact1> <fact2> <termif> OPT[occ <seq_of_natnum>]         *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   termife preconditions: <fact2>'s wff must be <termif>'s condition *
+; *   termife rule function: substitutes <termif> with <termif>'s       * 
+; *     "then part" (thenof(<termif>)) in <fact1>'s wff.                *
+; *     In the case <termif> is not a subexpression of                  *
+; *     <fact1>'s wff, no substitution takes place and a new fact is    *
+; *     asserted whose wff is equal to <fact1>'s wff.			*
+; *   If the optional part "occ <seq_of_natnum>" is not specified,      *
+; *   the substitution is performed in all occurences of <termif> in    *
+; *   <fact1>'s wff. If "occ <seq_of_natnum>" is specified, then        *
+; *   the substitution is performed in each occurrence in <seq_of_natnum>
+; *   appearing in <fact1>'s wff.					*
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM TERMIFE# ()
+ (LET ((fact1 (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((fact2 (FACT#) ))
+      (SEQ
+       (TK@ COMMA)
+       (LET ((termif (TERMIF#) ))
+         (SEQ
+          (LET ((occurrences (IF (TK2@ 'OCC 'occ) (NATNUMREP#)) ))
+            (SEQ
+            (ENDL)
+            (termife fact1 fact2 termif occurrences) )))))))))
+
+; TERMIFEN: Term if elimination command (with a negation of the condition)
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   termifen <fact1> <fact2> <termif> OPT[occ <seq_of_natnum>]        *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   termifen preconditions: <fact2>'s wff must be the negation of     *
+; *     <termif>'s condition 						*
+; *   termifen rule function: like termife.				*
+; * NOTE:								*
+; *   <fact2>'s wff must be the negation of <termif>'s condition and no *
+; *   viceversa. If <termif> = trmif not A then t1 else t2,		*
+; *                 <fact2>'s wff = A, the rule preconditions are not   *
+; *                   satisfied						*
+; *									*
+; ***********************************************************************
+;
+(DEFLAM TERMIFEN# ()
+ (LET ((fact1 (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((fact2 (FACT#) ))
+      (SEQ
+       (TK@ COMMA)
+       (LET ((termif (TERMIF#) ))
+         (SEQ
+          (LET ((occurrences (IF (TK2@ 'OCC 'occ) (NATNUMREP#)) ))
+            (SEQ
+            (ENDL)
+            (termifen fact1 fact2 termif occurrences) )))))))))
+
+; TERMIFI: Term if introduction command 
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   termifi <fact1> <fact2> <wff> <term1> <term2>			*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   termifi preconditions: <fact1>'s and <fact2>'s wffs must only     *
+; *     differ because of <term1> in <fact1>'s wff in place of <term2>  *
+; *   termifi rule function: it replaces in <fact1>' wff <term1>       *
+; *     with "iftrm <wff> then <term1> else <term2>", dischaarging any  *
+; *     assumption in <fact1>'s dependencies whose wff is equal to <wff>*
+; *     and any assumption in <fact2>'s dependencies whose wff is equal *
+; *     "not <wff>".							*
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM TERMIFI# ()
+ (LET ((fact1 (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((fact2 (FACT#) ))
+      (SEQ
+       (TK@ COMMA)
+       (LET ((wff (WFF#) ))
+         (SEQ
+          (TK@ COMMA)
+          (LET ((term1 (TERM#) ))
+            (SEQ
+             (TK@ COMMA)
+             (LET ((term2 (TERM#) ))
+               (SEQ
+                (ENDL)
+                (termifi fact1 fact2 wff term1 term2) )) )) )) )) )) )
+
+; WFFIFE: Wff if elimination command
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   wffife <fact1> <fact2> 						*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   wffife preconditions: <fact1>'s wff must be a wffif  and          *
+; *     <fact2>'s wff must be <fact1> wff's condition.			*
+; *   wffife rule function: deduce a fact whose wff is the          	*
+; *     "then part" (thenof(<wffif>)) of <fact1>'s wff.                 *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM WFFIFE# ()
+ (LET ((fact1 (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((fact2 (FACT#) ))
+     (SEQ
+      (ENDL)
+      (wffife fact1 fact2) )) )) )
+
+; WFFIFE: Wff if elimination command (with a negation)
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   wffifen <fact1> <fact2> 						*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   wffife preconditions: <fact1>'s wff must be a wffif  and          *
+; *     <fact2>'s wff must be the negation of <fact1> wff's condition   *
+; *   wffife rule function: deduce a fact whose wff is the          	*
+; *     "else part" (elseof(<wffif>)) of <fact1>'s wff.                 *
+; *                                                                     *
+; * NOTE:                                                               *
+; *   <fact2>'s wff must be the nagation of the condition and no        *
+; *   viceversa. If <fact1>'s wff = wffif not A then B else C,          *
+; *                 <fact2>'s wff = A, the rule preconditions are not   *
+; *                   satisfied                                         *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM WFFIFEN# ()
+ (LET ((fact1 (FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((fact2 (FACT#) ))
+     (SEQ
+      (ENDL)
+      (wffifen fact1 fact2) )) )) )
+
+; WFFIFI: Wff if introduction command 
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   wffifi <wff> <fact1> <fact2> 					*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   wffifi preconditions: NONE					*
+; *   wffife rule function: deduce a fact whose wff is the          	*
+; *     "wffif <wff> then <<fact1>'s wff> else <<fac2t>'s wff>".        *
+; *     The rule discharges any assumption in <fact1>'s dependencies    *
+; *     whose wff is equal to <wff>					*
+; *     and any assumption in <fact2>'s dependencies whose wff is equal *
+; *     "not <wff>".                                                    *
+; ***********************************************************************
+;
+(DEFLAM WFFIFI# ()
+ (LET ((wff (WFF_OR_FACT#) ))
+   (SEQ
+    (TK@ COMMA)
+    (LET ((fact1 (FACT#) ))
+      (SEQ
+      (TK@ COMMA)
+      (LET ((fact2 (FACT#) ))
+        (SEQ
+          (ENDL)
+          (wffifi wff fact1 fact2) )) )) )) )

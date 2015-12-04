@@ -1,0 +1,269 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: fapf.hgk
+;; Date: Wed Oct 20 10:47:22 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; *****************************************************************
+; *                                                               *
+; *  This file contains the builders for those facts which are    *
+; *  related to proofs.                                           *
+; *                                                               *
+; *****************************************************************
+;
+; *****************************************************************
+; *                                                               *
+; *         PROOFS                                                *
+; *        * %PLIST%       the list of proofs                     *
+; *        * %CURPNAME%    the current proof name                 *
+; *          %CURLLIST%    the current lines of the proof         *
+; *          %CURNLINE%    currently available nextline number    *
+; *          %CURELIST%    the current index list of deps         *
+; *          %CUREXISTE%   keeps open EE-lines (for auto elimin.  *
+; *          %CURLABEL%S   the current labels for facts           *
+; *                                                               *
+; *        * are used when switching proof, that is in the        *
+; *          non-elementary view of proofs (see the files CON.*)  *
+; *                                                               *
+; *****************************************************************
+;
+;;;; functions to get the proof parameters 
+;
+; ******************************************************************
+; *                                                                *
+; *   SYNTAX                                                       *
+; *      (curpname-get)                                            *
+; *      (curllist-get)                                            *
+; *      (curnline-get)                                            *
+; *      (curelist-get)                                            *
+; *      (curexiste-get)                                           *
+; *      (curlabels-get)                                           *
+; *                                                                *
+; *      (curpname-set  PNAME)                                     *
+; *      (curllist-set  LLIST)                                     *
+; *      (curnline-set  NLINE)                                     *
+; *      (curelist-set  ELIST)                                     *
+; *      (curexiste-set EXISTE)                                    *
+; *      (curlabels-set  LABELS)                                   *
+; *                                                                *
+; ******************************************************************
+;
+(DEFSUB curpname-set  (PNAME)  (SETQ %CURPNAME%  PNAME))
+(DEFSUB curllist-set  (LLIST)  (SETQ %CURLLIST%  LLIST))
+(DEFSUB curnline-set  (NLINE)  (SETQ %CURNLINE%  NLINE))
+(DEFSUB curelist-set  (ELIST)  (SETQ %CURELIST%  ELIST))
+(DEFSUB curexiste-set (EXISTE) (SETQ %CUREXISTE% EXISTE))
+(DEFSUB curlabels-set  (LABELS)  (SETQ %CURLABEL%  LABELS))
+
+(DEFSUB curpname-get  () %CURPNAME%)
+(DEFSUB curllist-get  () %CURLLIST%)
+(DEFSUB curnline-get  () %CURNLINE%)
+(DEFSUB curelist-get  () %CURELIST%)
+(DEFSUB curexiste-get () %CUREXISTE%)
+(DEFSUB curlabels-get  () %CURLABEL%)
+
+(DEFSUB curpname-del () (SETQ %CURPNAME% 'NOTNAMED&))
+(DEFSUB curllist-del () (SETQ %CURLLIST% MTL))
+(DEFSUB curnline-del () (SETQ %CURNLINE% 1))
+(DEFSUB curelist-del () (SETQ %CURELIST% MTL))
+(DEFSUB curexiste-del () (SETQ %CUREXISTE% MTL))
+(DEFSUB curlabels-del () (SETQ %CURLABEL% MTL))
+
+(DEFSUB curpname-ini () (SETQ %CURPNAME% 'NOTNAMED&))
+(DEFSUB curllist-ini () (SETQ %CURLLIST% MTL))
+(DEFSUB curnline-ini () (SETQ %CURNLINE% 1))
+(DEFSUB curelist-ini () (SETQ %CURELIST% MTL))
+(DEFSUB curexiste-ini () (SETQ %CUREXISTE% MTL))
+(DEFSUB curlabels-ini () (SETQ %CURLABEL% MTL))
+(DEFSUB curprf-ini ()
+ (SEQ
+  (curllist-ini)
+  (curnline-ini)
+  (curelist-ini)
+  (curexiste-ini)
+  (curlabels-ini)))
+; Building a line of the proof
+;
+; *****************************************************************
+; *                                                               *
+; * <line>  = < <linenum> . <wff> . <deplist> . <reason> >        *
+; *                                                               *
+; *      <linenum> = <natnum>                                     *
+; *                                                               *
+; *      <deplist> = a list of <linenum>'s                        *
+; *                                                               *
+; *      <reason>  = "why the line exists"                  	   *
+; *                                                               *
+; *      <assumptions> = a list of <linenum>'s or <simpset>       *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB line-mak (LINENUM WFF DEPLIST REASON) 
+                 (CONS LINENUM (CONS WFF (CONS DEPLIST REASON))) )
+(DEFSUB line-get-linenum (LINE) (CAR LINE))
+(DEFSUB line-get-wff     (LINE) (CADR LINE))
+(DEFSUB line-get-deplist (LINE) (CADDR LINE))
+(DEFSUB line-get-reason  (LINE) (CDDDR LINE))
+
+;; %CURELIST%
+; *********************************************************************
+; *                                                                   *
+; * %CURELIST% for any line remembers all the lines which depend on   *
+; * it (those that have its name in their dependency list). Any       *
+; * time a new line of the proof is stated all the new                *
+; * dependencies must be added to %CURELIST%.  %CURELIST% is a list   *
+; * where any element has in its car a line name and in its cdr       *
+; * the list of the lines which depend on it. That is we have:        *
+; *      ( ... (<line name> . (<line> ... ) ...)  ... )               *
+; *                                                                   *
+; * When deplist is not empty and it contains a line which is not     *
+; * yet in %CURELIST% then the current line MUST depend on itself     *
+; * (as it happens with ASSUME and EXISTE).                           *
+; *                                                                   *
+; *********************************************************************
+;
+(DEFLAM curelist-del-linenum (linenum)
+ (curelist-set (curelist-mod linenum (curelist-get))))
+
+(DEFLAM curelist-mod (linenum curelist)
+ (IF (MTL? curelist) MTL
+  (IF (EQUAL (CAAR curelist) linenum)
+   (curelist-mod linenum (CDR curelist))
+   (curelist-del-dep linenum curelist))))
+
+(DEFLAM curelist-del-dep (linenum curelist)
+ (IF (MTL? curelist) MTL
+  (IF (HGKM-MEMBER linenum (CDAR curelist))
+   (CONS (CONS (CAAR curelist) (HGKM-DELETE linenum (CDAR curelist)))
+         (curelist-del-dep linenum (CDR curelist)))
+   (CONS (CAR curelist) (curelist-del-dep linenum (CDR curelist))))))
+
+(DEFLAM curelist-update (deplist)
+  (IFN (IST deplist) (NOP)
+   (SEQ
+     (curelist-update1 (CAR deplist))
+     (curelist-update  (CDR deplist) ) )) )
+
+(DEFLAM curelist-update1 (DEP)
+  (LET ((DEP_PAIR (curelist-get-depair DEP) ))
+   (IF (IST DEP_PAIR) 
+          (SETCDR DEP_PAIR (CONS (curnline-get) (CDR DEP_PAIR)) )
+          (curelist-add-depair (LIST DEP DEP)) )) )
+
+(DEFLAM curelist-get-depair (KEY) (HGKM-ASSOC KEY %CURELIST%))
+(DEFLAM curelist-add-depair (PAIR) (SETQ %CURELIST% (CONS PAIR %CURELIST%)) )
+
+
+;;;%CURLLIST% AND %CURNLINE%
+;**************************************************************************
+;*                                                                        *
+;*  %CURNLINE% remembers the current line number and must be              *
+;*  incremented of one any time a new line is created.                    *
+;*                                                                        *
+;*  %CURLLIST% contains all the lines of the current proof. Any time      *
+;*  a new line is created it is added to it. LInes can be gotten          *
+;*  by their name with an ASSOC.                                          *
+;*                                                                        *
+;**************************************************************************
+ 
+
+(DEFSUB curllist-add-line (LINE) (SETQ %CURLLIST% (CONS LINE %CURLLIST%)) )
+
+; This function must be a DEFLAM as it is used by a MAPCAR
+;
+(DEFLAM curllist-get-line (LINENUM) (HGKM-ASSOC LINENUM %CURLLIST%))
+
+(DEFSUB LINENUM-TOO-LOW? (LINENUM) (NEGATIVE? LINENUM))
+(DEFSUB LINENUM-TOO-HIGH? (LINENUM) (GE LINENUM (curnline-get)))
+
+(DEFLAM curllist-get_noerr-line (LINENUM)
+  (IF (OR (LINENUM-TOO-LOW? LINENUM) (LINENUM-TOO-HIGH? LINENUM))
+     (FERRM0
+      "You cannot have line numbers negative or equal-higher than the current")
+     (curllist-get-line LINENUM) ) )
+
+(DEFSUB curnline-add1 () (SETQ %CURNLINE% (ADD1 %CURNLINE%)) )   
+
+
+;;;%CUREXISTE%
+; *****************************************************************
+; *                                                               *
+; * %CUREXISTE% for any element has this structure:               *
+; *                                                               *
+; * (<line numberwhere the existe is made>                        *
+; *  <number of the line on which we  made the EXISTE>            *
+; *  <variables (or parameters) which have been substituted>)     *
+; *                                                               *
+; *  Any time a new element is added to %CUREXISTE% it always     *
+; *  depends on itself. (this is why %CURNLINE%) is used)         *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB curexiste_substs-mak (LABEL SUBSTS)
+          (CONS (curnline-get) (CONS LABEL SUBSTS)) )
+(DEFSUB curexiste-add-substs (CUREXISTE_SUBSTS)
+         (SETQ %CUREXISTE% (CONS CUREXISTE_SUBSTS %CUREXISTE%)) )
+(DEFSUB curexiste-get-elem (LINENUM) (HGKM-ASSOC LINENUM %CUREXISTE%))
+
+(DEFSUB existelem-get-name (EXISTELEM) (CAR EXISTELEM))
+(DEFSUB existelem-get-orglabel (EXISTELEM) (CADR EXISTELEM))
+(DEFSUB existelem-get-substvars (EXISTELEM) (CDDR EXISTELEM))
+
+
+;; %CURLABEL%
+; *****************************************************************
+; *                                                               *
+; * %CURLABEL% contains all the labeled facts. Each element is a  *
+; * pair with he label and th fact name.                          *
+; *                                                               *
+; *****************************************************************
+;
+(DEFSUB labfact-mak (LABEL FACTNAME) (CONS LABEL FACTNAME))
+(DEFSUB labfact-get-label (LABFACT) (CAR LABFACT))
+(DEFSUB labfact-get-factname (LABFACT) (CDR LABFACT))
+
+(DEFSUB curlabels-add (LABFACT) (SETQ %CURLABEL% (CONS LABFACT %CURLABEL%)) )
+
+(DEFSUB curlabels-get-labfact (LABEL) (HGKM-ASSOC LABEL %CURLABEL%))

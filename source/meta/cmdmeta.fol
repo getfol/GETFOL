@@ -1,0 +1,143 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:42:33 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdmeta.fol
+;; Date: Wed Oct 20 10:46:29 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; REFLECTION
+;
+; *****************************************************
+; *                                                   *
+; *   SYNTAX                                          *
+; *     REFLECT FACTOFMETA <list of arguments>        *
+; *                                                   *
+; *   DESCRIPTION                                     *
+; *     It REFLECTS the fact (in the METATHEORY) of   *
+; *     name SYM1 in the context where REFLECTION is  *
+; *     performed.                                    *
+; *     <list of arguments> must corrispond to those  *
+; *     requested by FACTOFMETA.                      *
+; *                                                   *
+; *   NOTE                                            *
+; *     The first "changecontext" is made in order to *
+; *     save the current state of the proof even if   *
+; *     the current context is META.                  *
+; *                                                   *
+; *                                                   *
+; *****************************************************
+
+(DEFLAM REFL# ()
+ (LET ((SOURCECONTEXT (curcname-get)))
+  (SEQ
+   (probed-ctext-switch 'META)
+   (LET ((METAFACT (FACT#)))
+    (LET ((METAWFF (fact-get-wff METAFACT)))
+    (LET ((SCAN&MNGLIST (scan&mnglist-get METAWFF MTL)))
+     (SEQ
+      (IF (EQ 'META SOURCECONTEXT) (NOP)
+       (probed-ctext-switch SOURCECONTEXT))
+      (LET ((MNGLIST&DEPLIST (mnglist&deplist-get SCAN&MNGLIST MTL MTL)))
+       (SEQ
+        (ENDL)
+        (IF (EQ 'META SOURCECONTEXT) (NOP)
+         (probed-ctext-switch 'META))
+        (LET ((INDCONSTS (indconstlist-attach&get (CAR MNGLIST&DEPLIST))))
+         (LET ((GROUNDWFF (alle-mak METAWFF INDCONSTS)))
+          (LET ((TRAPEVAL (SEQ
+                           (usedsimps-ini) 
+                           (TRAP (expeval GROUNDWFF 
+                                  (rftmtree-get))))))
+           (IF (ERROR-OCCURRED? TRAPEVAL)
+            (SEQ
+             (indconsts-disint&delete INDCONSTS)
+             (probed-ctext-switch SOURCECONTEXT)
+             (REFLECT-EPRINC1 "Sorry!! Evaluating the wff caused some error"))
+            (LET ((TWFF (TRAP-GET-RESULT TRAPEVAL)))
+             (IFN (AND (PREDAPPL TWFF)
+                   (EQ
+                    (predappl-get-pred TWFF)
+                    (ls-get-obj 'THEOREM (predconst-ls))))
+              (SEQ
+               (indconsts-disint&delete INDCONSTS)
+               (probed-ctext-switch SOURCECONTEXT)
+               (REFLECT-EPRINC1
+                "Sorry!! Simplified result was not of the form ")
+               (REFLECT-EPRINC1 "THEOREM(---) so we can't yet reflect back"))
+              (LET ((TRMMNG (SEQ 
+                             (usedsimps-ini)
+                             (expeval (predappl1-get-arg TWFF) 
+                              (rftmtree-get)))))
+               (SEQ
+                (indconsts-disint&delete INDCONSTS)
+                (probed-ctext-switch SOURCECONTEXT)
+                (LET ((OBJWFF (mng-get-value TRMMNG)))
+                 (IF (VALUE-UNDEF? OBJWFF)
+                  (SEQ
+                   (REFLECT-EPRINC1
+                    "Sorry!! Simplified result was of the form THEOREM(---)")
+                   (REFLECT-EPRINC1
+                    "but I couldn't complete the evaluation of the argument"))
+                  (IFN (WFF OBJWFF)
+                   (SEQ
+                    (REFLECT-EPRINC1
+                     "Sorry!! Simplified result was of the form THEOREM(---)")
+                    (REFLECT-EPRINC1
+                     "but its argument didn't evaluate to an OT wff"))
+                   (SEQ
+                    (proof-add-line
+		     OBJWFF
+		     (CDR MNGLIST&DEPLIST)
+		     (reason-mak 'REFLECT
+		      (ras2-mak (metafact_ra-mak METAFACT)
+			   	(mnglist&deplist_ra-mak MNGLIST&DEPLIST))))
+                    (REFLECT-EPRINC1 "Ok!! I am finished doing reflection")
+)))))))))))))))))))))
+

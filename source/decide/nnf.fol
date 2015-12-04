@@ -1,0 +1,270 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:28:16 MET 1993
+;;
+;; This GETFOL file is (nnf.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*******************************************************************
+;*                                                                 *
+;*              nnf.fol                                            * 
+;*                                                                 *
+;*******************************************************************
+
+;*******************************************************************
+;*                                                                 *
+;* This file contains the routines  performing the rewriting       *
+;* process in Negative Normal Form.                                *
+;*                                                                 *
+;* By definition, a formula alpha is in N.N.F. iff:                *
+;*  - is atomic,                                                   *
+;*  - alpha = not beta, with beta atomic,                          *
+;*  - alpha = beta conn gamma, where conn could be disjunction     *
+;*            or conjunction, and beta, gamma in N.N.F.,           *
+;*  - alpha = Qx.beta, where Q is a quantifier, and beta is in     *
+;*            N.N.F..                                              *
+;*                                                                 *
+;* An eventual conditional term (termif) in atomic formula         *
+;* is previously rewritten by a rewriting rule                     *
+;* (see termif-rewrite).                                           *
+;*                                                                 *
+;* The rewriting process is performed by the application of        *
+;* a set of truthful preserving rewriting rules, obtaining, if     *
+;* alpha is the input formula,                                     *
+;* a logically  equivalent formula beta,i.e.                       *
+;*                                                                 *
+;*               |- alpha <--> beta                                *
+;*                                                                 *
+;*******************************************************************
+
+;*******************************************************************
+;*                                                                 *
+;* SYNTAX :                                                        *
+;* (nnf-rewrite wff quant-type)                                    *
+;*                                                                 *
+;* DESCRIPTION :                                                   *
+;* This routine,  returns a  N.N.F. formula logically equivalent   *
+;* wff.                                                            *
+;* Quant-type : quantifier type (X for eXistential and Y for       *
+;* universal). This flag is used to guide the rewriting process    * 
+;* (in the case of iff and wffif connectives) towards a form       *
+;* which suitable for qantifier pushing (with reduce routine -     *
+;* see file reduce.fol).                                           *
+;* The flag is tested by UNIQUANT? and EXIQUANT? (see reduce.hgk)  *
+;* For selecting the proper rule, if a negative wff is met,        *
+;* we use ? routine, that is an orelse tactical (see orelse.hgk),  *
+;* otherwise we directly invoke the correct rule.                  *
+;*                                                                 *
+;*******************************************************************
+
+(DEFLAM nnf (wff) (nnf-rewrite wff Uniquant))
+
+(DEFLAM nnf-rewrite (wff quant)
+ (IF (SIMPLE wff) wff
+  (IF (AWFF wff) 
+   (LET ((wff-result (termif-rewrite wff)))
+    (IF (FAIL? wff-result) wff (nnf-rewrite wff-result quant)))
+   (IF (NEG wff)
+    (LET ((wff-result (neg-rewrite wff quant)))
+     (IF (FAIL? wff-result) wff 
+      (nnf-rewrite wff-result quant)))
+    (IF (CONJ wff) (mkand (nnf-rewrite (lfand wff) quant)
+                          (nnf-rewrite (rtand wff) quant))
+     (IF (DISJ wff) (mkor (nnf-rewrite (lfor wff) quant)
+                          (nnf-rewrite (rtor wff) quant))
+      (IF (IMP wff) (nnf-rewrite (imp-rule wff) quant)
+       (IF (IFF wff) (nnf-rewrite (iff-rule wff quant) quant)
+        (IF (WFFIF wff) (nnf-rewrite (wffif-rule wff quant) quant)
+         (IF (QUANTWFF wff)
+          (mkquant (quantof wff)
+                   (bvarof wff)
+                   (nnf-rewrite (matrix wff) (quantof wff)))
+          (REMSG1 "<wff> with unknown syntax. Fatal error !!")))))))))))
+
+(DEFLAM neg-rewrite (wff quant)
+ (? (neg-pred wff)
+ (? (neg-neg wff)
+ (? (neg-boolean wff)
+ (? (de-morgan wff)
+ (? (neg-imp-rule wff)
+ (? (neg-iff-rule wff quant)
+ (? (neg-wffif-rule wff quant) 
+    (neg-quant wff)))))))))
+
+
+;*******************************************************************
+;*                                                                 *
+;*                      REWRITING  RULES                           *
+;*                                                                 *
+;* SYNTAX :                                                        *
+;*                                                                 *
+;* (rule-n wff [ quant-type ])                                     *
+;*                                                                 *
+;* DESCRIPTION :                                                   *
+;* rule-n is the name of n-th rewriting rule,                      *
+;* wff is the formula that must be rewritten,                      *
+;* quant-type is a flag for signaling the type of last quantifier  *
+;* met.                                                            *
+;* To perform the rewriting process we use the following list of   *
+;* rewriting rules:                                                *
+;*                                                                 *
+;*  1) not not alpha --> alpha                                     * 
+;*  2) not True --> False                                          *
+;*  3) not False --> True                                          *
+;*  4) not forall x.a --> exists x.not a                           *
+;*  5) not exists x.a --> forall x.not a                           *
+;*  6) not (a or b) --> (not a and not b)                          *
+;*  7) not (a and b) --> (not a or not b)                          *
+;*  8) (a imp b) --> (not a or b)                                  *
+;*  9) not (a imp b) --> (a and not b)                             *
+;* 10) (a iff b) --> ((not a or b) and (not b or a))               *
+;* 11) (a iff b) --> ((a and b) or (not a and not b))              *
+;* 12) not (a iff b) --> ((not a or not b) and (a or b))           *
+;* 13) not (a iff b) --> ((a and not b) or (not a and b))          *
+;* 14) (if a then b else c) --> ((not a or b) and (a or c))        *
+;* 15) (if a then b else c) --> ((a and b) or (not a and c))       *
+;* 16) not (if a then b else c) -->                                *
+;*     ((not a or not b) and (a or not c))                         *
+;* 17) not (if a then b else c) -->                                *
+;*     ((a and not b) or (not a and not c))                        *
+;*                                                                 *
+;* The order doesn't matter for the rewriting process, because     *
+;* rules are mutually exclusive.                                   *
+;* Rules (8) (10) (11) (14) (15) are called directly by            *
+;* nnf-rewrite routine. The rest of the set is called by           *
+;* neg-rewrite routine, through ? routine (see orelse.hgk file).   *
+;* Double rules (10-17) are equivalent, but rules (11),(13),(15),  *
+;* (17) are applied only if the formula is in the scope of         *
+;* existential quantifier.                                         *
+;* Otherwise,i.e. the formula is in the scope of universal         * 
+;* quantifier or is free, (10),(12),(14),(16) are applied.         *
+;* This solution allows to increase the performances of eventual   *
+;* reducing process.                                               *
+;* For the rewriting process in termif case, see termif.fol and    *
+;* neg-pred rule.                                                  *
+;*                                                                 *
+;*******************************************************************
+
+;* rule 1
+(DEFLAM neg-neg (wff)
+ (IFN (AND (NEG wff) (NEG (body wff))) (mk-fail) (body (body wff))))
+
+;* rules 2-3
+(DEFLAM neg-boolean (wff)
+ (IF (AND (NEG wff) (TRUTH (body wff))) False
+  (IF (AND (NEG wff) (FALSITY (body wff))) True (mk-fail))))
+
+;* rules 4-5
+(DEFLAM neg-quant (wff)
+ (IFN (AND (NEG wff) (QUANTWFF (body wff))) (mk-fail)
+  (IF (FORALL (body wff))
+   (mkexists (bvarof (body wff)) (mknot (matrix (body wff))))
+   (mkforall (bvarof (body wff)) (mknot (matrix (body wff))))))) 
+
+;* rules 6-7 
+(DEFLAM de-morgan (wff)
+ (IF (NEG wff)
+  (IF (CONJ (body wff)) 
+   (mkor (mknot (lfand (body wff))) (mknot (rtand (body wff))))
+   (IF (DISJ (body wff))
+    (mkand (mknot (lfor (body wff))) (mknot (rtor (body wff))))
+    (mk-fail)))
+  (mk-fail)))
+
+;* rule 8
+(DEFLAM imp-rule (wff) (mkor (mknot (hypot wff)) (concl wff)))
+
+;* rules 9 
+(DEFLAM neg-imp-rule (wff)
+ (IFN (AND (NEG wff) (IMP (body wff))) (mk-fail)
+  (mkand (hypot (body wff)) (mknot (concl (body wff)))))) 
+
+;* rules 10-11
+(DEFLAM iff-rule (wff quant)
+ (IF (UNIQUANT? quant)
+  (mkand (mkor (mknot (lfiff wff)) (rtiff wff))
+         (mkor (mknot (rtiff wff)) (lfiff wff)))
+  (mkor (mkand (lfiff wff) (rtiff wff))
+        (mkand (mknot (lfiff wff)) (mknot (rtiff wff))))))
+
+;* rules 12-13 
+(DEFLAM neg-iff-rule (wff quant)
+ (IFN (AND (NEG wff) (IFF (body wff))) (mk-fail)
+  (IF (UNIQUANT? quant)
+   (mkand (mkor (mknot (lfiff (body wff))) (mknot (rtiff (body wff))))
+          (mkor (lfiff (body wff)) (rtiff (body wff))))
+   (mkor (mkand (lfiff (body wff)) (mknot (rtiff (body wff))))
+         (mkand (mknot (lfiff (body wff))) (rtiff (body wff)))))))
+
+;* rules 14-15
+(DEFLAM wffif-rule (wff quant)
+ (IF (UNIQUANT? quant)
+  (mkand (mkor (mknot (ifof wff)) (thenof wff))
+         (mkor (ifof wff) (elseof wff)))
+  (mkor (mkand (ifof wff) (thenof wff))
+        (mkand (mknot (ifof wff)) (elseof wff)))))
+
+
+;* rules 16-17 
+(DEFLAM neg-wffif-rule (wff quant)
+ (IFN (AND (NEG wff) (WFFIF (body wff))) (mk-fail)
+  (IF (UNIQUANT? quant)
+   (mkand (mkor (mknot (ifof (body wff))) (mknot (thenof (body wff))))
+          (mkor (ifof (body wff)) (mknot (elseof (body wff)))))
+   (mkor (mkand (ifof (body wff)) (mknot (thenof (body wff))))
+         (mkand (mknot (ifof (body wff))) (mknot (elseof (body wff))))))))
+
+;************************************************************************
+;*                                                                      *
+;* The routine neg-pred, if condition of structure is satisfied,        *
+;* recalls routine termif-rewrite that performs the previous rewriting  *
+;* rule.                                                                *
+;*                                                                      *
+;* For the searching of termif see termif.fol file.                     *
+;*                                                                      *
+;************************************************************************
+
+(DEFLAM neg-pred (wff)
+ (IFN (AND (NEG wff) (PREDAPPL (body wff))) (mk-fail)
+  (LET ((wff-result (termif-rewrite (body wff))))
+   (IF (FAIL? wff-result) (mk-fail) (mknot wff-result)))))

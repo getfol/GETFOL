@@ -1,0 +1,24 @@
+\gfcommand{hgk}{{\HG} evaluation}
+\index{hgk}
+
+\gfsyntax{
+   hgk \ARG{s-expr};
+}
+
+\gfdescription{
+   Runs the {\HG} evaluator on \ARG{s-expr}.
+}
+
+\gfrecap{
+Runs the HGKM evaluator on `s-expr'.   
+}
+
+\gfexample+
+   ***** hgk (LOAD (QUOTE "file"))
++
+
+\gfnotes{
+	The command hgk tries to evaluate every element of the {\em
+	s-expression} passed as argument; therefore \verb+(LOAD "file")+
+	causes an error, if \verb+"file"+ has no value.
+}

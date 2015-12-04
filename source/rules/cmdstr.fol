@@ -1,0 +1,146 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 1.001
+;; This file is a GETFOL source file: cmdstr.fol
+;; Date: Thu Nov 11 14:42:42 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*   This file includes all parsing routines for structural       *
+;*   inference rules weaken, contract and cut.                    * 
+;*                                                                *
+;******************************************************************
+
+
+;WEAKEN command
+;******************************************************************
+;*                                                                *
+;*    [ WEAKEN | WK ] <fact>  BY  <fact-1> .. <fact-n>            *
+;*                                                                *
+;*    WEAKEN structural rule                                      *
+;*                                                                *
+;*    This command allows the user to add all the dependencies    *
+;*    of all <fact-i>s to the dependencies of fact if they are    *
+;*    not yet there, creating a new fact which is therefore       *
+;*    "weaker" than the former.                                   *
+;*                                                                *    
+;*    EXAMPLE of use:                                             *
+;*                                                                *
+;*          weaken 5 by 2 4 6;                                    *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM WEAKEN# ()
+ (LET ((fact (FACT#)))
+   (SEQ 
+    (TKC# 'BY "BY")
+    (LET ((list_of_newdeps (FACTREP#)))
+     (SEQ 
+      (ENDL)
+      (weaken fact list_of_newdeps))))))
+
+
+
+;CONTRACT command
+;******************************************************************
+;*                                                                *
+;*   [CONTRACT|CTC] <fact> BY <ass-1> .. <ass-n>                  *
+;*                                                                *
+;*   CONTRACT structural rule                                     *
+;*                                                                *
+;*   This command allows the user to eliminate redundant          *
+;*   dependencies of a fact.                                      *
+;*   All the <ass-i>s must be members of fact's deplist.          *
+;*   Contract eliminates all the dependencies of fact which have  *
+;*   the same wff of some assumption in the list but are not in   *
+;*   the list.                                                    *
+;*                                                                *
+;*   EXAMPLE of use:                                              *
+;*                                                                *
+;*       contract 7 by 2 4 6;                                     *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM CONTRACT# ()
+(LET ((fact (FACT#)))
+  (SEQ
+   (TKC# 'BY "BY")  
+   (LET ((assumption_list (FACTREP#)))
+    (SEQ
+      (ENDL)
+      (contract fact assumption_list))))))
+
+
+
+;CUT command
+;******************************************************************
+;*                                                                *
+;*  CUT <fact-1> <fact-2>  OPT [KEEP <ass-1> ... <ass-k>]         *
+;*                                                                *
+;*  CUT structural rule                                           *
+;*                                                                *
+;*  This command allows the user to generate a new fact, which is *
+;*  obtained from <fact-2> by eliminating every dependency whose  *
+;*  wff is equal to <fact-1>'s, except for all <assumption-i>s.   *
+;*  The optional part is usually omitted.                         *
+;*                                                                *
+;*  EXAMPLES of use:                                              *
+;*                                                                *
+;*       cut 7 9;                                                 *
+;*       cut 3 7 keep 1 2 3;                                      *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM CUT# ()
+ (LET ((fact1 (FACT#)))
+  (LET ((fact2 (FACT#)))
+   (IF (IST (TKC@ (QUOTE KEEP)))
+    (LET ((keeplist (FACTREP#)))
+     (SEQ
+      (ENDL)
+      (cut fact1 fact2 keeplist )))
+    (SEQ
+      (ENDL)
+      (cut fact1 fact2 MTL))))))
+
+

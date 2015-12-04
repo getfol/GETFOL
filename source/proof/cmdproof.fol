@@ -1,0 +1,302 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdpf.fol
+;; Date: Wed Oct 20 10:47:10 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; *****************************************************************
+; *                                                               *
+; * This file contains all the routines for building proof steps  *
+; * which are not natural deduction inference rules.              *
+; *                                                               *
+; *****************************************************************
+;
+;;;  documentation for the AXIOM command
+; *****************************************************************
+; *                                                               *
+; * <axiom>  ::= <axnam> : <wff>                                  *
+; * <theory> ::= <theoryname> : OPT [<axiom*> | <wff*> ]1         *
+; * <axiom*> ::= <axiom> REP [ OPT [,] <axiom> ]                  *
+; * <wff*>   ::= <wff> REP [ OPT [,] <wff>  ]                     *
+; * <axnam>  ::= <identifier <> number>                           *
+; *                                                               *
+; * SYNTAX                                                        *
+; *     AXIOM <axiom>                                             *
+; *     THEORY <theory>                                           *
+; *                                                               *
+; *   The AXIOM command plays the same role as ASSUME, but axioms *
+; *   do not appear in the dependency list of any step of a       *
+; *   deduction. The command must be used to give the axioms of   *
+; *   the theory you wanna build.                                 *
+; *                                                               *
+; *   The command THEORY builds a theory as a set of axioms       *
+; *   (eventually one) to which you can refer either as a totality*
+; *   or one by one (using the names by which they are called     *
+; *   within the theory).                                         *
+; *                                                               *
+; *   With <wff*> THEORY names the wffs getting <axnam> and       *
+; *   concatenating incrementing numbers (starting from 1)        *
+; *   In the case of only one axiom it still renames  <axnam>     *
+; *   (concatenating 1 at its end), thus giving a result different*
+; *   from the command AXIOM (as it should be since we are        *
+; *   building a theory)                                          *
+; *                                                               *
+; * BUGS                                                          *
+; *   The system is not protected if you name a theorem of a      *
+; *   theory with the same name of the theory. Depending on the   *
+; *   case FOL will sometimes understand the theory and sometimes *
+; *   the theorem                                                 *
+; *                                                               *
+; *   You cannot name an axiom with something which start with THM*
+; *   These kinds of names are infact legal only for user defined *
+; *   theorems.                                                   *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM AXIOM# ()
+ (LET ((AXIOM (AX#)) )
+   (SEQ
+    (ENDL)
+    (axiom AXIOM) ) ) )
+
+(DEFLAM AX# ()
+  (LET ((AXIOM (AX@)) )
+  (IF (IST AXIOM) AXIOM 
+      (REMSG1 "An axiom of the form '<label> : <wff>'")) ) )
+
+(DEFLAM AX@ ()
+ (LET ((AXLABEL (FOLSYM@) ))
+  (IF (ISF AXLABEL) FALSE
+  (IF (INTEGER?  AXLABEL) (FERRM1 "Axiom and theory names cannot be numbers!")
+  (IF (AXLABEL?  AXLABEL) (FERRM1 "Axioms and theories cannot be renamed!")
+   (SEQ
+    (TK# COLON "AXIOM" " : ")
+    (axiom-mak AXLABEL (WFF#))))))))
+
+(DEFLAM THEORY# ()
+ (LET ((THLABEL (FOLSYM# "The THEORY command") ))
+  (IF (INTEGER? THLABEL) (FERRM1 "Axiom and theory names cannot be numbers!")
+  (IF (AXLABEL? THLABEL) (FERRM1 "Axioms and theories cannot be renamed!")
+   (SEQ
+     (TK# COLON "THEORY" " : ")
+     (LET ((wffs (WFFREP@) ))
+     (IF (IST wffs) 
+         (theory THLABEL (wffs2axioms THLABEL wffs))
+         (theory THLABEL (AXIOMREP#)) )) ) )) ) )
+
+(DEFLAM AXIOMREP# () (LISTSCAN# 'AX# 'AX@ "An <axiom>" "<axiom>"))
+
+(DEFLAM wffs2axioms (THLABEL wffs) (wffs2axioms1 THLABEL wffs 1))
+
+(DEFLAM wffs2axioms1 (THLABEL wffs COUNT)
+ (IF (MTL? wffs) MTL
+  (LET ((NEWLABEL (mkfolsym THLABEL COUNT)))
+   (IF (AXLABEL? NEWLABEL)
+     (wffs2axioms1 THLABEL wffs (ADD1 COUNT))
+     (CONS (axiom-mak NEWLABEL (CAR wffs))
+           (wffs2axioms1 THLABEL (CDR wffs) (ADD1 COUNT)))))))
+
+;theorems
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *   THEOREM <axalabel> <fact>                                   *
+; *                                                               *
+; *   It creates a theorem (memorized together with the other     *
+; *   axioms of name <axlabel>                                    *
+; *   Of course the fact cannot have dependencies                 *
+; *   Theorems are different from axioms and their freevars do    *
+; *   matter                                                      *
+; *                                                               *
+; *   Theorem names are supposed to begin with THM. This allows to*
+; *   distinguish them from Axioms. This is necessary because     *
+; *   PREDPARS can be substituted in axiom schemas and NOT in     *
+; *   theorem schemas (we would get unsoundness) and we must be   *
+; *   able to distinguish "normal" axioms from theorems made in   *
+; *   axioms (we have the implementational problem that axioms and*
+; *   theorems are memorised in the same data structure.          *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM THEOREM# ()
+    (LET ((THEOREM (THM#) ))
+     (SEQ
+       (ENDL)
+       (theorem THEOREM) )) )
+
+(DEFLAM THM# ()
+  (LET ((AXLABEL (FOLSYM# "A Theorem name") ))   
+   (IF (AXLABEL? AXLABEL) 
+    (FERRM1 "Axioms, theories and theorems cannot be renamed!")
+    (LET ((FACT (FACT#) ))
+     (IF (IST (fact-get-deplist FACT))
+         (FERRM0 "A <fact> with dependencies cannot be made into a theorem")
+         (axiom-mak AXLABEL (fact-get-wff FACT)) ) ) ) ))
+
+;cancel lines of a proof
+;*****************************************************************
+; SYNTAX:
+;
+;     CANCEL  OPT[<linenum>];
+;
+;  It cancels steps of the current deduction, that is deletes
+;  proof lines.
+;  If no <linenum> is specified, the command cancels the last
+;  proof line.
+;  If <linenum> is specified, it cancels the proof lines from
+;  <linenum> to the last proof line.
+;  After performing his job, cancel perform the show proof command,
+;  to display its effect.
+;
+;*****************************************************************
+
+(DEFLAM CANCEL# ()
+  (LET ((linenum (NATNUM@)))
+    (SEQ
+      (ENDL)
+      (IF (IST linenum)
+          (proof-del-lines linenum               (SUB1 (curnline-get)))
+          (proof-del-lines (SUB1 (curnline-get)) (SUB1 (curnline-get))))
+      (PROOF-proof-print (REVERSE (curllist-get))))))
+
+
+;
+;;; Proof manipulation
+;
+;naming the current proof
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (NAMEPRF#)                                               *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      needed to make a proof name and name the current proof   *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM NAMEPRF# ()
+ (LET ((PNAME (FOLSYM# "NAMEPROOF")))
+  (IF (PROOF-UNNAMED? PNAME)
+   (GERRM0 PNAME " is the name of the unnamed proof.")
+   (IF (PROOF-NAME? PNAME)
+    (GERRM0 PNAME " is already a proof name.")
+    (IFN (CURPROOF-UNNAMED?)
+     (PROOF-EPRINC1 "The current proof is already named")
+     (SEQ
+      (ENDL)
+      (plist-set-proof (proof-mak-empty PNAME))
+      (curpname-set PNAME)
+      (PROOF-EPRINC2 "You have named the current proof: " PNAME)))))))
+
+; creation a new (empty) proof
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (MAKEPRF#)                                               *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      needed to make a proof name and an empty proof           *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM MAKEPRF# ()
+ (LET ((PNAME (FOLSYM# "MAKEPROOF")))
+  (IF (PROOF-UNNAMED? PNAME)
+   (GERRM0 PNAME " is the name of the unnamed proof.")
+   (IF (PROOF-NAME? PNAME)
+    (GERRM0 PNAME " is already a proof name.")
+    (SEQ
+     (ENDL)
+     (plist-set-proof (proof-mak-empty PNAME))
+     (PROOF-EPRINC2 "You have created the empty proof: " PNAME))))))
+
+
+
+
+;copying the current proof
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (COPYPRF#)                                               *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      needed to copy a current proof                           *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM COPYPRF# ()
+ (LET ((PNAME (FOLSYM# "COPYPROOF")))
+  (IF (PROOF-UNNAMED? PNAME)
+   (GERRM0 PNAME " is the name of the unnamed proof.")
+   (IF (PROOF-NAME? PNAME)
+    (GERRM0 PNAME " is already a proof name.")
+    (SEQ
+     (ENDL)
+     (cur-proof-copy PNAME)
+     (PROOF-EPRINC2
+      "You have copied the current proof in the proof: " PNAME))))))
+
+
+;switching to another proof
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (SWITCHPRF#)                                             *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      needed to switches the current proof to another proof    *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM SWITCHPRF# ()
+ (IF (CURPROOF-UNNAMED?)
+  (FERRM0 "The current proof has to be named before switching proof")
+  (LET ((PNAME (PNAME#)))
+   (IF (CURPROOF-NAME? PNAME)
+    (PROOF-EPRINC1 "You are already there: current state not saved.")
+    (SEQ
+     (ENDL)
+     (proof-switch PNAME)
+     (PROOF-EPRINC2 "You are now using the proof: " PNAME))))))
+

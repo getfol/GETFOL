@@ -1,0 +1,94 @@
+\gfcommand{alle}{universal quantification elimination rule}
+\index{alle}\index{us}
+
+\gfsyntax{
+   alle \ALT us \ARG{fact} \OPT{,} \ARG{term1} \ARG{term2} \SEQ;
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \\
+      \forall E
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      \fraz{\forall x A}
+           {A^{x}_{t}}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   The command uses the terms in \ARG{term1} \ARG{term2} \SEQ to instantiate
+   the universally quantified variables in the order in which they appear.
+   One execution of the command can instantiate more than one universally 
+   quantified variable.
+   If a particular term is not free for the variable to be instantiated, a 
+   bound variable change is made and then the substitution is made.
+   The dependencies are those of \ARG{fact}.
+
+   In the sorted rule, let \verb+forall x. A(x)+ be the formula to be 
+   instantiated, and let us suppose first that only a term {\tt t} is provided.
+   If {\tt t} has he same sort as {\tt x}, say {\tt Sx}, then the resulting 
+   formula is {\tt A(t)}; otherwise the resulting formula is
+   {\tt Sx(t) imp A(t)}.
+}
+
+\gfrecap{
+The command uses the terms in `term1' `term2' ... to instantiate
+the universally quantified variables in the order in which they appear.
+One execution of the command can instantiate more than one universally 
+quantified variable.
+If a particular term is not free for the variable to be instantiated, a 
+bound variable change is made and then the substitution is made.
+The dependencies are those of `fact'.
+In the sorted rule, let `forall x. A(x)' be the formula to be 
+instantiated, and let us suppose first that only a term `t' is provided.
+If `t' has he same sort as `x', say `Sx', then the resulting 
+formula is `A(t)'; otherwise the resulting formula is
+`Sx(t) imp A(t)'.
+}  
+
+\gfexample+
+   ***** declare predconst P 2;
+   ***** declare indvar x y;
+   ***** declare indconst c1 c2;
+   [...]
+
+   ***** assume forall x y. P(x y);
+   1   forall x y.P(x,y)     (1)
+
+   ***** alle 1 c1;
+   2   forall y.P(c1,y)     (1)
+
+   ***** alle 1 x c1;
+   3   P(x,c1)     (1)
+
+   ***** alle 1 c1 c2;
+   4   P(c1,c2)     (1)
+   
+   ***** declare predconst P 2;
+   ***** declare indvar x [Sx];
+   ***** declare indvar y [Sy];
+   ***** declare indconst c1 c2 [S];
+   [...]
+
+   ***** moregeneral Sx < S >;
+
+   ***** assume forall x y. P(x y);
+   1   forall x y.P(x,y)     (1)
+
+   ***** alle 1 c1;
+   2   forall y.P(c1,y)     (1)
+
+   ***** alle 2 c1;
+   3   Sy(c1) imp P(c1,c1)     (1)
+
+   ***** alle 1 c1 c2;
+   4   Sy(c2) imp P(c1,c2)     (1)
++
+
+\gfnotes{
+   The rule is sometimes called ``universal specialization''.
+}

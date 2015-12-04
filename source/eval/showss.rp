@@ -1,0 +1,184 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:36:06 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: showss.rp
+;; Date: Wed Oct 20 10:45:16 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i                                                               i
+; i            REPRESENTATIONS                                    i
+; i                                                               i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i                                                               i
+; i SYNTAX                                                        i
+; i      (SHOWREP#)			                          i
+; i                                                               i
+; i DESCRIPTION                                                   i 
+; i      This function scans <representationlabel>		  i
+; i                                                               i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+(DEFLAM SHOWREP# ()
+ (LET ((LABEL (REPNAM#)))
+  (SEQ
+   (ENDL)
+   (SHOWREP-OUT LABEL (SHOWREP-EXE LABEL)))))
+
+(DEFLAM SHOWREP-EXE (label)
+ (getdesfun label))
+
+; ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+; o                                                               o
+; o SYNTAX                                                        o
+; o      (SHOWREP-OUT REPNAM DESIGNATORS)		          o
+; o                                                               o
+; o DESCRIPTION                                                   o 
+; o      This function prints the output of the command	SHOWREP   o
+; o                                                               o
+; ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+(DEFLAM SHOWREP-OUT (REPNAM DESIGNATORS)
+(IF (MTL? DESIGNATORS)
+ (PRINTMES2 "No designators are defined for the representation: " 
+            REPNAM)
+ (SEQ (PRINTMES3 "The designators for the representation: "
+	          REPNAM " are: ")
+      (PRINTLIST DESIGNATORS) 
+      (CRLF) )))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i                                                               i
+; i            INTERPRETATIONS                                    i
+; i                                                               i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i                                                               i
+; i SYNTAX                                                        i
+; i      (SHOWINT#)			                          i
+; i                                                               i
+; i DESCRIPTION                                                   i 
+; i      This function scans                                      i
+; i    ALT[ <predconst> | <funconst> | <indconst> | <sentconst> ] i
+; i                                                               i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+(DEFLAM SHOWINT# ()
+ (LET ((CONSTSYM (DECSYM#)))
+  (SEQ
+   (ENDL)
+   (SHOWINT-OUT CONSTSYM (SHOWINT-EXE CONSTSYM)))))
+
+(DEFLAM SHOWINT-EXE (constsym)
+ (IF (INT-HAS constsym)
+  (getint constsym)
+  (int-mak %REP-UNDEF% %VALUE-UNDEF%)))
+
+; ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+; o                                                               o
+; o SYNTAX                                                        o
+; o      (SHOWINT-OUT CONSTSYM INT)		                  o
+; o                                                               o
+; o DESCRIPTION                                                   o 
+; o      This function prints the output of the command		  o
+; o      SHOWINT    		                                  o
+; o                                                               o
+; ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+;
+
+(DEFLAM SHOWINT-OUT (CONSTSYM INT)
+ (IF (INT-UNDEF? INT)
+  (SEQ
+   (CRLF)
+   (PRINTMES2 "There is no interpretation for: " CONSTSYM))
+  (IF (INDCONST CONSTSYM)
+   (INDSYM-OUT CONSTSYM INT 'Indconst)
+   (IF (SENTCONST CONSTSYM)
+    (INDSYM-OUT CONSTSYM INT 'Sentconst)
+    (IF (FUNCONST CONSTSYM)
+     (APPLSYM-OUT CONSTSYM INT 'Funconst)
+     (IF (PREDCONST CONSTSYM)
+      (APPLSYM-OUT CONSTSYM INT 'Predconst)
+      (FERRM0 "The argument must be a constsym")))))))
+
+(DEFLAM INDSYM-OUT (CONSTSYM INT TYP)
+ (SEQ
+  (CRLF) 
+  (INTERPRETATION-OUT CONSTSYM (int-get-value INT) TYP)
+  (HGKM-PRINC "with representation ")
+  (HGKM-PRINC (int-get-repinfo INT))
+  (CRLF)))
+
+(DEFLAM INTERPRETATION-OUT (CONSTSYM VALUE TYP)
+ (SEQ 
+  (HGKM-PRINC "The ") 
+  (HGKM-PRINC TYP) (HGKM-PRINC " ") 
+  (HGKM-PRINC (outnam CONSTSYM))
+  (HGKM-PRINC " is attached to ")
+  (HGKM-PRINC VALUE)
+  (CRLF)))
+
+(DEFLAM APPLSYM-OUT (CONSTSYM INTS TYP)
+ (IF (MTL? INTS) (ENDM)
+  (LET ((INT (FIRST INTS)))
+   (SEQ 
+    (CRLF)
+    (INTERPRETATION-OUT CONSTSYM (int-get-value INT) TYP)
+    (HGKM-PRINC "with output representation ")
+    (HGKM-PRINC (repinfo-get-out (int-get-repinfo INT)))
+    (CRLF)
+    (HGKM-PRINC "with arg representations ")
+    (HGKM-PRINC (repinfo-get-args (int-get-repinfo INT)))
+    (CRLF)
+    (APPLSYM-OUT CONSTSYM (REST INTS) TYP)))))

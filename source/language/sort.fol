@@ -1,0 +1,201 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: sort.fol
+;; Date: Wed Oct 20 10:46:09 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *                          sort.fol                             *
+; *                                                               *
+; * This file contains miscellaneous high level primitives        *
+; * concerning sorts. There are primitives for creating and dele- *
+; * ting sort, declaring the most general sort, adding new infor- *
+; * mation to the partial order, checking the sort of an          *
+; * expression. There are also the primitives for creating,       *
+; * and getting the extension of a sort.                          *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+
+
+; *****************************************************************
+; *                                                               *
+; * (sort-create SYM MGLIST LGLIST EXTENSION)                     *
+; *                                                               *
+; * Creation of a sort: that is addition of the sort information  *
+; * to a unary predicate.                                         *
+; *                                                               *
+; *****************************************************************
+
+
+(DEFLAM sort-create (SYM MG LG EXT)
+ (SEQ
+  (setissort SYM)
+  (setmg SYM MG)
+  (setlg SYM LG)
+  (setext SYM EXT)))
+
+
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *  ADDITION OF A NEW PAIR TO THE PARTIAL ORDER                  *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+;
+
+(DEFLAM mgpair-add (MG LG)
+ (SEQ
+  (mgsorts-add* (lg LG) (mg MG))
+  (lgsorts-add* (mg MG) (lg LG))))
+
+
+; This function sets all the sorts in MGSORTS
+; to be more general than every sort in SLIST.
+;
+(DEFLAM mgsorts-add* (SLIST MGSORTS)
+ (IF (MTL? SLIST) (NOP)
+  (SEQ
+   (mgsorts-add (CAR SLIST) MGSORTS)
+   (mgsorts-add* (CDR SLIST) MGSORTS))))
+
+
+; This function sets all the sorts in LGSORTS
+; to be more general than every sort in SLIST.
+;
+(DEFLAM lgsorts-add* (SLIST LGSORTS)
+ (IF (MTL? SLIST) (NOP)
+  (SEQ
+   (lgsorts-add (CAR SLIST) LGSORTS)
+   (lgsorts-add* (CDR SLIST) LGSORTS))))
+
+
+
+
+; *****************************************************************
+; *                                                               *
+; *      Comparison between sorts and expressions                 *
+; *                                                               *
+; * The routines to verify if an expression is of a given sort.   *
+; * This notion is logically well defined only when the expression*
+; * is a term of a language and the sort is a sort of the same    *
+; * language; however there is a generalized notion which has to  *
+; * be considered. Therefore there are two functions: SUPERSORT   *
+; * (which deals with the special purpose cases) and TRM_SUPERSORT*
+; * (which decides the logically defined ones).                   *
+; *                                                               *
+; * SUPERSORT                                                     *
+; *                                                               *
+; * SUPERSORT takes in input a generalized sort (that is, a       *
+; * declared sort, SysMostgeneral or TRUTHSORT) and an expression *
+; * (either a term or a wff). If the generalized sort is TRUTHSORT*
+; * SUPERSORT succeeds only if the expression is a wff. If the    *
+; * generalized sort is SysMostgeneral SUPERSORT succeeds only if *
+; * the expression is a term. In every other case (i.e. the gene- *
+; * ralized sort is a declared sort and the expression is a term) *
+; * SUPERSORT calls TRM_SUPERSORT.                                *
+; *                                                               *
+; * TRM_SUPERSORT                                                 *
+; *                                                               *
+; * (TRM_SUPERSORT S t) succeeds only if:                         *
+; * - t is an indsym whose sort is less general than S            *
+; * - t is a funsym application f(t1 ... tn), and f has an fmap   *
+; *   (S1 ... Sn = Sres) such that Sres is less general than S and*
+; *   all ti are of sort Si                                       *
+; * - t is an if term and both then and else are terms of sort S  *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM SUPERSORT (SRT EXP)
+ (IF (WFF EXP)
+  (EQ SRT TRUTHSORT)
+  (IF (EQ SRT SysMostgeneral) TRUE
+   (TRM_SUPERSORT SRT EXP))))
+
+(DEFLAM TRM_SUPERSORT (SRT TRM)
+ (IF (AND (SIMPLE TRM) (INDSYM TRM))
+  (IS-MG SRT (sort TRM))
+  (IF (FUNAPPL TRM)
+   (FMAPS_SUPERSORT SRT (fmaps (funappl-get-fun TRM)) (funappl-get-args TRM))
+   (IF (TERMIF TRM)
+    (AND
+     (TRM_SUPERSORT SRT (thenof TRM))
+     (TRM_SUPERSORT SRT (elseof TRM)))
+    (GERRM0 TRM " is not a well formed term.")))))
+
+(DEFLAM FMAPS_SUPERSORT (SRT FMAPLIST ARGS)
+ (IF (MTL? FMAPLIST) FALSE
+  (IF (IS-MG SRT (fmap-get-out (CAR FMAPLIST)))
+   (IF (TRMS_SUPERSORT (fmap-get-args (CAR FMAPLIST)) ARGS) TRUE
+    (FMAPS_SUPERSORT SRT (CDR FMAPLIST) ARGS))
+   (FMAPS_SUPERSORT SRT (CDR FMAPLIST) ARGS))))
+
+(DEFLAM TRMS_SUPERSORT (SRTLIST TRMLIST)
+   (IF (MTL? TRMLIST) TRUE
+   (IFN (TRM_SUPERSORT (CAR SRTLIST) (CAR TRMLIST)) FALSE
+   (TRMS_SUPERSORT (CDR SRTLIST) (CDR TRMLIST)) )))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *     Creating and getting the extension of a sort.             *
+; *                                                               *
+; *                                                               *
+; * (extension-create SORT INDLIST)                               *
+; * (extension-get SORT)                                          *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM extension-create (SORT INDLIST) (setext SORT INDLIST))
+
+(DEFLAM extension-get (SORT) (ext SORT))
+

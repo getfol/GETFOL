@@ -1,0 +1,15 @@
+COMMENT | |
+COMMENT | THIS file (together with fetch2 and fetch3) |
+COMMENT | tests the command fetch |
+COMMENT | |
+DECLARE SENTCONST A B C D;
+MARK init1;
+DECLARE INDVAR x y z w t n m;
+FETCH fetch2.tst FROM init2 TO end2 ;
+DECLARE PREDCONST P 1;
+DECLARE PREDCONST Q 1;
+DECLARE PREDCONST P2 2;
+MARK end1;
+DECLARE PREDCONST Q2 2;
+hgk FETCH\-RESULT;
+

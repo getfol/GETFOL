@@ -1,0 +1,5 @@
+
+(DEFLAM substfree  (WFF VAR TRM)
+    (clist-get-ctext&applfun  'OBJECT 'substexp
+                              (LIST VAR TRM WFF) ))
+

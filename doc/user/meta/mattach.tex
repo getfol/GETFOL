@@ -1,0 +1,115 @@
+\gfcommand{mattach}{semantic meta attachment}
+\index{mattach}
+
+\gfsyntax{
+   mattach \ARG{indconst} to \ALT dar \OPT{[rep]}
+   \ARG{cname}:\ARG{pname}:\ARG{sort}:\ARG{object};
+}
+
+\gfdescription{
+   Defines an attachment for a constant of the context {\em meta}.
+
+   \ARG{rep}, if present, can be a representation function or \verb+*+.
+   If it is \verb+*+ or no representation is specified, then the default representation function 
+   {\tt UNIVERSALREP} is taken.
+   \ARG{indconst} is a symbol declared to be an INDCONST in {\em meta}; \ARG{cname} is the name
+   of the context to which \ARG{object} belongs; \ARG{pname} is the name of the proof in which
+   \ARG{object} is present; \ARG{sort} is a sort of the meta-context associated to one of the
+   syntactic categories reported with the {\tt reflect} command; \ARG{object} is an object of
+   type \ARG{sort}.
+
+   This command implements the mechanism of ``naming'' symbols or objects belonging to the 
+   context \ARG{cname}, {\em ie.} the creation of names denoting objects of \ARG{cname}.
+   \ARG{indconst} can be attached ``one way'' (using {\tt to}) or ``two ways'' (using {\tt dar}).
+   The ``one way'' attachment tells the semantic interpretation mechanism that \ARG{indconst} is
+   the name in {\meta} of the {\GF} object in the context \ARG{cname} corresponding to
+   \ARG{object}.
+   The two ways attachment tells the semantic interpretation mechanism that whenever the 
+   (data structure representing) the \ARG{object} is computed as the representation of a 
+   term {\em t}, then \ARG{indconst} should be returned as the simplified version of {\em t}.
+}
+
+\gfrecap{
+This command implements the mechanism of ``naming'' symbols or objects belonging to the 
+context `cname', ie. the creation of names denoting objects of `cname'.
+`indconst' can be attached ``one way'' (using `to') or ``two ways'' (using `dar').
+The ``one way'' attachment tells the semantic interpretation mechanism that `indconst' is
+the name in meta of the GETFOL object in the context `cname' corresponding to
+`object'.
+The two ways attachment tells the semantic interpretation mechanism that whenever the 
+(data structure representing) the `object' is computed as the representation of a 
+term `t', then `indconst' should be returned as the simplified version of `t'.
+}
+
+\gfexample+
+   ***** namecontext META;
+   ***** nameproof P1;
+
+   ***** declare indconst sc [SENTCONST];
+   ***** declare indconst ic [INDCONST];
+   ***** declare indconst vl [FACT];
+   ***** declare indconst f1 [FACT];
+
+   ***** DECREP  SENTCONST INDCONST FACT;
+
+   ***** represent { SENTCONST } as SENTCONST;
+   ***** represent { INDCONST } as INDCONST;
+   ***** represent { FACT } as FACT;
+
+   ***** makecontext C;
+   ***** switchcontext C;
+   ***** declare indconst c;
+   ***** declare sentconst A;
+   ***** nameproof P1;
+   You have named the current proof: P1
+
+   ***** assume c=c;
+   1   c = c     (1)
+
+   ***** makeproof P2;
+   You have created the empty proof: P2
+
+   ***** switchproof P2;
+   You are now using the proof: P2
+
+   ***** assume A imp A;
+   1   A imp A     (1)
+
+   ***** label fact ax = 1;
+
+   ***** switchcontext META;
+
+   ***** MATTACH sc TO  C::SENTCONST:A;
+   ctext-get: I changed context to: C
+   ctext-get: I changed context to: META
+   sc attached to 'A
+
+   ***** MATTACH ic DAR C:P2:INDCONST:c;
+   ctext-get: I changed context to: C
+   ctext-get: I changed context to: META
+   ic attached to 'c
+   ic is the preferred name of c
+
+   ***** MATTACH vl DAR [SENTCONST] C:P1:FACT:1;
+   ctext-get: I changed context to: C
+   proof-get: I changed proof to: P1
+   proof-get: I changed proof to: P2
+   ctext-get: I changed context to: META
+   vl attached to '(1 (= c c) (1) ASSUME (%WFF% = c c))
+   vl is the preferred name of (1 (= c c) (1) ASSUME (%WFF% = c c))
+
+   ***** MATTACH f1 TO  C:P2:FACT:1;
+   ctext-get: I changed context to: C
+   ctext-get: I changed context to: META
+   f1 attached to '(1 (imp A A) (1) ASSUME (%WFF% imp A A))
+
+   ***** MATTACH f1 DAR C:P2:FACT:ax;
+   ctext-get: I changed context to: C
+   ctext-get: I changed context to: META
+   f1 attached to '(1 (imp A A) (1) ASSUME (%WFF% imp A A))
+   f1 is the preferred name of (1 (imp A A) (1) ASSUME (%WFF% imp A A))
+
++
+
+\gfnotes{}
+

@@ -1,0 +1,28 @@
+\gfcommand{represent}{default representation for sorts}
+\index{represent}
+\label{sec-rep-sort}
+
+\gfsyntax{
+  represent \{ \ARG{sort1}, \SEQ, \ARG{sortN} \} as \ARG{rep} \ALT \ARG{*};
+}
+
+\gfdescription{
+  Sets the default representation for \ARG{sort1}, \SEQ, \ARG{sortN} to be
+  \ARG{rep} ({\tt UNIVERSALREP} if \ARG{*} is specified).
+  The default representation is used by the reflect command (see section
+  \ref{sec-refl}).
+}
+
+\gfrecap{
+Sets the default representation for `sort1', ..., `sortN' to be `rep'
+(`UNIVERSALREP' if `*' is specified).
+The default representation is used by the `reflect' command.
+}
+
+\gfexample+
+   ***** declare sort s t;
+   ***** decrep rep;
+   ***** represent {s t} as rep;
+   ***** represent {s t} as rep;
+   s has already a default representation
++

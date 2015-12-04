@@ -1,0 +1,35 @@
+\gfcommand{awff}{{\em awff} verifier}
+\index{awff}
+
+\gfsyntax{
+   awff \ARG{awff};
+}
+
+\gfdescription{
+   {\bf term}, {\bf awff} and {\bf wff} verify that their arguments
+   are terms, atomic formulas and well formed formulas respectively.
+   An error is signaled if an expression of the correct
+   syntactic category is not provided.
+}
+
+\gfrecap{
+Verifies whether the formula `awff' is atomic.
+}
+
+\gfexample+
+   ***** declare indvar x y;
+   ...
+   ***** awff x = y;
+   x = y is an <awff>.
+
+   ***** declare predconst P 1 [pre];
+   ***** declare funconst f g 1;
+   ...
+   ***** awff P g(f(x),y);
+   P g(f(x),y) is an <awff>.
+
+   ***** awff P x and P x;
+   awff P x and P x;
+                ^
+   You have a legal command not ending with a semi-colon.
++

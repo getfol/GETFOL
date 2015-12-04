@@ -1,0 +1,245 @@
+\newcommand{\eg}{{\em e.g.~}}
+\newcommand{\ie}{{\em i.e.~}}
+\newcommand{\wrt}{w.r.t.~}
+\newcommand{\co}[2]{\langle #1, \: #2 \rangle}
+
+
+\section{Decision procedures}
+\label{sec-decide}
+\label{system:sec}
+A detailed description of the main decision procedures of {\tt GETFOL}
+is given in \cite{armando5}.
+
+The set of procedures of the {\tt GETFOL} system is depicted in figure
+\ref{system:fig}.
+Each box represents either a decider ({\tt PTAUT}, {\tt PTAUTEQ},
+{\tt FOLTAUT}) or a rewriting procedure ({\tt tautren}, {\tt  phexp},
+{\tt  reduce}).
+
+\begin{figure}
+\begin{center}
+\makebox[3.375in][l]{
+  \vbox to 2.750in{
+    \vfill
+    \special{psfile=decide/NEWFIG.PS}
+  }
+  \vspace{-\baselineskip}
+}
+\end{center}
+\caption{The system of deciders}
+\label{system:fig}
+\end{figure}
+
+\subsubsection*{{\tt PTAUT} and {\tt PTAUTEQ}}
+{\tt PTAUT} and {\tt PTAUTEQ}
+are deciders working on a quantifier-free first order language (hereon by
+abuse of language we call them propositional deciders).
+{\tt PTAUT} decides the set of first order formulas provable using
+only the propositional deductive machinery (moreover it returns a
+falsifying assignment whenever the input formula is not a tautology).
+For instance, the formula $(P(x)\con R(x,b))\imp (P(x)\dis R(x,b))$ can be
+easily inferred by a single application of {\tt PTAUT}.
+{\tt PTAUT} is a generalization of the Davis-Putnam-Loveland procedure
+(hereon DPL) \cite{davis2,davis6} to non clausal formulas.
+The core of {\tt PTAUT} is a procedure capable of partially evaluating
+the input formula \wrt a partial assignment of truth-values to the atomic
+subformulas. 
+A step of statistical analysis (of polynomial time complexity) collects
+information about the {\em polarity} of the subformulas and the existence
+of {\em Top-Level Disjunctive Occurrences} (TLDO) of atomic subformulas.
+A formula $\alpha$ occurs as a TLDO in $\beta$ 
+if and only if $\beta$ can be rewritten into a formula either of the form
+$(\alpha\dis\gamma)$ or $(\neg\alpha\dis\gamma)$ by means of rules
+expressing  the usual properties of the propositional connectives such as
+the associativity, commutativity and distributivity of the propositional
+connectives.
+The notion of positive (negative) subformula occurrence
+is inductively defined as follows: $\alpha$ occurs positively in $\alpha$, 
+$\alpha$ occurs negatively in $\neg\alpha$;
+$\alpha$ and $\beta$ occur positively in $(\alpha\con\beta)$ and
+$(\alpha\dis\beta)$;
+$\alpha$ occurs negatively and $\beta$ occurs positively in $(\alpha\imp\beta)$;
+finally $\alpha$ and $\beta$ occur both positively and negatively in
+$(\alpha\liff\beta)$.
+A subformula $\alpha$ is positive (negative) in $\beta$ if and only if
+each occurrence of $\alpha$ occurs positively (negatively) in $\beta$.
+
+The statistical analysis may suggest a partial assignment $\mu$ (\wrt which
+the formula can be simplified) according to the following criteria:
+\begin{itemize}
+\item for each positive (negative) atomic formula $\alpha$ occurring
+in $\beta$, $\mu(\alpha)=F$ ($\mu(\alpha)=T$);
+\item if $\beta$ contains a positive (negative) TLDO of $\alpha$ and there
+are no negative (positive) TLDO of $\alpha$, then $\mu(\alpha)=F$
+($\mu(\alpha)=T$).
+\end{itemize}
+
+If $\mu$ is not completely undefined, then {\tt PTAUT} simplifies the
+formula in input \wrt $\mu$ and recurs on the resulting (simplified) formula.
+If the input formula contains both a positive and a negative TLDO of an
+atomic formula the input formula is a tautology.
+These optimizations generalize the {\em Affirmative-Negative Rule} and the
+{\em Rule for the Elimination of One-Literal Clauses} of DPL.
+If $\mu$ is totally undefined, then
+an atomic formula is chosen, two partial assignments are created
+(one assigning $T$, the other $F$ to the chosen atomic formula),
+the formula is partially evaluated \wrt such assignments and finally
+the procedure branches recurring on the two simplified formulas.
+This last step generalizes the {\em Splitting Rule} of DPL.
+
+{\tt PTAUTEQ} is the result of adapting {\tt PTAUT}
+to take into account the properties of equality.
+The main difference is that, before a formula is simplified \wrt some
+assignment, the assignment is tested to check whether it is model of the
+quantifier-free theory of equality.
+The formula $(P(x)\con x=y)\imp (P(y)\con y=x)$ can be
+easily inferred by a single application of {\tt PTAUTEQ}.
+
+\subsubsection*{{\tt nnf} and {\tt skolemize}}
+{\tt nnf} rewrites the input formula into a logically equivalent one in
+{\em negative normal form}.
+
+{\tt skolemize} computes the skolemization of the input formula.
+
+\subsubsection*{{\tt tautren} and {\tt phexp}}
+The procedures on top of the propositional deciders (namely {\tt tautren}
+and {\tt phexp}) map the first-order formula in input into a quantifier-free
+formula.
+The mappings are such that the decision problem of the input (first-order)
+formula is related to the decision problem of the returned (quantifier-free)
+formula in a useful way.
+In particular, {\tt tautren} atomizes equal (modulo renaming of bound
+variables) quantified subformulas into newly introduced propositional
+letters.
+For instance the formula
+\begin{equation}\label{pb29-reduced}
+%\setlength{\templength}{\arraycolsep}
+\setlength{\arraycolsep}{0cm}
+\begin{array}{rl}
+(\exists x.F(x) \con \exists x.G(x)) \imp (&( \forall x.(F(x) \imp H(x)) \con \forall x.(G(x) \imp J(x))) \liff \\
+& ((\exists y.G(y) \imp \forall x.(F(x) \imp H(x))) \con\\
+&\ (\exists x.F(x) \imp \forall y.(G(y) \imp J(y)))))
+\end{array}
+\end{equation}
+is mapped into the propositional formula
+\begin{equation}\label{pb29-prop}
+(A \con B) \imp ((C \con D) \liff ((B \imp C) \con (A \imp D)))
+\end{equation}
+The relation between the decision problems of the input formula (say $\alpha$)
+and of the output formula (say $\alpha'$) is that
+$\der{}\alpha'$ only if $\der{}\alpha$.
+
+A more careful reduction to the quantifier-free fragment is performed by
+{\tt phexp}.
+{\tt phexp} maps an existential formula $\alpha$ into a quantifier-free formula
+$\alpha'$ such that $\der{}{\alpha'}$ if and only if $\der{}{\alpha}$.%
+\footnote{The set of existential formualas is the class of prenex
+universal-existential formulas without function symbols.}
+
+The formula $\alpha'$ is an improved version of the Herbrand's expansion
+of $\alpha$ \cite{dreben1}.
+An application of {\tt phexp} to the following formula:
+\begin{equation}\label{pb28}\small
+    (((P(x) \con \neg Q(y)) \dis
+     ((Q(a) \dis R(a)) \con (\neg Q(b) \dis \neg S(b)))) \dis
+     ((F(z) \con \neg G(z)) \con S(v))) \dis
+       ((\neg P(c) \dis \neg F(c)) \dis G(c))
+\end{equation}
+yields
+\begin{equation}\label{pb28-exp}\small
+\begin{array}{l}
+((((P(a) \dis P(b) \dis P(c)) \con (\neg Q(a) \dis \neg Q(b) \dis
+\neg Q(c)))\dis\\
+((Q(a) \dis R(a)) \con (\neg Q(b) \dis \neg S(b)))) \dis \\
+(((F(a) \con \neg G(a)) \dis (F(b) \con \neg G(b)) \dis
+(F(c) \con \neg G(c)))\con\\
+(S(a) \dis S(b) \dis S(c)))) \dis ((\neg P(c) \dis \neg F(c)) \dis G(c))\\
+\end{array}
+\end{equation}
+In \cite{armando5} it is shown that, the size of (\ref{pb28-exp})
+is 44 times smaller than the size of the standard Herbrand's expansion of
+(\ref{pb28}).
+
+\subsubsection*{{\tt reduce}}
+{\tt reduce} tries a set of rewriting rules on the input
+formula aiming at rewriting it into a logically equivalent formula that
+can be easily turned into an existential one via skolemization.
+The rewriting rules employed by {\tt reduce} are the usual rules
+expressing the distributivity of quantifiers through propositional connectives
+and the commutativity and associativity of propositional connectives
+listed in the following table.\\
+
+    \renewcommand{\arraystretch}{1.5}
+    {\small
+      $$
+      \begin{array}{|c|rcl|} \hline
+        (1) & Q x. \alpha[x] & \mapsto & \alpha \\ \hline
+        %(2) & Q x. (\neg \alpha(x)) & \mapsto & (\neg \hat{Q} x. \alpha(x)) \\ \hline
+        (2) & Q x. (\alpha \circ \beta)(x) & \mapsto & (Q x. \alpha \circ Q x. \beta) 
+        \\ \hline
+        (3) & Q x. (\alpha[x] + \beta(x)) & \mapsto & (\alpha[x] + Q x. \beta(x)) 
+        \\ \hline \hline
+        (4) & (\alpha(x) + \beta[x]) & \mapsto & (\beta[x] + \alpha(x)) \\ \hline
+        (5) & ((\alpha[x] + \beta(x)) + \gamma(x)) & \mapsto & 
+        (\alpha[x] + (\beta(x) + \gamma(x))) \\ \hline
+        (6) & ((\alpha \circ \beta)(x) + \gamma(x)) & \mapsto & 
+        ((\alpha + \gamma(x)) \circ (\beta + \gamma(x))) \\ \hline
+        (7) & (\alpha(x) + (\beta[x] + \gamma(x))) & \mapsto &
+        (\beta[x] + (\alpha(x) + \gamma(x))) \\ \hline
+        (8) & ((\alpha(x) + (\beta \circ \gamma)(x))) & \mapsto &
+        ((\alpha(x) + \beta) \circ (\alpha(x) + \gamma)) \\ \hline
+      \end{array}
+      $$
+      }
+    \renewcommand{\arraystretch}{1}
+{\small
+{\em Restrictions}: 
+\begin{itemize}
+\item In rules $\{(4)-(8)\}$ the left hand side must be a top normalizable
+formula.
+\item In rules $\{(7),(8)\}$ $\alpha$ must be minimal \wrt $\co{Q}{x}$.
+%\item Rules $\{(4)-(8)\}$ can be applied only to subformulae (say $\alpha$)
+%of a formula $Qx.\beta$ in which there is no proper
+%subformula $Qy.\gamma$ of which $\alpha$ is a subformula.
+\end{itemize}}
+
+Where
+$\alpha(x)$ denotes a formula in which there is at least one free occurrence
+of the variable $x$.
+$\alpha{[x]}$ denotes a formula in which there is no free occurrences of $x$.
+$Q$ and $Q'$ stand either for $\forall$ or for $\exists$.
+If $Q = \forall$, then $\circ = \con$ and $+ = \dis$.
+If $Q = \exists$, then $\circ = \dis$ and $+ = \con$.
+%$\con$ is said to be $\forall$-compatible and $\exists$-incompatible,
+%$\dis$ is said to be $\exists$-compatible and $\forall$-incompatible.
+%If $\cal S$ is a set of rewriting rules then $\mapsto_{\cal S}$ is the
+%reducibility relation induced by $\cal S$ and
+%$\stackrel{*}{\mapsto}_{\cal S}$ is the reflexive and transitive closure
+%of $\mapsto_{\cal S}$.
+The definition of {\em top normalizable formula} and of {\em minimal
+formula} are given in \cite{armando5}.
+
+For instance, a single application of {\tt reduce} turns the formula
+\begin{equation}\label{pb29}
+%\setlength{\templength}{\arraycolsep}
+\setlength{\arraycolsep}{0cm}
+\begin{array}{rl}
+(\exists x.F(x) \con \exists x.G(x)) \imp (&( \forall x.(F(x) \imp H(x)) \con \forall x.(G(x) \imp J(x))) \liff \\
+&(\forall x.\forall y.((F(x) \con G(y)) \imp (H(x) \con J(y)))))
+\end{array}
+\end{equation}
+into (\ref{pb29-reduced}).
+{\tt reduce} considerably enlarges the set of formulas which can be solved
+by using the system of deciders.
+In particular, any prenex first order formula 
+$$
+\forall \vec{y}_n \exists \vec{x}_n \ldots
+\forall \vec{y}_i \exists \vec{x}_i \ldots
+\forall \vec{y}_1 \exists \vec{x}_1 . \Phi
+$$
+such that each literal in $\Phi$ contains no variables in $\vec{y}_k$ and
+in $\vec{x}_l$ with $k < l$, or in $\vec{x}_k$ and in $\vec{x}_l$ with
+$k \neq l$ can be ``reduced" to an existential formula.
+On the basis of the previous result it is a trivial consequence
+that the {\em monadic calculus} can be reduced to the existential fragment
+by means of {\tt reduce}.

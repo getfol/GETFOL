@@ -1,0 +1,304 @@
+\section{Introduction}
+
+{\GF} is an interactive reasoning system.
+We use it as an environment for studying epistemological issues.
+We try to look at questions like: which notions are  important for the
+development of computer reasoning systems?
+What kind of conversations do we want to have with them? What parts of logic
+should we use to represent such notions?
+How should logic be embedded in a conversational reasoning system?
+
+\vspace{0.1cm}
+\noindent
+The motivations underlying the work in developing and using {\GF} lie at the
+intersection of many research areas, including artificial intelligence, theorem
+proving, logic and theory of computation.
+We believe that {\GF} could be of interest to researchers and practitioners in
+all these areas.
+In particular:
+
+\vspace{0.2cm}
+\noindent
+{\bf Artificial Intelligence}.
+{\GF} is a programming language for building intelligent systems.
+In {\GF} you can express and program various forms of reasoning.
+For instance, it is possible to define the language of a logical theory, add
+sets of axioms and then to perform {\it deductive reasoning}.
+Deductive reasoning can use very simple steps (which correspond roughly to the
+application of a single logical inference rule such as modus ponens) or very
+complicated ones (such as a tautology decider).
+It is also possible to define, for any given logical theory, a partial model and
+then to perform {\it computational reasoning} in it.
+{\GF} allows the user to define sets of logical theories and to perform
+{\it multitheoretic reasoning}. One very important case is when one
+theory is the meta theory of another theory; {\GF} provides some tools
+for performing such {\it metatheoretic} and {\it reflective reasoning}.
+
+One particular interesting application of {\GF} is the development of systems
+able to perform common sense reasoning.
+Here the multitheory facilities of {\GF} seem particularly useful (see for
+instance \cite{giunchiglia2,giunchiglia22}).
+
+\vspace{0.2cm}
+\noindent
+{\bf Theorem proving}.
+{\GF} {\it is} an interactive theorem prover for first order logic.
+{\GF}'s logic is a variation of Prawitz' Natural Deduction \cite{prawitz1}.
+A set of deciders for decidable subclasses of first order logic are also available
+(see for instance~\cite{aiello2,armando1}).
+The subset of {\GF} implementing the deductive reasoning is a ``standard'' object
+level theorem prover.
+{\GF} also provides facilities which can be effectively used for performing
+metatheoretic and reflective reasoning (see for instance \cite{aiello1,rww1,rww2} 
+\cite{giunchiglia3,giunchiglia13,giunchiglia25,giunchiglia27,basin1}).
+
+\vspace{0.2cm}
+\noindent
+{\bf Logic}.
+{\GF} implements various features which are innovative with respect to the
+``usual'' notion of formal system.
+The formal study of the properties of such features generates questions which
+are also interesting from a logical point of view.
+Some examples are: the {\GF} many sorted logic, the idea of performing
+computational reasoning in a mechanized partial model, the integration of
+computational and deductive reasoning, multitheoretic reasoning and, as a
+particular example, metatheoretic and reflective reasoning
+(\cite{rww1,giunchiglia26,giunchiglia14,giunchiglia15,giunchiglia28} report some
+work on these topics).
+
+\vspace{0.2cm}
+\noindent
+{\bf Mathematical theory of computation}.
+{\GF} is an environment that can deal effectively both with a theory and its
+metatheory. 
+Many aspects of program semantics can be nicely expressed when this is viewed as
+a reasoning system~\cite{rww1}. 
+
+
+\section{Acknowledgements}
+
+{\GF} is built on top a reimplementation of the {\tt FOL} system ({\tt
+FOL} version 2).
+The project was started by Richard Weyhrauch in 1973 at the Stanford
+AI Lab.
+The manual of {\tt FOL} version 2 \cite{giunchiglia34}, reports some  historical
+notes about the development of FOL and of its reimplementation.
+Below we report the contributions done after $1987$, starting from an
+early version of the reimplementation of the {\tt FOL} system:
+%
+\begin{description}
+	\item[Alessandro Armando] ($1987$ --):
+		reimplementation of the deciders {\tt TAUT} and {\tt TAUTEQ};
+		reimplementation of the scanner; upgrading of the installation
+		procedure; partecipation to the engineerization of the deciders;
+	\item[Alessandro Cimatti] ($1987$ --):
+		reimplementation of {\HG}; complete reimplementation (and
+		theoretical analysis) of sorts; complete reimplementation of the
+		language module; revision of the meta module, reimplementation of {\tt
+		MATTACH} and {\tt REFLECT}; development of the preliminary version of
+		the	distribution package;  system manager from 1990 to 1992;
+	\item[Enrico Giunchiglia] ($1987$ --):
+		reimplementation of {\tt MONADIC};
+	\item[Alex Simpson] ($1987$ -- $1989$):
+		reimplementation of the parser of formulas;
+	\item[Paolo Pecchiari] ($1989$ -- $1991$):
+		reimplementation of the eval module;
+	\item[Paolo Traverso] ($1989$ -- $1990$):
+		revision of Natural Deduction; revision of substitution rules;
+		revision of the user manual;
+	\item[Lorenzo Galvagni] ($1991$--$1992$):
+		reimplementation of reasons; upgrade of inference mechanisms;
+	\item[Roberto Sebastiani] ($1991$--$1992$):
+		implementation of structural rules;
+	\item[Andrea Parodi \& Fulvio Rappa] ($1992$--$1993$)
+		engineerization and reimplementation of the deciders;
+	\item[Marco Roveri] ($1992$ --):
+		reimplementation of the {\tt SHOW} command; fixing of {\tt DELETE!};
+	\item[Adolfo Villafiorita] ($1993$ --):
+		system manager; revision of the parser module; improvements to the
+		installation procedure; revision of the HGKM manual; revision of the
+		user manual; preparation of the distribution package
+		of versions 1.001 and 2.001.
+\end{description}
+
+
+\section{How to get started in {\GF}}
+
+\subsection{Some general hints}
+
+A good first step is to skim through the manual and, possibly, read some of the
+papers listed in the references.
+A good way to get started is to look through the example files in the {\it tst}
+directory (see the {\GF} file system) and fetch them (see the ``{\tt FETCH}''
+command) or, even better, type in, one by one, the commands contained in those files.
+
+{\GF} is a system you should have conversations with.
+{\GF} acts according to the following three-step process:
+%
+\begin{enumerate}
+	\item {\it Listen} to the user input;
+	\item {\it Act} in consequence of the input;
+	\item {\it Respond} explaining the actions taken.
+\end{enumerate}
+%
+Interaction  can happen by typing in commands, or by fetching a file
+containing {\GF} commands.
+{\GF} has very few defaults.
+You should expect to tell {\GF} everything.
+One of the very few defaults is that interaction happens using some first order
+language.
+However, the user must define (see the ``{\tt DECLARE}" command) most of the
+basic elements of the language ({\it eg.} signature, variable names).
+This process must be repeated for any new theory ({\it context} in {\GF}
+terminology) entered (see the commands in the section \ref{sec-cxt}, {\it eg.}
+the ``{\tt SWITCHCONTEXT}'' command).
+
+%  Finally, {\GF} comes with its programmer manual \cite{giunchiglia29}.
+%  Programmer manuals are often used only by skilled users with the goal of
+%  understanding/ modifying/ customizing systems.
+%  On the other hand, {\GF} provides the simulation structure facility (see later)
+%  which requires the user to ``attach'' code to the constants in the signature.
+%  The programmer manual describes some of the most commonly used functions defined
+%  in the code.
+%  This should help the beginner in learning how to use the system code.
+
+
+\subsection{Entering and exiting the {\GF} system}
+\label{sec-enter}
+
+To enter {\GF}:
+%
+\begin{enumerate}
+	\item
+		Type at the host prompt: {\tt <home>/getfol/public/{\GF}}.
+		You will enter {\HG} \cite{giunchiglia35}.
+		{\HG} is the implementation language of {\GF} running in a lisp
+		environment;
+	\item
+		Type at the {\HG} prompt ({\tt >}): {\tt (SYSBOOT)};
+	\item
+		{\GF} says hello to you, tells you the version and release you are
+		using. 
+		Now you are in {\GF}.
+		At the prompt you can type any of the commands described in this manual.
+\end{enumerate}
+
+To exit from {\GF}:
+%
+\begin{enumerate}
+	\item
+		at the prompt (let us suppose that the prompt is {\tt *****}) you can
+		type {\tt <CNTRL> D} to go back to either the lisp or the operating
+		system (depending on the lisp).
+		You can type {\tt DONE;} to go back to {\HG}.
+		If you want to terminate the session type, the escape command of the
+		host lisp, otherwise, if you want to return to {\GF}, type {\tt
+		(SYSBACK)}.
+		You will get back to {\GF} in the same status as you exited.
+\end{enumerate}
+
+\vspace*{0.2cm}
+{\bf Example: entering and exiting {\GF}}
+
+\begin{verbatim}
+	<host-prompt> <getfol-dir>/getfol/public/GETFOL
+	AKCL (Austin Kyoto Common Lisp)  ...
+	Contains Enhancements by W. Schelter
+	> (SYSBOOT)
+	...
+	Hi!  I am GETFOL - a Most Fantastically Overrated Logician.
+	This is version 1, October 1993
+
+	***** done;
+	Returning to host
+	NIL
+
+	>(SYSBACK)
+
+	Hi!  Glad you're back.
+	What would you like to talk about now?
+
+	***** ^D
+
+	>Bye.
+
+	<host-prompt>
+\end{verbatim}
+
+
+\section{Conventions}
+\label{sec-conv}
+
+To increase readability, the syntax of commands is not completely in BNF
+form, even if most of BNF conventions are actually used.
+Instead of complicating the BNF syntax, we prefer to list explicitly the
+different alternatives.
+You will find
+
+\begin{center}
+\begin{tabular}{l}
+	{\bf attach} {\funconst} {\bf to}
+		\OPT{\ARG{rep1}, \SEQ, \ARG{repN} = \ARG{repM}} \ARG{atom};\\
+	{\bf attach} {\predconst} {\bf to}
+		\OPT{\ARG{rep1}, \SEQ, \ARG{repN}} {\em atom};
+\end{tabular}
+\end{center}
+
+rather than
+
+\begin{center}
+	{\bf attach} {\tt <fun>} $|$ {\tt <pred>}\\
+\begin{bnf}
+	\T{fun}         \sep {\funconst} {\bf to} \T{repatomfun}\\
+	\T{repatomfun}  \sep \T{atom} | \T{repfun} \T{atom}\\
+	\T{repfun}      \sep \T{repargs} {\bf =} \T{rep}\\
+	\T{pred}        \sep {\predconst} {\bf to} \T{repatompred}\\
+	\T{repatompred} \sep \T{atom} | \T{reppred} \T{atom}\\
+	\T{reppred}     \sep \T{repargs}\\
+	\T{repargs}     \sep \T{rep} | \T{rep} \T{repargs}\\
+\end{bnf}
+\end{center}
+
+We enclose for optional parts in square brackets; we use $|$ for alternatives,
+{\bf bold} words for terminal symbols and {\em italic} or $mathematic$ words
+for non-terminals.
+We indicate repetions of items with
+	``\ARG{item1} \ARG{item} \SEQ''
+or with 
+	``\ARG{item1} \SEQ \ARG{itemN}''.
+When repetitions are present, in {\GF} it is possible to insert a comma between
+items.
+We will not indicate this optional comma in the syntax of commands.
+Thus
+	``\ARG{item1} \ARG{item2} \SEQ''
+must be read as
+	``\ARG{item1} \OPT{,} \ARG{item2} \OPT{,} \SEQ''.
+
+{\GF} commands work both in upper and lowercase letters even if in the manual,
+we write them in small letters\footnote{
+	Here we mean ``command names''.
+	In the {\GF} language we distinguish between cases.
+}.
+
+Each command comes with examples.
+The examples shown in this manual have been actually typed into {\GF}.
+We have edited them merely by deleting some empty lines that would have made the
+manual cumbersome.
+{\GF} answers are shown in verbose mode the first time they are introduced, then
+they are shown in silent mode (see command {\bf probe}, section \ref{sec-adm}).
+Throughout the examples, we will use the administration command {\tt show} (see
+section \ref{sec-adm}) to show the effects of the commands. 
+
+Various installations of the system may have different prompts.
+The same installation may use more than one prompt (the prompt can be programmed).
+In this manual we will suppose that the prompt is {\tt *****}.
+Thus, for instance, we will have the following situation:
+
+\begin{verbatim}
+	***** declare sentconst A;
+	A has been declared to be a Sentconst
+\end{verbatim}
+
+where the command ``{\tt declare sentconst A;}'' is typed at the {\GF} prompt
+({\tt *****}) and ``{\tt A has been declared to be a Sentconst}'' is the {\GF}
+answer.

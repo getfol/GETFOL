@@ -1,0 +1,47 @@
+\gfcommand{contract}{contraction rule}
+\index{contract}
+
+\gfsyntax{
+	contract \ALT ctc  \ARG{fact} by \ARG{assumption1} \SEQ  \ARG{assumptionN}; 
+}
+
+\gfdescription{
+	Every \ARG{assumptionI} must occur in the list of dependencies of \ARG{fact}.
+
+	The proof line's dependencies are those of \ARG{fact} less all the dependencies 
+	with the same wff of some \ARG{assumptionI}s.
+}
+
+\gfrecap{
+	Every `assumptionI' must occur in the list of dependencies of `fact'.
+
+	The proof line's dependencies are those of `fact' less all the dependencies 
+	with the same wff of some `assumptionI's.
+}
+
+\gfexample+
+   ***** declare sentconst A B C D;
+   ***** assume A A A A B B C D;
+   1   A     (1)
+   2   A     (2)
+   3   A     (3)
+   4   A     (4)
+   5   B     (5)
+   6   B     (6)
+   7   C     (7)
+   8   D     (8)
+   ***** wk 8 by 1 2 3 4 5 6 7;
+   9   D     (1 2 3 4 5 6 7 8)
+   ***** ctc 9 by 1 5;
+   10   D     (1 5 7 8)
+   ***** ctc 9 by 1 2 3 5 7;
+   11   D     (1 2 3 5 7 8)
+   ***** ctc 9 by 10;
+   I can only contract facts which occur in the assumption list!
+   ***** ctc 11 by 4;
+   I cannot contract using a fact not occurring in the assumption list!
++
+
+\gfnotes{}
+
+

@@ -1,0 +1,166 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:23:27 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: fapf.rp
+;; Date: Wed Oct 20 10:47:24 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; ***************************************************************
+; *                                                             *
+; * This file contains all the code necessary for the management*
+; * of proofs and lines of proofs                               *
+; *                                                             *
+; ***************************************************************
+;
+;lines of proof
+; ***************************************************************
+; *                                                             *
+; *    SYNTAX                                                   *
+; *     (LINEREF#)                                              *
+; *     (LINEREF@)                                              *
+; *     (LINENUMREF@)                                           *
+; *     (LINELABELREF@)                                         *
+; *     (LINEARROWREF@)                                         *
+; *                                                             *
+; *    NOTES                                                    *
+; *     The LINENUM parsed by NATNUM@ can be the beginning of a *
+; *     wff with infix operands (such as "1+2"). We should      *
+; *     verify that the next token is NOT an INFPRED or INFFUN. *
+; *     We do not do that with the understanding that when we   *
+; *     may have either a wff or a fact we always try the wff   *
+; *    first (see WFF_OR_FACT parsing routines). Whenever this  *
+; *    is not verified the routine will not work.               *
+; *                                                             *
+; *    In LINEARROWREF@ we have an arrow which MUST be followed *
+; *    by a number in order not to have an error (i.e. ^1, ^123,*
+; *    ^n). It means n lines before the current one.            *
+; *                                                             *
+; ***************************************************************
+;
+(DEFLAM LINEREF# ()
+ (REQ# (QUOTE LINEREF@) "The scanner" "a proof line reference"))
+
+(DEFLAM LINEREF@ ()
+ (LET ((LINENUM (LINENUMREF@) ))
+  (IF (IST LINENUM) (curllist-get_noerr-line LINENUM) FVAL)) )
+
+(DEFLAM LINENUMREF@ ()
+ (LET ((LINENUM (NATNUM@) ))
+ (IF (IST LINENUM)   LINENUM
+  (LET ((LINENUM (LINELABELREF@) ))
+  (IF (IST LINENUM)  LINENUM
+   (LET ((LINENUM (LINEARROWREF@) ))
+   (IF (IST LINENUM) LINENUM FVAL)) )) )) )
+
+(DEFLAM LINELABELREF@ ()
+ (LET ((S (SCANSTATUS-GET)))
+ (LET ((LABEL (FOLSYM@)))
+  (IFN (IST LABEL) FVAL
+   (LET ((LABFACT (curlabels-get-labfact LABEL) ))
+    (IFN (IST LABFACT) (SEQ (SCANSTATUS-RESTORE S) FVAL)
+      (PLUS (labfact-get-factname LABFACT) (SIGNEDNUM@)) )) ))) )
+
+(DEFLAM SIGNEDNUM@ ()
+ (LET ((PM (PLUSORMINUS@) ))
+  (IF (IST PM) (TIMES PM (NATNUM# "A label reference")) 0) ) )
+
+(DEFLAM PLUSORMINUS@ ()
+   (IF (IST (TK@ PLUS) )  1
+   (IF (IST (TK@ MINUS)) -1 FVAL)) )
+
+(DEFLAM LINEARROWREF@ ()
+  (IF (ISF (TK@ UPARROW)) FVAL
+      (DIFFERENCE (curnline-get) (NATNUM# "arrow reference")) ))
+
+;printing
+; ***************************************************************
+; *                                                             *
+; *  SYNTAX                                                     *
+; *   (line-print LINE)                                         *
+; *   (label-print LINE)                                        *
+; *                                                             *
+; ***************************************************************
+;
+(DEFLAM line-print (LINE)
+  (SEQ
+    (CRLF)
+    (HGKM-PRINC   (line-get-linenum LINE))
+    (HGKM-PRINC "   ")
+    (printexp (line-get-wff LINE))
+    (HGKM-PRINC "     ")
+    (deplist-print (line-get-deplist LINE))
+    (CRLF) ) )
+
+(DEFLAM deplist-print (DEPLIST)
+ (IF (MTL? DEPLIST) (NOP)
+     (SEQ
+      (HGKM-PRINC "(")
+      (deplist-print1 DEPLIST)
+      (HGKM-PRINC ")"))))
+
+(DEFLAM deplist-print1 (DEPLIST)
+ (IF (MTL? (REST DEPLIST))
+  (HGKM-PRINC (FIRST DEPLIST))
+  (SEQ
+   (HGKM-PRINC (FIRST DEPLIST))
+   (HGKM-PRINC " ")
+   (deplist-print1 (REST DEPLIST)))))
+
+  
+
+(DEFLAM label-print (LINE)
+   (SEQ
+     (CRLF)
+     (HGKM-PRINC (CAR LINE))
+     (HGKM-PRINC "   ")
+     (HGKM-PRINC (CDR LINE))
+     (CRLF) ))
+

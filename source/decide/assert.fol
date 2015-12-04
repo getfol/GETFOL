@@ -1,0 +1,179 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:28:06 MET 1993
+;;
+;; This GETFOL file (assert.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;**************************************************************************
+;*                                                                        *
+;*                       assert.fol                                       *
+;*                                                                        *
+;**************************************************************************
+
+;*****************************************************************************
+;*                                                                           *
+;*  DECIDE: this is the main procedure implementing "decide" command.        *
+;*                                                                           *
+;*  It is called by routine DECIDE# which                                    *
+;*  defines the syntax of command "decide" inside GETFOL system              *
+;*  (see file cmdecide.fol).                                                 *
+;*                                                                           *
+;*  SYNTAX    : (decide wff facts rewriters-list decider)                    *
+;*                                                                           *
+;*  Description of arguments :                                               *
+;*                                                                           *
+;*   .  wff : the formula we are trying to decide.                           *
+;*                                                                           *
+;*   .  facts : facts, if we want to decide whether formula is entailed      *
+;*                  by them. MTL otherwise.                                  *
+;*                                                                           *
+;*   .  rewriters-list : rewriting procedures we want to apply in the        *
+;*                    rewriting step, in order of application. MTL if no     *
+;*                        rewriting is needed(wanted).                       *
+;*                                                                           *
+;*   .  decider : decider we want use to decide the formula resulting from   *
+;*                  application of rewriting procedures.                     *
+;*                                                                           *
+;*  The procedure accomplishes the following steps:                          *
+;*                                                                           *
+;*   1)  it generates the implication <facts> -> wff.                        *
+;*                                                                           *
+;*   2)  it applies in sequence the rewriting procedures passed in list      *
+;*        <rewriters-list>, from the first to the last, using the resulting  *
+;*       formula from application of procedure <i> as input formula for      *
+;*         procedure <i+1>.                                                  *
+;*                                                                           *
+;*   3)  it applies the decider to the obtained formula :                    *
+;*        if the formula is a tautology, <wff> is asserted  in the proof     *
+;*        else, it concludes that the formula is not decidable with the      *
+;*         specified strategy.                                               *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM decide (wff facts rewr-list decider)
+ (IF (APPLY decider (LIST (rewr-apply rewr-list (facts_imp_wff-mak wff facts))))
+  (proof-add-line wff
+                  (facts-union-dep facts)
+                  (reason-mak 'DECIDE (ras2-mak (wff_ra-mak wff)
+                                              (facts_ra-mak facts))))
+  (DECIDEMSG wff facts (APPEND rewr-list (LIST decider)))))
+
+(DEFLAM rewr-apply (rewr-list wff)
+ (IF (MTL? rewr-list) wff
+  (rewr-apply (REST rewr-list) 
+              (HGKM-APPLY (GET-FUN (FIRST rewr-list)) (LIST wff)))))
+
+;*****************************************************************************
+;*                                                                           *
+;*  DECIDEMSG : this function is called when it is not possible to           *
+;*  decide the formula with the specified strategy.                          *
+;*  This happens when the decider called at the end of the                   *
+;*  strategy yelds FALSE.                                                    *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM DECIDEMSG (wff facts proc-list)
+ (LET ((str (CONCAT-STRS (FIRST proc-list) (list2string (REST proc-list)))))
+  (IF (MTL? facts)
+   (mesexpmes-print "decide couldn't prove that " 
+                     wff 
+                    (CONCAT-STRS "is a tautology using " str))
+   (mesexpmes-print "decide couldn't prove that "
+                     wff
+                    (CONCAT-STRS "is a logical consequence of facts using " str)))))
+
+
+(DEFLAM list2string (list)
+ (IF (MTL? list) "."
+  (CONCAT-STRS (CONCAT-STRS  "," (FIRST list)) (list2string (REST list)))))
+
+
+;*****************************************************************************
+;*                                                                           *
+;*  The following routine is invoked by every procedure                      *
+;*  whenever a defined error is found.                                       *
+;*                                                                           *
+;*  SYNTAX : (error-trap error procedure)                                    *
+;*                                                                           *
+;*  Most common errors are defined as follows :                              *
+;*                                                                           *
+;*   NOTNNF :  wff passed to the procedure must be in                        *
+;*             negative normal form.                                         *
+;*                                                                           *
+;*   NOTEX :   wff passed to the procedure must contain                      *
+;*             only existential occurrence of quantification.                *
+;*                                                                           *
+;*   FUNC  :   this error is signaled by                                     *
+;*             PHEXP or FOLTAUT when occurrences of function                 *
+;*             symbols are found in the formula.                             *
+;*                                                                           *
+;*   NOTPROP : wff passed to propositional deciders PTAUT PTAUTEQ            *
+;*             must be propositional (no occurrences of quant).              *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM error-trap (error proc)
+ (IF (EQ error 'NOTNNF)
+  (SEQ 
+   (PRINTMES2 proc " requires the formula to be in negative normal form.")
+   (ERRMESS "Try using NNF before .... " ))
+  (IF (EQ error 'NOTEX)
+   (SEQ
+    (PRINTMES2 proc " requires the formula to be in existential form.")
+    (ERRMESS "Try using SKOLEMIZE before .... "))
+   (IF (EQ error 'FUNC)
+    (PRINTMES2 proc " requires no functional symbols occur in the formula.")
+     (IF (EQ error 'NOTPROP)
+      (ERRMESS (CONCAT-STRS "The formula passed to " 
+		       (CONCAT-STRS (STRING proc) 
+			       " is not propositional !")))
+      (ERRMESS (CONCAT-STRS "Unknown error signaled by " (STRING proc))))))))
+
+
+
+
+
+
+
+

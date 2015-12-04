@@ -1,0 +1,30 @@
+\gfcommand{echo}{echoes a message to the standard output stream}
+\index{echo}
+
+\gfsyntax{
+   echo \ARG{separator} \OPT{\ARG{text}} \ARG{separator}
+}
+
+\gfdescription{
+   Echoes \ARG{text} between the two \ARG{separator}s to the current
+   output stream.
+   Any token can be a \ARG{separator}.
+}
+
+\gfrecap{
+Echoes text between the two separators.
+}
+
+\gfexample+
+   ***** echo ! this is an echo
+   enclosed between two exclamation marks !
+   this is an echo enclosed between two exclamation marks
+
+   ***** comment ? this is an echo
+   enclosed between two question marks ?
+   this is an echo enclosed between two question marks
+
+   ***** comment com this is a echo
+   enclosed between the two words "com" com
+   this is an echo enclosed between the two words "com"
++

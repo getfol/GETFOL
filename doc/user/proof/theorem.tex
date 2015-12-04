@@ -1,0 +1,70 @@
+\gfcommand{theorem}{axiom creation from facts with no dependencies}
+\index{theorem}
+
+\gfsyntax{
+  theorem \ARG{sym} \ARG{hook};
+}
+
+\gfdescription{
+  The command creates an axiom from the fact whose hook
+  is \ARG{hook}. The {\em axlabel} is \ARG{sym} and the {\em wff} is the formula
+  of the fact; \ARG{hook} can identify an axiom, a theory 
+  or a proof line without dependencies.
+}
+
+\gfrecap{
+  Adds a fact without dependencies to the list of axioms.
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   ...
+
+   ***** assume A;
+   1   A     (1)
+   ***** theorem th1 1;
+   theorem th1 1;
+   A <fact> with dependencies cannot be made into a theorem
+   ***** impi 1 1;
+   2   A imp A     
+   ***** theorem th1 2;
+   th1 : A imp A
+   ***** show axiom;
+   th1 : A imp A
+   ***** axiom ax1 : A or not A;
+   ax1 : A or (not A)
+   ***** theorem ExcludedMiddle ax1;
+   ExcludedMiddle : A or (not A)
+   ***** show axiom;
+   th1 : A imp A
+   ax1 : A or (not A)
+   ExcludedMiddle : A or (not A)
+
+   ***** declare predpar P 1;
+   ***** declare predconst p 1;
+   ***** declare indvar x;
+   ***** axiom PI: P(x);
+   ...
+   ***** andi PI P:lambda x.p(x) PI P:lambda x.p(x);
+   3   p(x) and p(x)     
+   ***** theorem thPI PI;
+   thPI : P(x)
+   ***** andi thPI P:lambda x.p(x) thPI P:lambda x.p(x);
+   4   p(x) and p(x)     
++
+   
+\gfnotes{
+  The axiom may be an axiom schema in which case it becomes then 
+  possible to instantiate it.
+  In {\GF} proof lines containing {\tt predpar}s
+  and/or {\tt funpar}s can {\it not} be instantiated. 
+  If the user wants to prove $A \imp A$ and $B \imp B$,
+  he can carry out the proof with non-instantiated axioms and get the
+  schema $\alpha \imp \alpha$. $\alpha \imp \alpha$ can then be instantiated to
+  $A \imp A$ and $B \imp B$. This capability is provided 
+  by the command {\tt theorem}.
+}
+
+
+
+

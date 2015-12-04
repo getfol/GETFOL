@@ -1,0 +1,74 @@
+                                README
+
+This README file describes the contents of the *source* directory of the GETFOL
+distribution package. This directory has the following contents:
+
+  README      :  this file.
+
+  admin       :  source code of the ADMIN module (administration commands)
+
+  context     :  source code of the CONTEXT module (multi-contextual reasoning)
+
+  decide      :  source code of the DECIDE module (deciders)
+
+  eval        :  source code of the EVAL module (syntactic evaluation, semantic
+                 attachment)
+
+  fix.gfl     :  file loaded at startup by GETFOL; it contains last-minute
+                 changes of the code
+
+  hgkm        :  source code of the hgkm interpreted language
+
+  language    :  source code of the LANGUAGE module (declaration of the
+                 language)
+
+  meta        :  source code of the META module (metareasoning)
+
+  nd          :  source code of the ND module (natural deduction inference
+                 rules)
+
+  parser      :  source code of the PARSER module (the reader of GETFOL)
+
+  proof       :  source code of the PROOF module (handling of multiple proofs)
+
+  rules       :  source code of the RULE module (cut, weaken, etc.)
+
+
+                               * IMPORTANT NOTES *
+
+The name of source files is given according to the following patterns:
+
+  <module name>.cfg     configuration file for the module
+  i<name>.fol           initialization file
+  cmd<name>.fol         command file
+  <name>.fol            high level functions
+  <name>.hgk            low level functions
+  <name>.rp             read and parsing functions
+  v<name>.cl            declaration of special variables
+
+The system can be configured at the module level also:
+
+ * edit the configuration file to change the directory in which source and/or
+   object files are to be stored/retrieved.
+
+ * edit the initialization file to change the name of the commands and/or to
+   eliminate some of the commands defined in a module.
+   For instance, if you do not want to have the SUBSTitution rule, comment the
+   lines:
+
+     (mknewcommand (QUOTE SUBST) (QUOTE FOL)
+                   (QUOTE Natural-Deduction)(QUOTE SUBST#) MTL)
+
+   in the file "ind.cfg" before building the system.
+
+
+If you find any bug, or want to add extensions to the system once it has been
+built, you may want to edit the file "fix.gfl".
+The file "fix.gfl" is loaded every time the system is started and therefore is a
+good place where to put temporary patches/extensions to the code.
+
+
+If you have find any bug or have suggestions on how to improve the system,
+please send e-mail to:
+
+               getfol@frege.mrg.dist.unige.it (GETFOL manager)

@@ -1,0 +1,189 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: declss.hgk
+;; Date: Wed Oct 20 10:45:00 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                       declss.hgk                               *
+;*                                                                *
+;* This file contains the low level routines to transform the     *
+;* format of logical attachments, representations, default        *
+;* representations of a sort into the format of low level data    *
+;* structure and the low level routines to get the low level      *
+;* data structure.                                                *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+
+;******************************************************************
+;*                                                                *
+;*     ATTACHMENTS                                                *
+;*                                                                *
+;******************************************************************
+
+;;; The predicate to check if a constsym has a created interpretation
+;
+(DEFSUB INT-HAS-CREATED (constsym)
+ (IF (MTL? (getint constsym))
+  FALSE
+  TRUE))
+
+;;; The predicate to check if a interpretation has a created 
+;   preferred name
+(DEFSUB PREFNAM-HAS-CREATED (replabel sexpr)
+ (IF (ISF (HGKM-ASSOC sexpr (getdesfun replabel)))
+  FALSE
+  TRUE))
+
+;;; CREATION LOGICAL ATTACHMENTS
+
+(DEFSUB ind-int-create (indconst replabel sexpr)
+ (setint indconst (int-mak replabel sexpr)))
+
+(DEFSUB prefnam-create (indconst replabel sexpr)
+ (addesfun replabel (desfun-entry-mak sexpr indconst)))
+
+(DEFSUB sent-int-create (sentconst replabel sexpr)
+ (setint sentconst (int-mak replabel sexpr)))
+
+(DEFSUB pred-int-create (predconst repinfo atom)
+ (IF (INT-HAS-CREATED predconst)
+  (addint predconst (int-mak repinfo atom)) 
+  (setint predconst (LIST (int-mak repinfo atom)))))
+
+(DEFSUB fun-int-create (funconst repinfo atom)
+ (IF (INT-HAS-CREATED funconst)
+  (addint funconst (int-mak repinfo atom)) 
+  (setint funconst (LIST (int-mak repinfo atom)))))
+
+;;; GETTING LOGIC ATTACHMENTS
+
+(DEFSUB ind-int-get (indconst)
+ (IFN (INT-HAS-CREATED indconst)
+  (int-undef-mak)
+  (getint indconst)))
+
+; prefnam-get finds an FOL name for the object in
+; the model corresponding to int.
+; If no such name is found, prefnam-get
+; returns an undefined name.
+
+(DEFLAM prefnam-get (int)
+ (LET ((replabel (int-get-repinfo int))
+       (value    (int-get-value int)))
+  (IF (PREFNAM-HAS-CREATED replabel value)
+   (lookupdesfun replabel value)
+   (prefnam-get-builtin replabel value))))
+
+(DEFSUB sent-int-get (sentconst)
+ (IFN (INT-HAS-CREATED sentconst)
+  (int-undef-mak)
+  (getint sentconst)))
+
+(DEFSUB pred-int-get (predconst)
+ (IFN (INT-HAS-CREATED predconst)
+  (int-undef-mak)
+  (getint predconst)))
+
+(DEFSUB fun-int-get (funconst)
+ (IFN (INT-HAS-CREATED funconst)
+  (int-undef-mak)
+  (getint funconst)))
+
+;;; DELETION LOGICAL ATTACHMENTS
+
+(DEFSUB constsym-int-delete (constsym) (remint constsym))
+
+
+;******************************************************************
+;*                                                                *
+;*     REPRESENTATIONS                                            *
+;*                                                                *
+;******************************************************************
+
+;;; The predicate to check if a label is a created representation label
+;
+(DEFSUB IS-REP-CREATED (replabel)
+ (IF (IST (getisrep replabel))
+  TRUE
+  FALSE))
+
+(DEFSUB rep-create (replabel)
+ (SEQ
+  (setisrep replabel)
+  (inidesfun replabel)))
+
+(DEFSUB rep-delete (replabel)
+ (SEQ
+  (remisrep replabel)
+  (remdesfun replabel)))
+
+
+;******************************************************************
+;*                                                                *
+;*     DEFAULT REPRESENTATION OF A SORT                           *
+;*                                                                *
+;******************************************************************
+
+;;; The predicate to check if a sort has a created default representation
+;
+(DEFSUB DEFREP-HAS-CREATED (sort)
+ (IF (IST (getdefrep sort))
+  TRUE
+  FALSE))
+
+(DEFSUB sort-defrep-create (sort replabel)
+ (setdefrep sort replabel))
+
+(DEFSUB sort-defrep-get (sort)
+ (IF (DEFREP-HAS-CREATED sort)
+  (getdefrep sort)
+  MTL))
+
+(DEFSUB sort-defrep-delete (sort)
+ (remdefrep sort))

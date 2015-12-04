@@ -1,0 +1,29 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{GAC{\etalchar{+}}91}
+
+\bibitem[GAC{\etalchar{+}}91]{giunchiglia29}
+F.~Giunchiglia, A.~Armando, A.~Cimatti, E.~Giunchiglia~P. Pecchiari,
+  L.~Serafini, A.~Simpson, and P.~Traverso.
+\newblock {{\tt GETFOL} Programmer Manual - {\tt GETFOL} version 1}.
+\newblock Technical Report 91-0007, DIST - University of Genova, Genova, Italy,
+  1991.
+
+\bibitem[GC91]{giunchiglia35}
+F.~Giunchiglia and A.~Cimatti.
+\newblock {{\tt HGKM} User Manual - {\tt HGKM} version 2}.
+\newblock Technical Report 91-0009, DIST - University of Genova, Genova, Italy,
+  1991.
+
+\bibitem[GT91]{giunchiglia12}
+F.~Giunchiglia and P.~Traverso.
+\newblock {{\tt GETFOL} User Manual - {\tt GETFOL} version 1}.
+\newblock Manual 9109-09, IRST, Trento, Italy, 1991.
+\newblock Also DIST Technical Report 91-0005, DIST, University of Genova.
+
+\bibitem[GW92]{giunchiglia7}
+F.~Giunchiglia and T.~Walsh.
+\newblock A {Theory} of {Abstraction}.
+\newblock {\em Artif. Intell.}, 56(2-3):323--390, 1992.
+\newblock Also IRST-Technical Report 9001-14, IRST, Trento, Italy.
+
+\end{thebibliography}

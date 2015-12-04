@@ -1,0 +1,116 @@
+;******************************************************************
+;*                                                                *
+;*                        ilang.fol                               *
+;*                                                                *
+;* This file contains the initialization of the language.         *
+;*                                                                *
+;******************************************************************
+
+
+;******************************************************************
+;*                                                                *
+;*  COMMANDS FOR THE LANGUAGE DEFINITION                          *
+;*                                                                *
+;******************************************************************
+
+; DECLARATION OF LANGUAGE, SORTS AND FUNCTIONAL MAPPING
+(mknewcommand (QUOTE DECLARE)     (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE DECL#)      FALSE)
+(mknewcommand (QUOTE SETFMAP)     (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE SETFMAP#)   FALSE)
+
+; SORTS
+(mknewcommand (QUOTE MOSTGENERAL) (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE MOSTGEN#)   FALSE)
+(mknewcommand (QUOTE MOREGENERAL) (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE MOREGEN#)   FALSE)
+(mknewcommand (QUOTE EXTENSION)   (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE EXTENSION#) FALSE)
+
+; CHECKING THE CORRECTNESS OF TERMS AND FORMULAS
+(mknewcommand (QUOTE TERM)        (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE TERMCMD#)   FALSE)
+(mknewcommand (QUOTE AWFF)        (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE AWFFCMD#)   FALSE)
+(mknewcommand (QUOTE WFF)         (QUOTE FOL)
+              (QUOTE LANGUAGE)    (QUOTE WFFCMD#)    FALSE)
+
+;******************************************************************
+;*                                                                *
+;* SETTING PROBE TOKENS FOR THE LANGUAGE                          *
+;*                                                                *
+;******************************************************************
+
+(probes-add-probe 'DECLARE TRUE)
+
+
+;******************************************************************
+;*                                                                *
+;*  LANGUAGE SHOW OPTIONS                                         *
+;*                                                                *
+;******************************************************************
+
+(mknewshowtoken (QUOTE SYM)   (QUOTE SSYM#)   (QUOTE LANGUAGE))
+(mknewshowtoken (QUOTE TYP)   (QUOTE STYP#)   (QUOTE LANGUAGE))
+(mknewshowtoken (QUOTE SORT)  (QUOTE SSRT#)   (QUOTE LANGUAGE))
+(mknewshowtoken (QUOTE MEM)   (QUOTE SMEM#)   (QUOTE LANGUAGE))
+(mknewshowtoken (QUOTE MGS)   (QUOTE SMGS#)   (QUOTE LANGUAGE))
+(mknewshowtoken (QUOTE LGS)   (QUOTE SLGS#)   (QUOTE LANGUAGE))
+
+
+;******************************************************************
+;*                                                                *
+;* Initalization of TRUTHSORT and SysMostgeneral                  *
+;*                                                                *
+;******************************************************************
+
+(truthsort-ini)
+(sysmostgeneral-ini)
+
+
+;******************************************************************
+;*                                                                *
+;* The initalization of the structures of the language which are  *
+;* shared between the contexts: cur-sys-symls.                    *
+;*                                                                *
+;******************************************************************
+
+; Generation of the symbol label space for the system.
+
+(cur-sys-symls-set (dflt-sys-symls-mak))
+
+
+; Setting the phisical variables of the system (i.e. the variables
+; containing particularly relevant symbols, like logical connectives,
+; quantifiers and so on).
+
+(cur-sys-symls-set-phis (sys-symls-get-phis (cur-sys-symls-get)))
+  
+
+;******************************************************************
+;*                                                                *
+;* The initialization of the structures of the (non shared)       *
+;* language: cur-cxt-symls.                                       *
+;*                                                                *
+;******************************************************************
+
+; Generation of the symls for the current context.
+; Currently the only default object in a context (other than the shared
+; symbols) is the most general sort.
+
+(cur-cxt-symls-set (dflt-cxt-symls-mak))
+
+
+; Setting the phisical variables of the current context: the most general
+; sort is sorted in the global variable Mostgeneral.
+
+(cur-cxt-symls-set-phis (cxt-symls-get-phis (cur-cxt-symls-get)))
+
+
+;******************************************************************
+;*                                                                *
+;* The initialization of the counter for new symbols              *
+;*                                                                *
+;******************************************************************
+
+(folsym_counter-reset)

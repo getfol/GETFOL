@@ -1,0 +1,63 @@
+\gfcommand{iffi}{equivalence introduction}
+\index{iffi}\index{ii}
+
+\gfsyntax{
+   iffi \ALT ii \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \liff  I  
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      \fraz{A \imp B \ \ B \imp A}
+           {A \liff B}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   Both facts must be implications. 
+   If \ARG{fact1}'s wff is of the form {\tt A imp B}, then \ARG{fact2}'s wff 
+   must be {\tt B imp A}.
+   The conclusion is {\tt A iff B} with the union of the dependencies of 
+   \ARG{fact1} and \ARG{fact2}.
+}
+
+\gfrecap{
+Both facts must be implications. 
+If the formula of `fact1' is of the form `A imp B', then the formula of
+`fact2' must be `B imp A'.
+The conclusion is {\tt A iff B} with the union of the dependencies of 
+`fact1' and `fact2'.
+}
+   
+\gfexample+
+   ***** declare sentconst A B;
+   [...]
+
+   ***** assume A imp B B imp A;
+   1  A imp B  (1)
+   2  B imp A  (2)
+
+   ***** iffi 1 2;
+   3  A iff B  (1 2);
+
+   ***** iffi 2 1;
+   4  B iff A  (1 2)
+
+   ***** reset;
+   [...]
+
+   ***** declare sentconst A;
+   [...]
+
+   ***** assume FALSE imp A A imp FALSE;
+   1  FALSE imp A  (1)
+   2  A imp FALSE  (2)
+
+   ***** iffi 1 2;
+   3  FALSE iff A  (1 2);
++

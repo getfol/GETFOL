@@ -1,0 +1,28 @@
+\gfcommand{assume}{derive an assumption}
+\index{assume}
+
+\gfsyntax{
+   assume \ARG{wff1} \OPT{\OPT{,} \ARG{wff2} \SEQ};
+}
+
+\gfdescription{
+   For each \ARG{wffI}, this command builds an assumption as a new proof line
+   and asserts it in the proof.
+   An assumption is a proof line that depends on itself.
+}
+
+\gfrecap{
+For each formula in the line, assume builds an assumption as a new proof line
+and asserts it in the proof.
+An assumption is a proof line that depends on itself.
+}
+ 
+\gfexample+
+   ***** declare sentconst A B;
+   ***** assume A and B;
+   1   A and B     (1)
+   
+   ***** assume A and B    A imp B;
+   2   A and B     (2)
+   3   A imp B     (3)
++

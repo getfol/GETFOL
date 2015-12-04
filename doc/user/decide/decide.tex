@@ -1,0 +1,69 @@
+\gfcommand{decide}{general purpose decider}
+\index{decide}
+
+\gfsyntax{
+  decide \ARG{wff}  \OPT{by \ARG{fact1} \ARG{fact2} \SEQ} using 
+  \OPT{\{ \ARG{rewriter} \SEQ \}} \ARG{decider};
+}
+
+\gfdescription{
+ {\em rewriter} and {\em decider} are defined by the following grammar:
+ %
+ \begin{bnf}
+    \T{rewriter} \sep nnf | reduce | skolemize |
+                      phexp | tautren \\ 
+    \T{decider}  \sep ptaut | ptauteq
+ \end{bnf}
+ %
+ Let {\it wff}$_i$ be the formula of {\it fact}$_{i}$, $i = 1, 2, ...\ .$
+ The command tries to verify whether the formula 
+ %
+ \begin{equation}
+   {\it wff_1} \con ... \con {\it wff}_n \imp {\it wff} \label{eq-dec}
+ \end{equation}
+ %
+ is a theorem by applying the specified rewriters in the same order they
+appear on the command line and finally applying the decider to the resulting
+formula.
+ If this succeeds, it asserts a fact whose formula is \ARG{wff}
+ and whose dependencies are the union of the dependencies of 
+ \ARG{fact1}, \ARG{fact2}, \SEQ.
+Otherwise failure is reported.\\
+ %
+ Whenever the formula in input to one of the specified routines does not  
+ match the syntactic  restrictions of the routine, an error  message is
+ printed, together with hints on how to modify the strategy. 
+}
+
+\gfrecap{
+  `rewriter' is one of the following: nnf, reduce, skolemize, phexp, tautren.
+  `decider'  is either ptaut or taut.
+The command tries to verify whether the formula:
+   +-------------------------------------------------------+
+   | (wff1 and ... and wffN) imp wff                   (1) |
+   +-------------------------------------------------------+
+(where `wffI' if the formula of `factI') is a theorem by applying
+the rewriters `rewriter ...' (in the order in which they appear) and 
+then the decider `decider' to (1).
+}
+
+\gfexample+
+   ***** declare indvar x,y,z;
+   ***** declare predconst P,Q 1;
+   ***** decide exists x.forall y.forall z.((P(y) imp Q(z) imp
+               (P(x) imp Q(x))))  using nnf,phexp,ptaut;
+   
+   PHEXP requires the formula to be in existential form.
+   Try using SKOLEMIZE before .... 
+   
+   ***** decide exists x.forall y.forall z.((P(y) imp Q(z) imp
+               (P(x) imp Q(x)))) using nnf,skolemize,phexp,ptaut;
+   
+   decide couldn't prove that exists x. forall y z. ((P(y) imp Q(z))
+    imp (P(x) imp Q(x))) is a tautology using nnf,skolemize,phexp,ptaut.
+   
+   ***** decide exists x.forall y.forall z.((P(y) imp Q(z) imp
+               (P(x) imp Q(x)))) using nnf,reduce,skolemize,phexp,ptaut;
+   
+   1   exists x. forall y z. ((P(y) imp Q(z)) imp (P(x) imp Q(x)))     
++

@@ -1,0 +1,76 @@
+\gfcommand{probe}{verbose mode}
+\index{probe}
+
+\gfsyntax{
+   probe;\\
+   probe \ARG{activity};\\
+   probe all;\\
+}
+
+\gfdescription{
+	Some {\GF} {\em activities} can be executed either in verbose
+	or in silent mode.
+	In the former, {\GF} displays messages describing the execution of the
+	command which are not displayed in the silent mode.
+	Examples of activities are given below. 
+
+	{\tt probe} lists the probed commands
+
+	{\tt probe} \ARG{activity} sets commands in the activity to be executed
+	in a verbose mode. 
+
+	{\tt probe all} sets all activities to verbose mode.
+}
+
+\gfrecap{
+Set verbose mode for certain activities.
+}
+
+\gfexample+
+   ***** probe;
+   Probing function set : COMMAND no
+   Probing function set : IO yes
+   Probing function set : DECLARE yes
+   Probing function set : PROOF yes
+   Probing function set : ATTACH yes
+   Probing function set : SIMPLIFY yes
+   Probing function set : SIMPSET yes
+   Probing function set : REWRITE yes
+   Probing function set : EVAL yes
+   Probing function set : CONTEXT yes
+   Probing function set : REFLECT yes
+   
+   ***** declare sentconst A B C;
+   A has been declared to be a Sentconst
+   B has been declared to be a Sentconst
+   C has been declared to be a Sentconst
+   
+   ***** probe command;
+   
+   ***** probe;
+   probe;
+   Probing function set : COMMAND yes
+   Probing function set : IO yes
+   Probing function set : DECLARE yes
+   Probing function set : PROOF yes
+   Probing function set : ATTACH yes
+   Probing function set : SIMPLIFY yes
+   Probing function set : SIMPSET yes
+   Probing function set : REWRITE yes
+   Probing function set : EVAL yes
+   Probing function set : CONTEXT yes
+   Probing function set : REFLECT yes
+   
+   ***** declare sentconst D E F;
+   declare sentconst D E F;
+   D has been declared to be a Sentconst
+   E has been declared to be a Sentconst
+   F has been declared to be a Sentconst
+   
+   ***** unprobe all;
+   unprobe all;
+   
+   ***** declare sentconst H G K;
++
+
+\gfnotes{}

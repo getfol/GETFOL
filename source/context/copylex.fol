@@ -1,0 +1,238 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: copylex.fol
+;; Date: Wed Oct 20 10:45:46 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;**********************************************************************
+;*                                                                    *
+;* 			     copylex.fol                              *
+;*                                                                    *
+;* This file contatins all the functions necessary to copy a given    *
+;* symls in the  current one.                                         *
+;*                                                                    *
+;**********************************************************************
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(symls-copy SYMLS)                                            *
+;* DESCRIPTION:                                                       *
+;* 	symls-copy copies all the symbols of SYMLS in the current     *
+;* 	context.                                                      *
+;* NOTE:                                                              *
+;* 	symls-copy aborts if the language to be copied contains a     *
+;*      symbol whose label is used in the current context.            *
+;*                                                                    *
+;* 	symls-copy treats the sorts in a very special way.            *
+;* 	UNIVERSAL is never copied because of its special role.        *
+;*      The other sorts are declared in two steps:                    *
+;*                                                                    *
+;* 	    1) in the first only their name is declared, no           *
+;* 	    information about extension or lgs/mgs is associated with *
+;* 	    them. This step must be done before of declaring symbols  *
+;* 	    that refers to one or more sorts (like indsym and funsym).*
+;*                                                                    *
+;* 	    2) in the second step all the information of extension and*
+;* 	    lgs/mgs are declared. This step must be done after having *
+;* 	    declared the indconst (for extension), and the sorts (for *
+;* 	    lgs/mgs).                                                 *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM symls-copy (SYMLS)
+ (LET ((PREDSYMS (syms-del-mostgeneral (symls-get-predsyms SYMLS)))
+       (SENTSYMS (symls-get-sentsyms SYMLS))
+       (INDSYMS  (symls-get-indsyms  SYMLS))
+       (FUNSYMS  (symls-get-funsyms  SYMLS)))
+  (LET ((DECLARED (symlabel-get
+		   (APPEND
+		    (syms-get-outnams SENTSYMS)
+		    (syms-get-outnams INDSYMS)
+		    (syms-get-outnams FUNSYMS)
+		    (syms-get-outnams PREDSYMS)))))
+   (IF (IST DECLARED)
+    (DECLARE-EPRINC3 "COPYLEX cannot be done: " DECLARED
+		     " has already been declared")
+    (SEQ
+     (predsyms-copy  PREDSYMS)
+     (sentsyms-copy  SENTSYMS)
+     (indsyms-copy   INDSYMS)
+     (funsyms-copy   FUNSYMS)
+     (sortsinfo-copy (syms-get-sorts PREDSYMS)))))))
+
+(DEFLAM syms-del-mostgeneral (SYMS)
+ (IF (MTL? SYMS) MTL
+     (IF (EQ (outnam (FIRST SYMS)) (outnam Mostgeneral))
+	 (REST SYMS)
+	 (LCONS (FIRST SYMS) (syms-del-mostgeneral (REST SYMS))))))
+
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(predsyms-copy PREDSYMS)                                      *
+;* DESCRIPTION:                                                       *
+;* 	predsyms-copy copies the PREDSYMS in the current context.     *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM predsyms-copy (PREDSYMS)
+ (IF (MTL? PREDSYMS) (NOP)
+  (SEQ
+   (predsym-copy (FIRST PREDSYMS))
+   (predsyms-copy (REST PREDSYMS)))))
+
+(DEFLAM predsym-copy (PREDSYM)
+ (IF (IS-SORT PREDSYM)
+  (pseudosorts-declare (LIST (outnam PREDSYM)))
+  (SEQ
+   (DECLARE-EPRINC3 (outnam PREDSYM) " has been declared to be a "
+		    (syntype PREDSYM))
+   (predsym-declare (syntype PREDSYM) (outnam PREDSYM) (arity PREDSYM)
+		    (sact-copy (sact PREDSYM))))))
+
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(sentsyms-copy SENTSYMS)                                      *
+;* 	(indsyms-copy  INDSYMS)                                       *
+;* DESCRIPTION:                                                       *
+;* 	sentsyms-copy copies the SENTSYMS in the current context.     *
+;* 	indsyms-copy  copies the INDSYMS in the current context.      *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM sentsyms-copy (SENTSYMS)
+ (IF (MTL? SENTSYMS) (NOP)
+  (SEQ
+   (sentsym-copy (FIRST SENTSYMS))
+   (sentsyms-copy (REST SENTSYMS)))))
+
+(DEFLAM sentsym-copy (SENTSYM)
+ (sentsyms-declare (syntype SENTSYM) (LIST (outnam SENTSYM))))
+
+
+
+(DEFLAM indsyms-copy (INDSYMS)
+ (IF (MTL? INDSYMS) (NOP)
+  (SEQ
+   (indsym-copy (FIRST INDSYMS))
+   (indsyms-copy (REST INDSYMS)))))
+
+(DEFLAM indsym-copy (INDSYM)
+ (indsyms-declare (syntype INDSYM) (LIST (outnam INDSYM))
+		  (ls-get-obj (outnam (sort INDSYM)) (predconst-ls))))
+
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(funsyms-copy  FUNSYMS)                                       *
+;* DESCRIPTION:                                                       *
+;* 	funsyms-copy  copies the FUNSYMS in the current context.      *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM funsyms-copy (FUNSYMS)
+ (IF (MTL? FUNSYMS) (NOP)
+  (SEQ
+   (funsym-copy (FIRST FUNSYMS))
+   (funsyms-copy (REST FUNSYMS)))))
+
+(DEFLAM funsym-copy (FUNSYM)
+ (SEQ
+  (DECLARE-EPRINC3 (outnam FUNSYM) " has been declared to be a "
+		   (syntype FUNSYM))
+  (funsym-declare (syntype FUNSYM) (outnam FUNSYM) (arity FUNSYM)
+		  (fmaps-copy (fmaps FUNSYM)) (sact-copy (sact FUNSYM)))))
+
+(DEFLAM fmaps-copy (FMAPS)
+ (IF (MTL? FMAPS) MTL
+  (CONS (fmap-copy (FIRST FMAPS)) (fmaps-copy (REST FMAPS)))))
+
+(DEFLAM fmap-copy (FMAP)
+ (fmap-mak
+  (ls-get-objs (syms-get-outnams (fmap-get-args FMAP)) (predconst-ls))
+  (ls-get-obj (outnam (fmap-get-out FMAP)) (predconst-ls))))
+
+(DEFLAM sact-copy (SACT) (COPY SACT))
+
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;* 	(sortsinfo-copy SORTS)                                        *
+;* DESCRIPTION:                                                       *
+;* 	sortsinfo-copy copies the lgs, mgs and extensions.            *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM sortsinfo-copy (SORTS)
+ (IF (MTL? SORTS) (NOP)
+  (SEQ
+   (sortinfo-copy (FIRST SORTS))
+   (sortsinfo-copy (REST SORTS)))))
+
+(DEFLAM sortinfo-copy (SORT) (SEQ (lg-copy SORT) (ext-copy SORT)))
+
+(DEFLAM lg-copy (SORT)
+ (LET
+  ((SORT1 (ls-get-obj (outnam SORT) (predconst-ls)))
+   (LGS (syms-get-outnams (lg SORT))))
+  (IF (HGKM-MEMQ (outnam Mostgeneral) LGS)
+   (mgpair-declare SORT1 Mostgeneral)
+   (mgpairs-declare
+    SORT1
+    (ls-get-objs (HGKM-DELETE (outnam SORT1) LGS) (predconst-ls))))))
+
+(DEFLAM ext-copy (SORT)
+ (IF (MTL? (ext SORT)) (NOP)
+  (LET
+   ((SORT1 (ls-get-obj (outnam SORT) (predconst-ls))))
+   (SEQ
+    (extension-declare
+     SORT1 (ls-get-objs (syms-get-outnams (ext SORT)) (indconst-ls)))
+    (CRLF)))))

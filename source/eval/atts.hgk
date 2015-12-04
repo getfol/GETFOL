@@ -1,0 +1,236 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:35:58 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: atts.hgk
+;; Date: Wed Oct 20 10:44:49 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;****************************************************************************
+;*                                                                          *
+;*                                                                          *
+;*             atts.hgk                                                     *
+;*                                                                          *
+;*                                                                          *
+;****************************************************************************
+
+; This file is supposed to contain the low level primitives for
+; creating the data structure of attachments, representations
+; defrep of a sort, builtin representations.
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *       PART I: the data structure for attachments              *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+;;;  the data structure for the representation information of an interpretation
+
+; < representation-info > = < replabel > | < argsreplabel > . replabel      
+; < argsreplabel >        = ( < replabel > )                       
+; < replabel >            =  < label > | undefined rep                 
+
+(DEFSUB REPLABEL-UNDEF? (arg) (EQ arg %REP-UNDEF%))
+(DEFSUB repinfo-mak (argsrep outrep) (CONS argsrep outrep))
+(DEFSUB repinfo-get-out (repinfo) (CDR repinfo))
+(DEFSUB repinfo-get-args (repinfo) (CAR repinfo))
+
+(DEFSUB Def-replist-mak (n)(LIST-N %DEFDEFREP% n))
+
+(DEFLAM ARGREPS-HAS (oldint repargs)
+ (IF (MTL? oldint) FALSE
+  (IF (REP-COMPATIBLE repargs (repinfo-get-args 
+                     (int-get-repinfo (FIRST oldint))))
+   TRUE
+   (ARGREPS-HAS (REST oldint) repargs))))
+
+(DEFLAM REP-COMPATIBLE (reps1 reps2)
+ (IF (AND (MTL? reps1) (MTL? reps2)) TRUE
+  (IF (OR  (MTL? reps1) (MTL? reps2)) FALSE
+   (IF (NOT (EQ (CAR reps1) (CAR reps2))) FALSE
+    (REP-COMPATIBLE (CDR reps1) (CDR reps2))))))
+
+                                     
+; In the property DESFUN of a replabel are stored the informations
+; about designation-function.
+
+;;;  the data structure for a designation function entry
+;
+; < designation-function > =  ( < value > . < folnam > )
+
+(DEFSUB desfun-entry-mak (sexpr indconst) (CONS sexpr indconst))
+(DEFSUB desfun-entry-get-sexpr (desfun) (CAR desfun))
+(DEFSUB desfun-entry-get-name (desfun) (CDR desfun))
+
+
+; this data structure is used to realize
+; the inverse operation of getting an interpretation i.e. get the
+; GETFOLSYM corresponding to an actual data structure.
+
+(DEFSUB getdesfun (replabel) (GETPROP replabel (QUOTE DESFUN)))
+(DEFSUB remdesfun (replabel) (REMPROP replabel (QUOTE DESFUN)))
+(DEFSUB inidesfun (replabel) (setdesfun Alist-empty replabel))
+(DEFSUB setdesfun (replabel desfun) (SETPROP replabel desfun (QUOTE DESFUN)))
+(DEFSUB addesfun (replabel desfun-entry)
+ (setdesfun replabel (CONS desfun-entry (getdesfun replabel))))
+(DEFSUB lookupdesfun (replabel sexpr) 
+ (desfun-entry-get-name (HGKM-ASSOC sexpr (getdesfun replabel))))
+
+
+
+; Interpretations are stored under the INT property of the
+; constsym's property list
+                                                               
+(DEFSUB getint (constsym) (GETPROP constsym (QUOTE INT)))
+(DEFSUB remint (constsym) (REMPROP constsym (QUOTE INT)))
+(DEFSUB setint (constsym int) (SETPROP constsym int (QUOTE INT)))
+(DEFSUB addint (applsym int) (setint applsym (CONS int (getint applsym))))
+
+
+;;;  the data structure for an interpretation
+; < interpretation > =  < representation-info > . <value>   
+
+(DEFSUB VALUE-UNDEF? (obj) (EQ obj %VALUE-UNDEF%))
+
+(DEFSUB INT-UNDEF? (obj)
+ (OR (REPLABEL-UNDEF? (CAR obj)) (VALUE-UNDEF? (CDR obj))))
+
+(DEFSUB int-mak (repinfo value) (CONS repinfo value))
+(DEFSUB int-get-repinfo (int) (CAR int))
+(DEFSUB int-get-value (int) (CDR int))
+
+(DEFSUB int-undef-mak () (CONS %REP-UNDEF% %VALUE-UNDEF%))
+
+(DEFLAM int-chose (ints argrep)
+ (IF (MTL? ints) (int-undef-mak)
+  (IF (ISF (REP-COMPATIBLE
+            (repinfo-get-args (int-get-repinfo (FIRST ints)))
+             argrep))
+   (int-chose (REST ints) argrep)
+   (FIRST ints))))
+
+(DEFLAM sameint (int1 int2)
+ (IF (OR (INT-UNDEF? int1)(INT-UNDEF? int2)) %VALUE-UNDEF%
+  (IFN (EQUAL (int-get-repinfo int1) (int-get-repinfo int2))
+   %VALUE-UNDEF%
+   (IF (EQUAL (int-get-value int1) (int-get-value int2))
+    TRUE 
+    FALSE))))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *       PART II: the data structure for representations         *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+; The information that a label is a representation label
+; is stored in the property REP of the label
+
+(DEFSUB getisrep (replabel) (GETPROP replabel (QUOTE ISREP)))
+(DEFSUB setisrep (replabel) (SETPROP replabel TRUE (QUOTE ISREP)))
+(DEFSUB remisrep (replabel) (REMPROP replabel (QUOTE ISREP)))
+
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *       PART III: the data structure for default representation *
+; *                 of a sort                                     *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+; The information about default representation of a sort
+; are stored in the property DEFREP of the sort
+
+(DEFSUB getdefrep (sort) (GETPROP sort (QUOTE DEFREP)))
+(DEFSUB setdefrep (sort replabel) (SETPROP sort replabel (QUOTE DEFREP)))
+(DEFSUB remdefrep (sort) (REMPROP sort (QUOTE DEFREP)))
+
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *       PART IV: the data structure for builtin representations *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+; data structure for GETFOL standard representations
+
+; GETFOL provides the following standard representations with
+; naming functions that allow for naming any object under
+; that representation
+
+(DEFSUB NAME-UNDEF? (obj) (EQ obj %NAME-UNDEF%))
+
+(DEFLAM prefnam-get-builtin (replabel value)
+ (IF (EQ replabel %TRUTHREP%)
+  (tvalue2tconst value)
+  (IF (AND (EQ replabel (natnumrep-get)) (KNOWNATNUM value))
+   (natvalue2numconst value)
+   %NAME-UNDEF%)))
+
+(DEFLAM  tvalue2tconst(value)
+ (IF (EQ value TRUE) True
+  (IF (EQ value FALSE) False %NAME-UNDEF%)))
+
+(DEFLAM natvalue2numconst (value)
+ (LET ((name (numeral-mak value)))
+  (IF (IST name) name
+   %NAME-UNDEF%)))
+

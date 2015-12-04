@@ -1,0 +1,171 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: simpset.hgk
+;; Date: Wed Oct 20 10:45:23 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*************************************************************************
+;*                                                                       *
+;*                      simpset.hgk                                      *
+;*                                                                       *
+;* PART 1:	SIMPSETS 			 		                                     *
+;*                                                                       *
+;* - the data structure of a simpset				                         *
+;* - the data structure of the user simpsets        		                *
+;* - the data structure of the built-in simpsets                         *
+;*                                                                       *
+;* PART 2:	SIMPSETS AND GETFOL LOGIC	 		                            *
+;*                                                                       *
+;* - the data structure of the interface between the simpset world and   *
+;*   GETFOL's logic 							                                  *
+;*                                                                       *
+;*************************************************************************
+
+
+; *************************************************************************
+; *                                                                       *
+; *                                                                       *
+; *    PART 1:  SIMPSETS                                                  *
+; *                                                                       *
+; *                                                                       *
+; *************************************************************************
+
+; %SIMPS%is a global variable that contains a list of all the user simpsets.
+; %BNSIMPS% is a global variable that contains a list of all
+; the built-in simpsets.
+
+
+; *****************************************************************
+; *                                                               *
+; *   PART 1.1: the data structure for simpsets                   *
+; *                                                               *
+; *****************************************************************
+
+; <simpset> :: = <simplab> . <amf> . <simplabs> . <reason>
+; <simplab> :: = <folsym>
+
+(DEFSUB simp-mak (label amf  simplabs  reason)
+ (CONS label (CONS amf  (CONS simplabs  reason))))
+(DEFSUB simp-get-label (simp) (CAR simp))
+(DEFSUB simp-get-amf (simp)(CADR simp))
+(DEFSUB simp-get-labs (simp) (CADDR simp))
+(DEFSUB simp-get-reason (simp)(CDDDR simp))
+
+
+; *****************************************************************
+; *                                                               *
+; *    PART 1.2: the data structure for user simpsets             *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB simps-ini () (SETQ %SIMPS% MTL))
+(DEFSUB simps-set (simps) (SETQ %SIMPS% simps))
+(DEFSUB simps-get () %SIMPS%)
+(DEFSUB simps-add (simp)(simps-set (CONS simp (simps-get))))
+(DEFSUB simps-modify (simp)
+ (SETCDR (simps-get-simp (simp-get-label simp)) (CDR simp)))
+(DEFSUB simps-del () (simps-set MTL))
+(DEFSUB simps-get-simp (label)(HGKM-ASSOC label (simps-get)))
+
+;;; The predicate to check if a label is a label of a user simpset
+(DEFSUB SIMPLAB? (label)(IF (IST (simps-get-simp label)) TRUE FALSE))
+
+;;; The predicate to check if a label is a label of a user basic simpset
+(DEFSUB BASICSIMPLAB? (label)
+ (IFN (SIMPLAB? label) FALSE
+  (IFN (EQUAL (simp-get-labs (simps-get-simp label)) (LIST label)) FALSE 
+   TRUE)))
+
+
+; *****************************************************************
+; *                                                               *
+; *     PART 1.3: the data structure for built-in simpsets        *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB bnsimps-ini () (SETQ %BNSIMPS% MTL))
+(DEFSUB bnsimps-set (bnsimps) (SETQ %BNSIMPS% bnsimps))
+(DEFSUB bnsimps-get () %BNSIMPS%)
+(DEFSUB bnsimps-add (simp)(bnsimps-set (CONS simp (bnsimps-get))))
+(DEFSUB bnsimps-del () (bnsimps-set MTL))
+(DEFSUB bnsimps-get-simp (label)(HGKM-ASSOC label (bnsimps-get)))
+ 
+;;; The predicate to check if a label is a label of a built-in simpset
+(DEFSUB BNSIMPLAB? (label) (IF (IST (bnsimps-get-simp label)) TRUE FALSE))
+
+
+;******************************************************************
+;*                                                                *
+;*   PART 2:	SIMPSETS AND GETFOL'S LOGIC	 		               *
+;*                                                                *
+;******************************************************************
+
+; %SIMPSINTERFACE% is the global variable that implements an interface
+; between the simpset world and GETFOL's world.
+
+
+; *****************************************************************
+; *                                                               *
+; *  PART 2.1: the data structure for the interface between a     *
+; *            simpset and GETFOL's logic                         *
+; *                                                               *
+; *****************************************************************
+
+; <simpsinterface> ::= <simpinterface-list>
+; <simpinterface>  ::= <simplab> . <wffrep> . <factrep>
+
+(DEFSUB simpinterface-mak (label wffs facts) (CONS label (CONS wffs facts)))
+(DEFSUB simpinterface-get-label (simpinterface) (CAR simpinterface))
+(DEFSUB simpinterface-get-wffs  (simpinterface)(CADR simpinterface))
+(DEFSUB simpinterface-get-facts (simpinterface) (CDDR simpinterface))
+
+(DEFSUB simpsinterface-ini () (SETQ %SIMPSINTERFACE% MTL))
+(DEFSUB simpsinterface-set (simpsinterface)
+ (SETQ %SIMPSINTERFACE% simpsinterface))
+(DEFSUB simpsinterface-get () %SIMPSINTERFACE%)
+(DEFSUB simpsinterface-add (simpinterface)
+ (simpsinterface-set (CONS simpinterface (simpsinterface-get))))
+(DEFSUB simpsinterface-del () (simpsinterface-set MTL))
+(DEFSUB simpsinterface-get-simpinterface (label)
+ (HGKM-ASSOC label (simpsinterface-get)))

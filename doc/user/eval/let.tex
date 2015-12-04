@@ -1,0 +1,44 @@
+\gfcommand{let}{evaluation plus attachment}
+\index{let}
+
+\gfsyntax{
+  let \ARG{\indconst} to \ALT dar [ \ARG{rep} ] \ARG{term};
+}
+
+\gfdescription{
+  This command evaluates the \ARG{term} using the mixed evaluation mechanism
+  of the {\tt eval} command.
+  If the evaluation returns a {\HG} representation for \ARG{term}, then it is
+  attached to  \ARG{indconst} with representation function \ARG{rep}. Then the 
+  equality of \ARG{indconst} with \ARG{term} is asserted as the next line in the
+  proof, otherwise an error message is given. If \ARG{rep} is not specified the
+  representation is the default representation. If this does not happen {\GF}
+  outputs an error message.
+}
+
+\gfrecap{
+This command evaluates the `term' using the mixed evaluation mechanism
+of the {\tt eval} command.
+If the evaluation returns a HGKM representation for `term', then it is
+attached to  `indconst' with representation function `rep'. Then the 
+equality of `indconst' with `term' is asserted as the next line in the
+proof, otherwise an error message is given. If `rep' is not specified the
+representation is the default representation. If this does not happen GETFOL
+outputs an error message.
+}
+
+\gfexample+
+   ***** declare indconst a b c;
+   ***** attach b to b;
+   b attached to 'b
+   ***** attach c to c;
+   c attached to 'c
+   ***** declare funconst h 2;
+   ***** DEFLAM h(x y) (QUOTE d);
+   ***** attach h to h;
+   h attached to h
+   ***** let a dar h(b c);
+   a attached to 'd
+   a is the preferred name of d
+   1   a = h(b,c)     
++

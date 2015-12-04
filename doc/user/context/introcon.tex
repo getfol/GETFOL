@@ -1,0 +1,27 @@
+\section{Multiple contexts}
+\label{sec-cxt}
+
+\subsection{Introduction}
+
+\begin{quote}\em
+  ... When reasoning, people seem to be able to switch focus of their
+  attention and make always some sort of local reasoning ...
+  \cite{giunchiglia2}
+\end{quote}
+
+Structuring the knowledge into {\em distinguished partial descriptions of the
+world}, has been hinted as a cognitively plausible hypotheses. 
+Distinct partial descriptions can be represented by {\GF} {\bf contexts}.
+A {\GF} context contains its own language defined by a set of declarations, 
+its own axioms and definitions, and its own computational model.
+Reasoning can be performed within a context. 
+You can type any command defined so far within any context in {\GF}.
+Multiple proofs can be performed within a context.
+When you work in {\GF} you are always in one context.
+The context in which you are working in is called the {\em current context}.
+When you enter the system the current context is empty and without name.
+If you want to leave the context to work in another one, you have to give the
+context a name to refer to it later (by the command {\tt namecontext}).
+You can create a new context by using {\tt makecontext}, and  switch to it
+by using {\tt switchcontext}.
+The context you switch to then becomes the current context.

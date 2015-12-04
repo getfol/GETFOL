@@ -1,0 +1,49 @@
+\gfcommand{makeproof}{create a new empty proof}
+\index{makeproof}
+
+\gfsyntax{
+   makeproof \ARG{prf-name};
+}
+
+\gfdescription{
+   A new empty proof with name \ARG{prf-name} is created.
+}
+
+\gfrecap{
+A new empty proof with name prf-name is created.
+}
+
+\gfexample+
+   ***** show whereami;
+   You are now using an unnamed context.
+   You are now using an unnamed proof.
+   ***** nameproof P1;
+   You have named the current proof: P1
+   ***** show whereami;
+   You are now using an unnamed context.
+   You are now using the proof: P1
+   ***** declare sentconst A;
+   ***** assume A;
+   1   A     (1)
+   ***** makeproof P2;
+   You have created the empty proof: P2
+   ***** switchproof P2;
+   You are now using the proof: P2
+   ***** declare sentconst B;
+   ***** assume A or B;
+   1   A or B     (1)
+   ***** switchproof P1;
+   You are now using the proof: P1
+   ***** assume B;
+   2   B     (2)
+   ***** andi 1 2;
+   3   A and B     (1 2)
+   ***** show proof;
+   1   A     (1)
+   2   B     (2)
+   3   A and B     (1 2)
+   ***** switchproof P2;
+   You are now using the proof: P2
+   ***** show proof;
+   1   A or B     (1)
++

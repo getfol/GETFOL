@@ -1,0 +1,64 @@
+\gfcommand{tauteq}{tautological decider with equality}
+\index{tauteq}
+
+\gfsyntax{
+  tauteq \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+
+\gfdescription{
+  The class of formulae decided by {\tt tauteq} is the set of formulas provable
+  using:
+  \begin{itemize}
+  \item the introduction and elimination rules for the sentential connectives;
+  \item the {\em congruence-rule};
+  \item the following axioms schemata for equality:
+  $$
+  \begin{array}{l}
+    x=x\\
+    (x=y\ \imp\ y=x)\\
+    ((x=y\ \con\ y=z)\ \imp\ x=z)\\
+    ((x_1=y_1\ \con \ldots \con\ x_n=y_n)\ \imp\ 
+    (P(x_1, \ldots \ ,x_n)\ \liff\ P(y_1, \ldots \ ,y_n)))
+  \end{array}
+  $$
+  %
+  corresponding to {\em reflexivity, symmetry, transitivity} and {\em substitution 
+  into predicates}.
+  \end{itemize}
+}
+
+\gfrecap{
+The class of formulae decided by {\tt tauteq} is the set of formulas provable
+using:
+* the introduction and elimination rules for the sentential connectives;
+* the ``congruence-rule'';
+* the following axioms schemata for equality:
+     +-------------------------------------------------------------------------+
+     |   x = x                                                                 |
+     |   x = y imp y = x                                                       |
+     |   (x = y and y = z) imp x = z                                           |
+     |   (x1 =y1 and ... and xN = yN) imp (P(x1, ..., xN) iff P(y1, ..., yN))  |
+     +-------------------------------------------------------------------------+
+  corresponding to ``reflexivity'', ``symmetry'', ``transitivity'' and
+  ``substitution into predicates''.
+}
+
+\gfexample+
+   ***** declare predconst P 1;
+   ***** declare funconst f 1;
+   ***** declare indvar x y;
+   ***** declare indvar z;
+   ***** tauteq x=x;
+   1   x=x
+   ***** tauteq x=y imp y=x; 
+   2   x=y imp y=x
+   ***** tauteq ((x=y and y=z) imp x=z);
+   3   (x=y and y=z) imp x=z
+   ***** tauteq (x=y imp (P(x) or not P(y)));
+   4   x=y imp (P(x) or not P(y))
+   ***** tauteq (f(x)=f(y) imp (P(f(x)) iff P(f(y))));
+   5   f(x)=f(y) imp (P(f(x)) iff P(f(y)))
+   ***** tauteq x=y imp f(x)=f(y);
+   TAUTEQ couldn't prove that (x = y) imp (f(x) = f(y))
+   is a tautology.
++

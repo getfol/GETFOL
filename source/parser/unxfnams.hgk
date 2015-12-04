@@ -1,0 +1,112 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: unxfnams.hgk
+;; Date: Wed Oct 20 10:48:25 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;  OS dependent functions  [FOL mode]
+; 
+; *****************************************************************
+; *                                                               *
+; *    This file contains the definitions of                      *
+; *    FILNAM# and filnam-print  that is of the functions which   *     
+; *    manage file names.                                         *
+; *                                                               *
+; *****************************************************************
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (FILNAM#)                                                *
+; *      (filnam-print  <filename>)                               *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *								  *
+; *      The Unix filename syntax is used (with "." and "..")     *
+; *								  *
+; *      NOTE: ".", "..", "/" cant be part of a name  (the        *
+; *                       identifier being parsed), if not quoted *
+; *            "~"  can be part of a name but has no meaning      *
+; *								  *
+; *	 BUG: any IGNCHAR can follow "/" (before the name)  and   *
+; *           thus, for instance " ". Thus "./ ciao" is the same  *
+; *           as "./ciao". Sequences of filenames shoud be forced *
+; *           to be separated by commas.			  *
+; *								  *
+; *	 filnam-print prints a UNIX file name.			  *
+; *	 A UNIX file name is already a string and so can be	  *
+; *	 printed itself.					  *
+; *								  *
+; *****************************************************************
+;
+(DEFLAM FILNAM# ()
+ (LET ((FILNAM (FILNAM@) ))
+  (IF (IST FILNAM) FILNAM
+      (FERRM0  "I was not able to parse a filename ") )))
+
+           
+(DEFLAM FILNAM@ ()
+ (LET ((FOLSYM (FOLSYM@) ))
+ (IF (IST FOLSYM)
+   (IF (EQ FOLSYM SLASH) 
+     (IF (EQ (CUR-TOKEN) SLASH)
+       (FERRM1 "A filename cannot have two slashes one after the other")
+       (LET ((FILNAM (FILNAM@) ))  
+       (IF (ISF FILNAM)
+           (FERRM1 "A filename cannot end with a slash")
+           (CONCAT-SYMS SLASH FILNAM)) ) )
+     (IF (EQ (CUR-TOKEN) DOT)
+      (CONCAT-SYMS FOLSYM (CONCAT-EMPTY?SYMS (TK@ DOT) (FOLSYM@))) 
+      (IF (EQ (CUR-TOKEN) SLASH)(CONCAT-SYMS FOLSYM (FILNAM@)) FOLSYM)))
+   (LET ((DOT?DOT (CONCAT-EMPTY?SYMS (TK@ DOT) (TK@ DOT)) ))
+     (IF (ISF DOT?DOT) MTL
+       (IF (EQ (CUR-TOKEN) SLASH)
+           (CONCAT-SYMS DOT?DOT (FILNAM@)) 
+           (FERRM1 "A filename must have a slash after . or ..")
+   ) ) )
+)))
+;;print of filenames
+;
+(DEFLAM filnam-print (L) (HGKM-PRINC L))
+

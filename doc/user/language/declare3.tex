@@ -1,0 +1,43 @@
+\gfcommand{declare}{sorted declaration of indsyms and funsyms}
+\index{declare}
+\index{declare!sorted language}
+
+\gfsyntax{
+  declare indconst \ALT indpar \ALT indvar \ARG{sym1} \SEQ \ARG{symN}
+  [ \ARG{sortsym} ]; \\
+  declare funconst \ALT funpar \ARG{sym1} \SEQ \ARG{symN}
+  ( \ARG{sortsym1} \SEQ \ARG{sortsymN} ) = \ARG{sortsym};\\
+}
+
+\gfdescription{
+  The first form declares the \ARG{symI} to be indsym, and sets their
+  sort to \ARG{sortsym}.
+  The second form declares the \ARG{symI} to be funsyms of arity $N$, and adds
+  (\ARG{sortsym1} \SEQ \ARG{sortsymN} \ARG{sortsym}) to the set of fmaps of
+  the \ARG{symI}.
+}
+
+\gfrecap{
+Declares symI to be an indsym (of sort `sortsym') or a funsym with fmap
+(`sortsym1', ..., `sortsymN', `sortsym')
+}
+
+\gfexample+
+   ***** declare predconst S4 1;
+   S4 has been declared to be a Predconst
+   ***** declare indvar x [S1];
+   S1 is a sort
+   x has been declared to be an Indvar
+   ***** declare funconst f ( S4 S5 ) = S1;
+   S1 is a sort
+   The unary predconst S4 has been declared to be a sort
+   S5 has been declared to be a sort
+   f has been declared to be a Funconst
++
+
+\gfnotes{
+  In both forms of declaration \ARG{sortsym} and \ARG{sortsymI} have to be
+  either new symbols or unary predicates or sorts.
+  In the former cases \ARG{sortsym} and \ARG{sortsymI} are also declared to
+  be sorts. 
+}

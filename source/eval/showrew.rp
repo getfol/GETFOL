@@ -1,0 +1,109 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: showrew.rp
+;; Date: Wed Oct 20 10:45:15 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i                                                               i
+; i            SIMPSETS                                           i
+; i                                                               i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i                                                               i
+; i SYNTAX                                                        i
+; i      (SHOWSIMPSET#)			                          i
+; i                                                               i
+; i DESCRIPTION                                                   i 
+; i      This function scans <simpsetlabel>			  i
+; i                                                               i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+;
+(DEFLAM SHOWSIMPSET# ()
+ (LET ((label (REQ# (QUOTE SIMPLAB@) (QUOTE "This command")
+               (QUOTE " a simpset label "))))
+  (SEQ 
+   (ENDL)
+   (showsimpset label))))
+
+(DEFLAM showsimpset (label)
+ (IF (BNSIMPLAB? label)
+  (SEQ (CRLF)(PRINTMES2 label " is a label of a built-in simpset.")(CRLF))
+  (IF (BASICSIMPLAB? label)
+   (showbasicsimp (simplab2wffs label) (simplab2facts label))
+   (IF (MTL? (simp-get-labs (simps-get-simp label)))
+    (PRINTMES2 label " is an empty compound simpset")
+    (PRINTMES3 label " is compound by this list of simpsets :" 
+     (simp-get-labs (simps-get-simp label)))))))
+
+(DEFLAM showbasicsimp (wffs facts)
+ (SEQ 
+  (IF (MTL? wffs)
+   (PRINTMES "This basic simpset does not contain any wff.")
+   (SEQ (HGKM-PRINC "Wffs :  ")(CRLF)(printwfflist wffs)))
+  (IF (MTL? facts) 
+   (PRINTMES "This basic simpset does not contain any fact.")
+   (LET ((output (select-labeledfacts (MAPCAR 'fact-get-label facts) MTL MTL)))
+    (LET ((axs (CAR output))
+          (pfs (CDR output)))
+     (SEQ
+      (IFN (MTL? axs)
+       (SEQ (HGKM-PRINC "Axioms :  ") (PRINTLIST axs)(CRLF))
+       (NOP))
+      (IFN (MTL? pfs)
+       (SEQ (CRLF)(HGKM-PRINC "Proof lines :  ")(PRINTLIST pfs)(CRLF))
+       (NOP))))))))
+
+(DEFLAM printwfflist(wffs)
+ (IF (MTL? wffs)(NOP)
+  (SEQ (printexp (FIRST wffs))(CRLF)(printwfflist (REST wffs)))))
+
+(DEFLAM select-labeledfacts (factlabels ax pf)
+ (IF (MTL? factlabels) (CONS ax pf)
+  (IF (INTEGER? (CAR factlabels))
+   (select-labeledfacts (REST factlabels) ax
+    (APPEND pf (LIST (FIRST factlabels))))
+   (select-labeledfacts (REST factlabels)
+    (APPEND ax (LIST (FIRST factlabels))) pf))))

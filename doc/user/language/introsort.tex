@@ -1,0 +1,69 @@
+\section{Sorts}
+\label{sec-sort}
+
+\subsection{Introduction}
+
+The {\GF} logic is sorted, although you are not forced to make any
+sort declarations.
+If you never use any of the system's sort commands, you can use the 
+logic as if it were unsorted. {\GF} makes sure that everything works correctly
+with appropriate default sorts
+(see later in this section).
+
+Sorts in {\GF} are specially-handled unary predicates: that is, aside from the
+usual features of unary predicates, they possess some additional ones.
+This choice won't be deeply justified here.
+The resulting logic can, however, be proved to be 
+consistent and to allow more compact axiomatizations and proofs
+than the unsorted one.
+
+\subsection{Defining the sort hierarchy}
+We present here the commands for the declaration of new sorts, for the
+definition of the generality relations between sorts, for the definition
+of a most general sort and for the declaration sort extensions.
+
+
+The generality relations can be intuitively specified in this way:
+stating that sort $S_1$ is {\it weakly more general} than sort $S_2$
+is equivalent to
+specifying an axiom of the form $\forall x(S_2(x) \imp S_1(x))$.
+In this case we also say that $S_2$ is {\it weakly less general} than $S_1$.
+Two sorts are said to be {\it equivalent} when they are mutually
+(weakly) more general.
+When $S_1$ is {\it weakly more (less) general} than $S_2$ and it is not
+equivalent to it, then we say that $S_1$ is {\it strictly more (less)
+general} than $S_2$.
+Finally, we say that $S$ is a {\em most general sort} if it is weakly more
+general than any sort. {\GF} has a default most general sort, {\tt
+UNIVERSAL}, that is used when no explicit sort information is provided to
+the system.
+
+\subsection{Sorted declarations}
+
+A sort is associated to every {\indsym} at the moment of its declaration.
+In unsorted
+declarations, when no sort is specified, the default most general sort
+{\tt UNIVERSAL} is taken to be the sort of the symbol.
+
+The sort information associated with a {\funsym} is a set of so-called 
+{\it fmaps},
+that is of $n+1$-tuples of sorts, where $n$ is the arity of the \funconst.
+The fmaps for $f$ specify the sort of a term whose external {\funsym} is 
+$f$, depending on the sort of its arguments. When a {\funsym} is declared
+the $n+1$-tuple ({\tt UNIVERSAL} \ldots {\tt UNIVERSAL}) is always added to its
+{\it fmaps}.
+
+According to the sort information of symbols we give now the
+definition of the useful notion of {\it sort of a term}:
+we say that $t$ is a term of sort $S$ 
+if and only if
+%
+\begin{itemize}
+\item
+  $t$ is an individual symbol, and its sort is weakly less general than $S$,
+  or
+\item
+  $t=f(t_1,\dots,t_n)$, $f$ has an {\it fmap} of the form $(S_1,\dots,S_n,
+  S_f)$, $S_f$ is weakly less general than $S$ and all $t_i$ are terms of sort
+  $S_i$.
+\end{itemize}

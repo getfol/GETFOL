@@ -1,0 +1,255 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:23:22 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: fa.rp
+;; Date: Wed Oct 20 10:47:15 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; ********************************************************************
+; *                                                                  *
+; *  This file contains the code for general facts                   *
+; *  The code for the parsing of the different kinds of facts is     *
+; *  in the relative files                                           *
+; *                                                                  *
+; ********************************************************************
+; 
+;;;facts
+; ********************************************************************
+; *                                                                  *
+; * SYNTAX                                                           *
+; *                                                                  *
+; *  (FACTREP#)                                                      *
+; *  (FACTREP@)                                                      *
+; *  (FACTS@)                                                        *
+; *  (PROOFRANGE@)                                                   *
+; *  (RANGE@)                                                        *
+; *                                                                  *
+; * DESCRIPTION                                                      *
+; *                                                                  *
+; * FACTREP# scans lists of: (1) linenumbers (2) range               *
+; * specifications (3) axiom references (4) theory references. It    *
+; * returns the list of the corresponding facts. Line numbers,       *
+; * range specifications and theory references determine collections *
+; * of facts in the obvious way.                                     *
+; *                                                                  *
+; * Using BNF formalism the grammar of the language parsed by        *
+; * FACTREP@ (i.e. the set of well formed REPetitions of FACTs) is   *
+; *                                                                  *
+; * <FACTREP>    ::= <FACTS> | <FACTS> [,] <FACTREP>                 *
+; * <FACTS>      ::= <FACT> | <PROOFRANGE>                           *
+; * <FACT>       ::= <LINENUM> | <AXIOMLABEL> | <THEORYREF>          *
+; * <PROOFRANGE> ::= <LINE> : <LINE>                                 *
+; * <LINE>       ::= <NATNUM> | <LINELABEL> | <LINEARROW>            *
+; *                                                                  *
+; * FACTS@ is different from FACTREP@ since it succeeds in applying  *
+; * only one of the parsing functions.                               *
+; *                                                                  *
+; ********************************************************************
+;
+(DEFLAM FACTREP# ()
+ (LET ((FACTS (FACTREP@)))
+  (IF (IST FACTS) FACTS
+   (FERRM0 "This command requires a list of facts"))))
+
+(DEFLAM FACTREP@ ()
+ (LET ((FACTS (FACTS@)))
+  (IF (ISF FACTS) FACTS
+   (SEQ
+    (TK@ COMMA)
+    (APPEND FACTS (FACTREP@))))))
+
+(DEFLAM FACTS@ ()
+ (LET ((facts (PROOFRANGE@)))
+  (IF (IST facts) facts
+   (LET ((fact (FACT@)))
+    (IF (IST fact) (LIST fact) FVAL)))))
+
+(DEFLAM PROOFRANGE@ ()
+ (LET ((RANGE (RANGE@)))
+  (IF (IST RANGE) (MAPCAR 'curllist-get-line RANGE) FVAL)))
+
+; Note: we are sure that we are parsing a <PROOFRANGE> only when we meet
+; a ":" after a <LINE>. Hence we have to save the PC's value before reading
+; the first <LINE> to eventually restore it if we don't find a ":".
+;
+(DEFLAM RANGE@ ()
+ (LET ((S (SCANSTATUS-GET)))
+  (LET ((LOWER (LINENUMREF@)))
+   (IF (ISF LOWER)
+    (SEQ (SCANSTATUS-RESTORE S) FVAL)
+    (IF (ISF (TK@ COLON))
+     (SEQ (SCANSTATUS-RESTORE S) FVAL)
+     (LET ((UPPER (LINENUMREF@)))
+      (IF (AND (IST UPPER) (RANGE? LOWER UPPER))
+       (range-mak LOWER UPPER)
+       (SEQ
+        (SCANSTATUS-RESTORE S)
+        (REMSG1 "A well formed range")))))))))
+
+(DEFLAM RANGE? (LOWER UPPER)
+ (IF (OR (LINENUM-TOO-LOW? LOWER)
+         (OR (LINENUM-TOO-HIGH? UPPER)
+             (GT LOWER UPPER))) FALSE TRUE))
+
+(DEFLAM range-mak (LOWER UPPER)
+ (IF (GE LOWER UPPER) (LIST UPPER)
+  (CONS LOWER (range-mak (ADD1 LOWER) UPPER))))
+  
+
+;;;fact
+; ********************************************************************
+; *                                                                  *
+; * SYNTAX                                                           *
+; *   (FACT#)                                                        *
+; *   (FACT@)                                                        *
+; *                                                                  *
+; * DESCRIPTION                                                      *
+; *   We introduce the possibility of getting the and of the axioms  *
+; *   of a theory but NOT of substituting eventual predpars inside   *
+; *   them (in this case, you have to pick up the right axioms one   *
+; *   by one. This is done in order to avoid name matching in the    *
+; *   PREDPAR names).                                                *
+; *                                                                  *
+; *   Note that the system is not protected if you name an axiom     *
+; *   with the same name as a label. Sometimes it wil get the line   *
+; *   sometimes the axiom.                                           *
+; *                                                                  *
+; *   WARNING THIS CODE IS DEPENDENT ON THE SYSTEM BEING BUILT.      *
+; *                                                                  *
+; ********************************************************************
+;
+
+(DEFLAM FACT# ()
+ (LET ((fact (FACT@)))
+  (IF (IST fact) fact
+   (REMSG1 "The reference to a fact"))))
+
+(DEFLAM FACT@ ()
+  (LET ((fact (LINEREF@) ))
+   (IF (IST fact) fact
+    (LET ((fact (AXREF@) ))
+     (IF (IST fact) fact
+      (LET ((fact (THEORYREF@) ))
+       (IF (IST fact) fact
+        (LET ((fact (DEFNREF@)))
+         (IF (IST fact) fact FVAL)))))))))
+
+
+;;;;fact and/or wff
+; ***********************************************************************
+; *                                                                     *
+; *  DESCRIPTION                                                        *
+; *    These parsing routines are used because commands sometimes may   *
+; *    allow the user to use different options (i.e. wff or fact)       *
+; *    wffs are parsed before facts because otherwise we could have     *
+; *    ambiguity (of the kind "1+2").                                   *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM WFF_OR_FACT# ()
+  (LET ((wff  (WFF@) ))
+   (IF  (IST wff) wff
+     (LET ((fact (FACT@) ))
+      (IF  (IST fact) (fact-get-wff fact)
+        (REMSG2 "This command" "a wff or a fact") )) )) )
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;*    (fact-print FACT)                                               *
+;*                                                                    *
+;* DESCRIPTION:                                                       *
+;*    fact-print prints FACT                                          *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM fact-print (FACT)
+ (SEQ
+      (HGKM-PRINC (fact-get-label FACT))
+      (HGKM-PRINC "  ")
+      (printexp (fact-get-wff FACT))
+      (HGKM-PRINC "  ")
+      (IF (MTL? (fact-get-deplist FACT)) (NOP)
+	  (deplist-print (fact-get-deplist FACT)))
+      (CRLF)))
+
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;*    (premises-print  PREMISES DEPTH MAXDEPTH)                       *
+;*    (premise-print   PREMISE DEPTH)                                 *
+;*                                                                    *
+;* DESCRIPTION:                                                       *
+;*  premises-print recursevely prints the premises of PREMISES.       *
+;*                                                                    *
+;* NOTE:                                                              *
+;*  DEPTH represent the level of the FACTS in the deduction           *
+;*  tree. The tree is truncated at the level MAXDEPTH.                *
+;*  If the value of MAXDEPTH is ALL all the tree is printed.          *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM facts-print-premises (FACTS DEPTH MAXDEPTH)
+ (IF (AND (INTEGER? MAXDEPTH) (GT DEPTH MAXDEPTH)) (NOP)
+     (IF (MTL? FACTS) (NOP)
+	 (SEQ (premise-print (FIRST FACTS) DEPTH)
+	      (facts-print-premises (fact-get-premises
+				  (FIRST FACTS)) (+ DEPTH 1) MAXDEPTH)
+	      (facts-print-premises (REST FACTS) DEPTH MAXDEPTH)))))
+
+(DEFLAM premise-print (PREMISE DEPTH)
+ (IF (EQ DEPTH 0)
+     (fact-print PREMISE)
+     (SEQ (HGKM-PRINC "   ") (premise-print PREMISE (- DEPTH 1)))))
+
+
+
+

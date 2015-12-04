@@ -1,0 +1,107 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:23:21 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: fa.hgk
+;; Date: Wed Oct 20 10:47:13 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; ********************************************************************
+; *                                                                  *
+; * This file contains all the constructors and data manipulation    *
+; * routines for facts and parts of facts.                           *
+; *                                                                  *
+; ********************************************************************
+;
+;facts
+; ********************************************************************
+; *                                                                  *
+; *  SYNTAX                                                          *
+; *    (fact-mak label wff deplist reason)                           *
+; *    (fact-get-label fact)                                         *
+; *    (fact-get-wff   fact)                                         *
+; *    (fact-get-deplist fact)                                       *
+; *    (fact-get-reason  fact)                                       *
+; *                                                                  *
+; ********************************************************************
+;
+(DEFSUB fact-mak (LABEL WFF DEPLIST REASON) 
+     (CONS LABEL (CONS WFF (CONS DEPLIST REASON))) )
+(DEFSUB fact-get-label   (FACT) (CAR FACT))
+(DEFSUB fact-get-wff     (FACT) (CADR FACT))
+(DEFSUB fact-get-deplist (FACT) (CADDR FACT))
+(DEFSUB fact-get-reason  (FACT) (CDDDR FACT))
+
+
+;deplists
+; ********************************************************************
+; *                                                                  *
+; *  SYNTAX                                                          *
+; *    (deplist-mak LABEL)                                           *
+; *    (EMPTY-DEPLIST? deplist)                                      *
+; *    (deplist-union dep1 dep2)                                     *
+; *    (SUB-DEPLIST deplist1 deplist2)                               *
+; *    (deplist-length deplist)                                      *
+; *                                                                  *
+; ********************************************************************
+;
+(DEFCONSTANT Emptydeplist MTL)
+(DEFSUB EMPTY-DEPLIST? (deplist) (MTL? deplist))
+(DEFSUB deplist-mak (LABEL) (LIST LABEL))
+(DEFSUB deplist-mak2 (dep1 dep2) (CONS dep1 dep2))
+(DEFSUB deplist-get-1st (deplist) (CAR deplist))
+(DEFSUB deplist-get-2nd (deplist) (CDR deplist))
+
+(DEFSUB deplist-union   (dep1 dep2)     (UNIONLE dep1 dep2))
+(DEFSUB deplist-del-label (label deplist) (OUTOF label deplist) )
+(DEFSUB SUB-DEPLIST (deplist1 deplist2) (SUBSET deplist1 deplist2))
+(DEFSUB deplist-length (deplist) (LENGTH deplist))
+
+

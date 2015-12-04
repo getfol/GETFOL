@@ -1,0 +1,606 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:36:02 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: eval.fol
+;; Date: Wed Oct 20 10:45:03 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								         i
+; i                eval.fol                                              i
+; i This file contains the routines to perform a semantic and syntactic  i
+; i evaluation of an exp. Moreover it contains the procedures used to    i
+; i make attachments with the LET command.                               i
+; i								         i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     1-MIXED EVALUTATION OF AN EXP             		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (expeval exp amf)        				  *
+; *      (expeval1 exp amf)        				  *
+; *      (rewrite-call exp amf)        				  *
+; *								  *
+; *****************************************************************
+
+(DEFLAM expeval (exp amf)
+ (IF (AND (QUANTWFF exp) (HGKM-MEMBER (bvarof exp) (amf-get-mrn amf)))
+;    To avoid variable conflicts it is in some 
+;    case necessary to rename bound variables. 
+  (LET ((exp_rnvars (quantvar-rename exp)))
+   (quantvar-unrename (expeval1 (CAR exp_rnvars) amf)(CDR exp_rnvars)))
+  (expeval1 exp amf)))
+
+(DEFLAM expeval1 (exp amf)
+ (IF (CWFF exp) 
+  (LET ((wff1 (rewrite-call exp amf)))
+   (IF (NOT (EQUAL exp wff1)) (expeval wff1 amf)
+    (LET ((wff2 (cwffeval exp amf)))
+     (IF (NOT (EQUAL exp wff2))
+      (LET ((wff3 (rewrite-call wff2 amf)))
+       (IF  (NOT (EQUAL wff2 wff3))(expeval wff3 amf)
+        wff2))
+      exp))))
+  (IF (AWFF exp)  
+   (LET ((wff1 (awffeval exp amf)))
+    (IF (OR (TRUTH wff1) (FALSITY wff1))
+     (SEQ
+      (EVAL-printexp2 "Evaluating " exp " gives " wff1)
+      wff1)
+     (SEQ 
+      (EVAL-printexp1 "Evaluating " exp " doesn' t work")
+      (LET ((wff2 (rewrite-call wff1 amf)))
+       (IF  (NOT (EQUAL wff1 wff2))(expeval wff2 amf)
+        wff1)))))
+   (IF (TERM exp)
+    (LET ((mng (trmeval exp amf)))
+     (IF (NOT (VALUE-UNDEF? (mng-get-value mng)))
+      (SEQ
+       (EVAL-printexp2 "Evaluating " exp " gives " (mng-get-exp mng))
+       mng)
+      (SEQ 
+       (EVAL-printexp1 "Evaluating " exp " doesn' t work")
+       (LET ((trm1 (rewrite-call (mng-get-exp mng)  amf)))
+        (IF  (NOT (EQUAL  (mng-get-exp mng) trm1))(expeval trm1 amf)
+         mng)))))
+    (ERRMES-printexp
+     exp " is not an exp. Fatal error during evaluation.")))))
+ 
+; rewrite-call tries a one step of syntactic simplification, doing
+; the matching.
+
+(DEFLAM rewrite-call (exp amf)
+ (LET ((rr (amf-match exp amf)))
+  (IF (MATCH? rr)
+   (SEQ 
+    (EVAL-printexp2 "Syntactic simplification of " exp " gives "
+     (rr-get-exp rr))
+    (rr-get-exp rr))
+   (SEQ 
+    (EVAL-printexp exp ": syntactic simplification fails.") 
+    exp))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     2.1-MIXED EVALUTATION OF A COMPOUND WFF		        i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (cwffeval wff amf)          	  			  *
+; *      (noteval wff amf)              	                  *
+; *      (oreval wff amf)                                         *
+; *      (impeval wff amf)                                        *
+; *      (andeval wff amf)                                        *
+; *      (iffeval wff amf)                                        *
+; *      (wffifeval wff amf)                                      *
+; *								  *
+; *								  *
+; *****************************************************************
+
+(DEFLAM cwffeval (cwff amf)
+ (IF (NEG cwff) (noteval cwff amf)
+  (IF (DISJ cwff) (oreval cwff amf)
+   (IF (IMP cwff) (impeval cwff amf)
+    (IF (CONJ cwff) (andeval cwff amf)
+     (IF (IFF cwff) (iffeval cwff amf)
+      (IF (WFFIF cwff) (wffifeval cwff amf)
+       (IF (FORALL cwff) (foralleval cwff amf)
+        (IF (EXISTS cwff) (existseval cwff amf)
+         (ERRMES-printexp
+          cwff "is not a CWFF. Fatal error during evaluation."))))))))))
+
+(DEFLAM noteval (wff amf)
+ (LET ((wff1 (expeval (body wff) amf)))
+  (IF (EQ wff1 False) True
+   (IF (EQ wff1 True) False
+    (IF (EQ wff1 (body wff)) wff
+     (mknot wff1))))))
+
+(DEFLAM oreval (wff amf)
+ (LET ((wff1 (expeval (lfor wff) amf)))
+  (IF (EQ wff1 True) True
+   (LET ((wff2 (expeval (rtor wff) amf)))
+    (IF (EQ wff2 True) True
+     (IF (EQ wff1 False) wff2
+      (IF (EQ wff2 False) wff1
+       (IF (AND (EQ wff1 (lfor wff)) (EQ wff2 (rtor wff))) wff
+        (mkor wff1 wff2)))))))))
+
+(DEFLAM impeval (wff amf)
+ (LET ((wff1 (expeval (hypot wff) amf)))
+  (IF (EQ wff1 False) True
+   (LET ((wff2 (expeval (concl wff) amf)))
+    (IF (EQ wff2 True) True
+     (IF (EQ wff1 True) wff2
+      (IF (EQ wff2 False) (mknot wff1)
+       (IF (AND (EQ wff1 (hypot wff)) (EQ wff2 (concl wff))) wff
+        (mkimp wff1 wff2)))))))))
+
+(DEFLAM andeval (wff amf)
+ (LET ((wff1 (expeval (lfand wff) amf)))
+  (IF (EQ wff1 False) False
+   (LET ((wff2 (expeval (rtand wff) amf)))
+    (IF (EQ wff2 False) False
+     (IF (EQ wff1 True) wff2
+      (IF (EQ wff2 True) wff1
+       (IF (AND (EQ wff1 (lfand wff)) (EQ wff2 (rtand wff))) wff
+        (mkand wff1 wff2)))))))))
+
+(DEFLAM iffeval (wff amf)
+ (LET ((wff1 (expeval (lfiff wff) amf)))
+  (LET ((wff2 (expeval (rtiff wff) amf)))
+   (IF (EQ wff1 True) wff2
+    (IF (EQ wff2 True) wff1
+     (IF (EQ wff1 False)
+      (IF (EQ wff2 False) True (mknot wff2))
+      (IF (EQ wff2 False) (mknot wff1)
+       (IF (AND (EQ wff1 (lfiff wff)) (EQ wff2 (rtiff wff))) wff
+        (mkiff wff1 wff2)))))))))
+
+(DEFLAM wffifeval (wff amf)
+ (LET ((wff1 (expeval (ifof wff) amf)))
+  (IF (EQ wff1 True) (expeval (thenof wff) amf)
+   (IF (EQ wff1 False) (expeval (elseof wff) amf)
+    (LET ((wff2 (expeval (thenof wff) amf))
+          (wff3 (expeval (elseof wff) amf)))
+     (IF (EQ wff2 wff3) wff2
+      (mkwffif wff1 wff2 wff3)))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     2.2-MIXED EVALUTATION OF A QUANTIFIED WFF	        i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (foralleval wff amf)                                     *
+; *      (foralleval-noext wff amf)                               *
+; *      (foralleval-ext extension indvar matrix wff)             *
+; *      (existseval wff amf)                                     *
+; *      (foralleval-noext wff amf)                               *
+; *      (existseval-ext extension indvar matrix wff)             *
+; *								  *
+; *								  *
+; *****************************************************************
+
+(DEFLAM foralleval (wff amf)
+ (IFN (EXTENSION-HAS (sort (bvarof wff)))
+  (foralleval-noext wff amf)
+  (LET ((wff1 (foralleval-ext (extension-get (sort (bvarof wff))) 
+               (bvarof wff) (matrix wff) amf True)))
+   (IF (EQ wff1 True) True
+    (IF (EQ wff1 False) False
+     (foralleval-noext wff amf))))))
+
+(DEFLAM foralleval-noext(wff amf)
+ (LET ((wff1 (expeval (matrix wff) amf)))
+  (IF (EQ wff1 True) True
+   (IF (EQ wff1 False) False
+    (IFN (IS-FREE (bvarof wff) wff1) wff1
+     (mkforall (bvarof wff) wff1))))))
+
+(DEFLAM foralleval-ext (extension indvar matrix amf wff)
+ (IF (MTL? extension) wff
+  (LET ((wff1 (expeval (substexp indvar (FIRST extension) matrix) amf)))
+   (IF (EQ wff1 True)
+    (foralleval-ext (REST extension) indvar matrix amf wff)
+    (IF (EQ wff1 False) False
+     (foralleval-ext (REST extension) indvar matrix amf matrix))))))
+
+(DEFLAM existseval (wff amf)
+ (IFN (EXTENSION-HAS (sort (bvarof wff)))
+  (existseval-noext wff amf)
+  (LET ((wff1 (existseval-ext (extension-get (sort (bvarof wff)))
+               (bvarof wff) (matrix wff) amf False)))
+   (IF (EQ wff1 True) True
+    (IF (EQ wff1 False) False
+     (existseval-noext wff amf))))))
+
+(DEFLAM existseval-noext(wff amf)
+ (LET ((wff1 (expeval (matrix wff) amf)))
+  (IF (EQ wff1 True) True
+   (IF (EQ wff1 False) False
+    (IFN (IS-FREE (bvarof wff) wff1) wff1
+     (mkexists (bvarof wff) wff1))))))
+
+(DEFLAM existseval-ext (extension indvar matrix amf wff)
+ (IF (MTL? extension) wff
+  (LET ((wff1 (expeval (substexp indvar (FIRST extension) matrix) amf)))
+   (IF (EQ wff1 True) True
+    (IF (EQ wff1 False) 
+     (existseval-ext (REST extension) indvar matrix amf wff)
+     (existseval-ext (REST extension) indvar matrix amf matrix))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     2.3-MIXED EVALUTATION OF A ATOMIC WFF		        i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (awffeval awff amf)				          * 
+; *      (senteval sentconst)	           			  *
+; *      (equeval awff amf)				          *
+; *      (sorteval awff amf)				          *
+; *      (sortmatch sort mng)   				  *
+; *      (predeval awff amf)				          *
+; *								  *
+; * DESCRIPTION							  * 
+; *								  *
+; *****************************************************************
+    
+; Note that the algoritm depends on whether predsyms 
+; have an interpretation
+ 
+(DEFLAM awffeval (awff amf)
+ (IF (SIMPLE awff)
+  (IF (SENTCONST awff) (senteval awff) awff)
+  (IF (EQU awff) (equeval awff amf)
+   (IF (IS-SORT (predappl-get-pred awff)) (sorteval awff amf)
+    (IF (PREDCONST (predappl-get-pred awff))
+     (IF (INT-HAS (predappl-get-pred awff))
+      (predeval awff amf)
+      (SEQ
+       (EVAL-EPRINC2 (outnam (predappl-get-pred awff))
+        " has no interpretation.")
+       (LET ((wff (rewrite-call awff amf)))
+        (IF (NOT (EQUAL awff wff))
+         (expeval wff amf)
+         (predeval awff amf)))))
+     (LET ((wff (rewrite-call awff amf)))
+      (IF (NOT (EQUAL awff wff))
+       (expeval wff amf)
+       (predappl-mak (predappl-get-pred awff)
+        (HGKM-NTH 5 (argseval (predappl-get-args awff) amf))))))))))
+
+(DEFLAM senteval (sentconst)
+ (IF (TRUTH sentconst) True
+  (IF (FALSITY sentconst) False
+   (LET ((tconst (tvalue2tconst (sentinterpret sentconst))))
+    (IF (NAME-UNDEF? tconst)
+     sentconst
+     tconst)))))
+
+(DEFLAM equeval (awff amf)
+ (LET ((mng1 (expeval (lfequ awff) amf))
+       (mng2 (expeval (rtequ awff) amf)))
+  (IF (IS-TRUE (samename (mng-get-exp mng1) (mng-get-exp mng2))) 
+   True
+   (LET ((tconst (tvalue2tconst 
+                  (sameint 
+                   (int-mak (mng-get-replabel mng1)(mng-get-value mng1))
+                   (int-mak (mng-get-replabel mng2)(mng-get-value mng2))))))
+    (IFN (NAME-UNDEF? tconst) tconst
+     (mkequ (mng-get-exp mng1) (mng-get-exp mng2)))))))
+
+(DEFLAM sorteval (awff amf)
+ (LET ((sort (predappl-get-pred awff))
+       (term (predappl1-get-arg awff)))
+  (IF (TRM_SUPERSORT sort term) True
+   (LET ((mng (expeval term amf)))
+    (LET ((tconst (tvalue2tconst (sortmatch sort mng))))
+     (IF (NAME-UNDEF? tconst)
+      (predappl1-mak sort (mng-get-exp mng))
+       tconst))))))
+
+(DEFLAM sortmatch (sort mng)
+ (IF (IS-MG sort (mng-get-sort mng)) TRUE
+  (IF (TRM_SUPERSORT sort (mng-get-exp mng)) TRUE
+   (sortinterpret sort 
+    (CONS (mng-get-replabel mng) MTL)
+    (LIST (quotit (mng-get-value mng)))))))
+
+(DEFLAM predeval (awff amf)
+ (LET ((p (predappl-get-pred awff))
+       (rl (argseval (predappl-get-args awff) amf)))
+  (LET ((argreps (SECOND rl))
+        (argvals (HGKM-NTH 3 rl)) 
+        (nam (predappl-mak p (HGKM-NTH 5 rl))))
+   (IF (EQ (HGKM-NTH 4 rl) FALSE)
+        ; failure because not all args evaluate
+    nam
+    (LET ((tconst (tvalue2tconst (predinterpret p argreps argvals))))
+     (IF (NAME-UNDEF? tconst)
+      nam
+      tconst))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     3-MIXED EVALUTATION OF A TERM                 		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (trmeval trm amf)    	         		          *
+; *      (indeval indconst)		         		  *
+; *								  *
+; * DESCRIPTION							  * 
+; *      trmeval evaluates terms and returns a mng.		  *
+; *								  *
+; *****************************************************************
+
+; Note that the algoritm depends on whether funsyms
+; have an interpretation
+
+(DEFLAM trmeval (trm amf)
+ (IF (SIMPLE trm)
+  (IF (INDCONST trm) (indeval trm)
+   (mng-mak %REP-UNDEF% %VALUE-UNDEF% trm (sort trm)))
+  (IF (TERMIF trm) (iftrmeval trm amf)
+   (IF (AND (FUNCONST (funappl-get-fun trm))
+            (INT-HAS (funappl-get-fun trm)))
+    (funeval trm amf)
+    (SEQ
+     (EVAL-EPRINC2 (outnam (funappl-get-fun trm)) " has no interpretation.")
+     (LET ((trm1 (rewrite-call trm amf)))
+      (IF (NOT (EQUAL trm trm1))(expeval trm1 amf)
+       (funeval trm amf))))))))
+
+(DEFLAM indeval (indconst)
+ (LET ((int (indinterpret indconst)))
+  (mng-mak 
+   (int-get-repinfo int) 
+   (int-get-value int)
+   (IF (NAME-UNDEF? (prefnam-get int)) indconst (prefnam-get int))
+   (sort indconst))))
+
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (iftrmeval iftrm amf)	         		          *
+; *      (bestsort mng1 mng2)					  *
+; *								  *
+; *****************************************************************
+
+(DEFLAM iftrmeval (trm amf)
+ (LET ((wff (expeval (ifof trm) amf)))
+  (IF (EQ wff True) (expeval (thenof trm) amf)
+   (IF (EQ wff False) (expeval (elseof trm) amf)
+    (LET ((mng1 (expeval (thenof trm) amf))
+          (mng2 (expeval (elseof trm) amf)))
+     (LET ((tv (AND
+                (EQ (mng-get-replabel mng1) (mng-get-replabel mng2))
+                (NOT (REPLABEL-UNDEF? (mng-get-replabel mng1))))))
+      (mng-mak 
+       (IF tv (mng-get-replabel mng1) %REP-UNDEF%)
+       (IF (AND tv 
+            (EQUAL (mng-get-value mng1) (mng-get-value mng2)))
+        (mng-get-value mng1)
+        %VALUE-UNDEF%)
+       (IF (EQUAL (mng-get-exp mng1) (mng-get-exp mng2))
+        (mng-get-exp mng1)
+        (mktrmif wff (mng-get-exp mng1) (mng-get-exp mng2)))
+       (bestsort mng1 mng2))))))))
+
+(DEFLAM bestsort (mng1 mng2)
+ (IF (EQ (mng-get-sort mng1) (mng-get-sort mng2)) (mng-get-sort mng1)
+  (LET ((tv1 (sortmatch (mng-get-sort mng1) mng2)))
+   (IF (IS-TRUE tv1) (mng-get-sort mng1)
+    (LET ((tv2 (sortmatch (mng-get-sort mng2) mng1)))
+     (IF (IS-TRUE tv2) (mng-get-sort mng2)
+      Mostgeneral))))))
+
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (funeval trm amf)	                		  *
+; *      (chosesort funsym argmng)	       			  *
+; *      (funsort fmaps best argmng)	       			  *
+; *      (ARGSOK argmng argsorts)	       			  *
+; *								  *
+; * DESCRIPTION							  * 
+; *      chosesort is given a funsym and the result of the	  *
+; *	 evaluation of each of the arguments "argmng". It returns *
+; *	 the best sort it can find.				  *
+; *								  *
+; *****************************************************************
+
+(DEFLAM funeval (trm amf)
+ (LET ((f  (funappl-get-fun trm))
+       (rl (argseval (funappl-get-args trm) amf)))
+  (LET ((argmngs (FIRST rl)) 
+        (argreps (SECOND rl))
+        (argvals (HGKM-NTH 3 rl)) 
+        (nam (funappl-mak f (HGKM-NTH 5 rl))))
+   (LET ((newsort (chosesort f argmngs)))
+    (IF (EQ (HGKM-NTH 4 rl) FALSE)
+        ; failure because not all args evaluate
+     (mng-mak %REP-UNDEF% %VALUE-UNDEF% nam newsort)
+     (LET ((int (funinterpret f argreps argvals)))
+      (mng-mak
+       (int-get-repinfo int)
+       (int-get-value int)
+       (IF (NAME-UNDEF? (prefnam-get int)) nam (prefnam-get int))
+       newsort)))))))
+
+(DEFLAM chosesort (funsym argmng)
+ (funsort (fmaps funsym) Mostgeneral argmng))
+
+(DEFLAM funsort (fmaps best argmng)
+ (IF (MTL? fmaps) best
+  (IF (AND
+       (NOT (IS-MG (fmap-get-out (FIRST fmaps)) best))
+       (ARGSOK argmng (fmap-get-args (FIRST fmaps))))
+   (funsort (REST fmaps) (fmap-get-out (FIRST fmaps)) argmng)
+   (funsort (REST fmaps) best argmng))))
+
+(DEFLAM ARGSOK (argmng argsorts)
+ (IF (MTL? argmng) TRUE
+  (IFN (IS-TRUE (sortmatch (FIRST argsorts) (FIRST argmng))) FALSE
+   (ARGSOK (REST argmng) (REST argsorts)))))
+
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								         i
+; i 								         i
+; i 4-MIXED EVALUTATION OF A LIST OF TERMS                               i
+; i								         i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *								  *
+; * SYNTAX							  *
+; *      (argseval terms amf)				          *
+; *								  *
+; * DESCRIPTION							  * 
+; *      argseval evaluates a list of terms                       *
+; *	 The list rl built by argseval contains			  *
+; *	 (FIRST rl) is a list containing the meanings of the args *
+; *	 (SECOND rl) is a list of the representations of the args *
+; *	 (HGKM-NTH 3 rl) is a list of the values of the args      *
+; *	 (HGKM-NTH 4 rl) is TRUE if all the args have a value	  *
+; *	 (HGKM-NTH 5 rl) is a list of the exps associated with    *
+; *		    the evaluation of the args			  *
+; *								  *
+; *****************************************************************
+
+(DEFLAM argseval (terms amf)
+ (IF (MTL? terms) (LIST MTL MTL MTL TRUE MTL)
+  (LET ((mng  (expeval (FIRST terms) amf))
+        (rl   (argseval (REST terms) amf)))
+   (LET ((test (NOT (VALUE-UNDEF? (mng-get-value mng))) ))
+    (LIST
+     (CONS mng (FIRST rl))
+     (CONS (mng-get-replabel mng) (SECOND rl))
+     (CONS (quotit (mng-get-value mng)) (HGKM-NTH 3 rl))
+     (IF test (HGKM-NTH 4 rl) FALSE)
+     (CONS (mng-get-exp mng) (HGKM-NTH 5 rl)))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								         i
+; i 								         i
+; i 5-ATTACHMENT OF INDSYMS BY LET                                       i
+; i								         i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+(DEFLAM let-dar-check&mak (indconst replabel term)
+ (LET ((val (SEQ
+             (usedsimps-ini)
+             (mng-get-value
+              (expeval term 
+               (simplabs2amf (LIST (QUOTE LOGICTREE))))))))
+  (IF (VALUE-UNDEF? val)
+   (ERRMESS "The right hand side does not evaluate in the ss.")
+   (SEQ
+    (ind-int&prefnam-check&mak indconst replabel val)
+    (proof-add-line 
+     (mkequ indconst term) 
+     Emptydeplist
+     (reason-mak 'LET (ras3-mak (indconst_ra-mak indconst)
+				(replabel_ra-mak replabel)
+				(term_ra-mak term))))))))
+
+(DEFLAM let-to-check&mak (indconst replabel term)
+ (LET ((val (SEQ
+             (usedsimps-ini)
+             (mng-get-value
+              (expeval term 
+               (simplabs2amf (LIST (QUOTE LOGICTREE))))))))
+  (IF (VALUE-UNDEF? val)
+   (ERRMESS "The right hand side does not evaluate in the ss.")
+   (SEQ
+    (ind-int-check&mak indconst replabel val)
+    (proof-add-line 
+     (mkequ indconst term) 
+     Emptydeplist
+     (reason-mak 'LET (ras3-mak (indconst_ra-mak indconst)
+				(replabel_ra-mak replabel)
+				(term_ra-mak term))))))))

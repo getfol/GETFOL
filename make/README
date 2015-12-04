@@ -1,0 +1,63 @@
+								   README
+
+This README file describes the contents of the *make* directory of the GETFOL 
+distribution package. This directory has the following contents:
+
+  README        :  this file.
+ 
+  TROUBLES.DOC  :  a list of the most common problems encountered during the
+                   installation procedure.
+                   Read this file if you have problems building the system.
+
+  getfol.cfg    :  configuration file for GETFOL.
+                   This file may be edited to change the modules that are to be
+                   installed in the GETFOL system.
+
+  hgkm.cfg      :  configuration file for HGKM.
+
+  host.lsp      :  common lisp code, which stores the host-dependent
+                   informations needed to build the GETFOL system.
+
+  install.lsp   :  common lisp code, which defines the functions needed to build
+                   the GETFOL system.
+
+
+                         *** BUILDING THE SYSTEM ***
+
+0) [optional] edit the file "getfol.cfg" to determine what the modules to
+   be installed are.
+   For instance, if you do not want to install the META module, comment the
+   following two lines in the file "getfol.cfg":
+
+      (LOAD (PATH-CONCAT (SYS-GET-SRCDIR 'GETFOL)  "meta"      "meta.cfg"))
+      (SYS-ADD-MODULE  'GETFOL  'META)
+
+1) edit the file "host.lsp" changing the value of the variable %HOME-DIR% to
+   the pathname of the GETFOL directory in your system.
+   That, is, suppose your current directory is the *make* directory of the
+   GETFOL system:
+
+      $ pwd
+      /home/goedel/staff/john/getfol/make
+
+   Edit the file "host.lsp" and change the line:
+
+      (SETQ %HOME-DIR% "/home/tarski/staff/getfol/getfol-v20")
+
+   to:
+
+      (SETQ %HOME-DIR% "/home/goedel/staff/john/getfol")
+
+2) call your favorite lisp environment and type at the prompt:
+
+        > (LOAD "install.lsp")
+        > (MAKE-GETFOL)
+        > (SYSTEM-SAVE "GETFOL")
+
+   This will create an executable file (in the example GETFOL) in the
+   directory make.
+
+
+If you have any problem making the system, please send e-mail to:
+
+               getfol@frege.mrg.dist.unige.it (GETFOL manager)

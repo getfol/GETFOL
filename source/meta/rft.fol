@@ -1,0 +1,234 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:42:34 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: rft.fol
+;; Date: Wed Oct 20 10:46:37 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; *************************************************************
+; *
+; * PART I: Parsing in the META context.
+; *
+; *
+; *************************************************************
+
+; *************************************************************
+; *
+; *   SYNTAX
+; *     (scan&mnglist-get WFF MNGLIST)
+; *
+; *   DESCRIPTION
+; *     scan&mnglist-get returns the list of all the arguments of the
+; *     WFF. Any single argument has associated an internal
+; *     structure so built (see file SIM.HGK in evaluator
+; *     stuff for the meaning of the structure "MEANING")
+; *     <"scan-fun-name","MEANING associated to its sort">
+; *
+; *     SCANFUN is: ( sort . scanning-function )
+; *
+; *     The list of ( scanning-function . mng ) has to be built in the
+; *     "right" order.
+; *
+; *************************************************************
+;
+(DEFLAM scan&mnglist-get (MWFF SCAN&MNGLIST)
+ (IFN (FORALL MWFF) SCAN&MNGLIST
+  (LET ((BOUNDVAR (bvarof MWFF)))
+   (LET ((VARSORT (sort BOUNDVAR)))
+    (LET ((SCANFUN (sort2fun-get (outnam VARSORT))))
+     (IF (IST SCANFUN)
+      (scan&mnglist-get
+       (matrix MWFF)
+       (APPEND SCAN&MNGLIST (LIST (scan&mng-mak SCANFUN BOUNDVAR VARSORT))))
+      (REMSG1 "A meta-theorem with bound variables of a reasonable sort")))))))
+
+(DEFLAM scan&mng-mak (SCANFUN BOUNDVAR VARSORT)
+ (CONS SCANFUN 
+  (mng-mak
+   (sort-defrep-get VARSORT)            ; representation
+   %VALUE-UNDEF%                        ; value
+   BOUNDVAR                             ; expression
+   VARSORT)))                           ; sort (of the expression)
+
+
+; *************************************************************
+; *
+; * PART II: Parsing in the object theory
+; *
+; *
+; *************************************************************
+
+;;;mnglist&deplist-get
+; *********************************************************
+; *
+; *  SYNTAX
+; *    (mnglist&deplist-get SCAN&MNGLIST MNGLIST DEPLIST)
+; *
+; *  where:
+; *    SCAN&MNGLIST is the input structure built by scan&mnglist-get
+; *    MNGLIST is the completed output structure
+; *     (any argument is associated its MEANING)
+; *    DEPLIST if the list od dependencies (if any)
+; *     associated to those MNG's which are WFF's
+; *
+; *  DESCRIPTION
+; *    mnglist&deplist-get takes as input the structure built by
+; *    scan&mnglist-get
+; *    and builds a list of meanings using the scanning functions
+; *    to get the values to be attached to the constants that have
+; *    been substituted to the variables.
+; *    right context.
+; *    It returns a CONS whose CAR is MNGLIST and whose CDR
+; *    is a dependency list.
+; *    The recursion is performed on the list of (scan+mng)
+; *
+; *********************************************************
+;
+(DEFLAM mnglist&deplist-get (SCAN&MNGLIST MNGLIST DEPLIST)
+ (IF (MTL? SCAN&MNGLIST)
+  (CONS MNGLIST DEPLIST)
+  (SEQ				
+   (TK@ COMMA)
+   (LET ((SCAN&MNG (FIRST SCAN&MNGLIST)))
+    (LET ((PARSEDVAL (HGKM-APPLY (GET-FUN (CAR SCAN&MNG)) MTL)))
+     (LET ((MNG (mng-fill SCAN&MNG PARSEDVAL)))
+      (mnglist&deplist-get
+       (REST SCAN&MNGLIST)
+       (APPEND MNGLIST (LIST MNG))
+       (BUILDDEPLIST DEPLIST MNG PARSEDVAL))))))))
+
+;  mng-fill extracts the mng from the pair scan&mng
+;  and fills the value field with the parsed value.
+;
+(DEFLAM mng-fill (SCAN&MNG PARSEDVAL)
+ (LET ((MNG (CDR SCAN&MNG)))
+  (mng-mak
+   (mng-get-replabel MNG)
+   PARSEDVAL
+   (mng-get-exp MNG)
+   (mng-get-sort MNG))))
+
+
+(DEFLAM BUILDDEPLIST (DEPLIST MNG VALUE)
+ (IFN (EQ (mng-get-sort MNG) 'FACT)
+  DEPLIST
+  (UNIONLE DEPLIST (fact-get-deplist VALUE))))
+
+
+
+
+; *************************************************************
+; *
+; * PART III: Creating the suitable indconsts and attachments
+; *
+; *
+; *************************************************************
+
+
+(DEFLAM indconstlist-attach&get (MNGLIST)
+ (IF (MTL? MNGLIST) MTL
+  (CONS (indconst-attach&get (CAR MNGLIST))
+   (indconstlist-attach&get (CDR MNGLIST)))))
+
+(DEFLAM indconst-attach&get (MNG)
+ (LET ((REP (mng-get-replabel MNG))
+       (VALUE (mng-get-value MNG))
+       (SORT (mng-get-sort MNG)))
+  (LET ((LABEL (sym2symn (outnam SORT))))
+   (LET ((SYM (indsym-create 'Indconst LABEL SORT (simpsym_sact-mak LABEL))))
+    (ind-int-create SYM REP (quotit VALUE))
+    (prefnam-create SYM REP VALUE)
+    SYM))))
+
+
+(DEFLAM indconsts-disint&delete (CONSTLIST)
+ (IF (MTL? CONSTLIST) (NOP)
+  (SEQ
+   (indconst-disint&delete (CAR CONSTLIST))
+   (indconsts-disint&delete (CDR CONSTLIST)))))
+
+; NB this part is ad hoc, and has to be modified as soon as possible
+;Needed to test with EQUAL (not EQ).
+(DEFLAM EQUAL-OUTOF (M L)
+ (IF (MTL? L) MTL
+  (IF (EQUAL M (FIRST L)) (EQUAL-OUTOF M (REST L))
+   (LCONS (FIRST L) (EQUAL-OUTOF M (REST L))))))
+
+(DEFLAM indconst-disint&delete (CONST)
+ (LET ((INT (getint CONST)))
+  (LET ((REP (int-get-repinfo INT))
+        (VAL (int-get-value INT)))
+   (SEQ
+    (setdesfun REP
+     (EQUAL-OUTOF (desfun-entry-mak (unquotit VAL) CONST) (getdesfun REP)))))))
+
+
+
+; *************************************************************
+; *
+; * PART IV: Calling the evaluator
+; *
+; *
+; *************************************************************
+
+
+; rftmtree-get returns the simpset used in performing the
+; automated deduction phase after the instantiation of universal
+; variables. This is an interersting theoretical topic.
+; rftmtree-get is the right place to store the information
+; to control this deduction.
+
+(DEFLAM rftmtree-get ()
+ (simp-get-amf (simps-get-simp 'EVALSS)))
+
+
+
+
+

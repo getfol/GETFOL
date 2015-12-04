@@ -1,0 +1,33 @@
+; (DEFLAM curllist-get () CURLLIST)
+
+(DEFLAM cxtmakempty () (ctext-mak-empty (ctext-emptyname-get) ) )
+
+(DEFLAM contextdeclsentconst (WFF CONTEXT)
+    (ctext-get&extend 
+       CONTEXT (QUOTE sentdecl-check&mak) (LIST (QUOTE Sentconst) (LIST WFF))) )
+
+(DEFLAM contextmakassert     (WFF CONTEXT)
+    (ctext-get&extend CONTEXT (QUOTE assume) (LIST (LIST WFF)) ))
+
+(DEFLAM getfacts (CONTEXT)
+   (ctext-get&applfun CONTEXT (QUOTE curllist-get) MTL))
+
+(DEFLAM andsbuilder (FACTS) (facts2wffs_conj-mak FACTS))
+
+(DEFLAM CONTEXTTAUT           (WFF CONTEXT)
+    (ctext-get&applfun CONTEXT (QUOTE TAUTOLOGY?) (LIST WFF)))
+
+(DEFLAM PCONSIST (CONTEXT)
+    (ctext-get&applfun CONTEXT (QUOTE TAUTWFF) 
+             (MAPCAR (QUOTE mkand) (curllist-get)) (QUOTE TRUE)) )
+
+(DEFLAM PTHEOREM (WFF CONTEXT)
+   (CONTEXTTAUT 
+      (mkimp (andsbuilder (getfacts CONTEXT)) WFF) CONTEXT))
+
+(DEFLAM Pconsist (WFF CONTEXT)
+ (NOT 
+   (CONTEXTTAUT 
+      (mkimp (andsbuilder (getfacts CONTEXT)) (mknot WFF)) CONTEXT)))
+
+

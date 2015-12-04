@@ -1,0 +1,41 @@
+\gfcommand{wffifen}{wff conditional elimination (with negation)}
+\index{wffifen}
+
+\gfsyntax{
+	wffifen \ARG{fact1} \ARG{fact2};
+}
+
+\gfdescription{
+	\renewcommand{\arraystretch}{0.5}
+	\[
+	\mbox{{\em wif}} \  E_{\neg} \ \
+	\fraz{\neg A \ \ \ \ \ \mbox{{\em wffif}} \ A \ \mbox{{\em then}} \ B \
+	\mbox{{\em else}} \ C } 
+	{C}
+	\]
+	\renewcommand{\arraystretch}{1}
+	
+	If {\em fact}$_1$'s wff is {\tt wffif A then B else C} and {\em fact}$_2$'s
+	wff is {\tt not A}, then the derived wff is {\tt C} and its dependencies are
+	the union of those of {\em fact}$_1$ and {\em fact}$_2$.
+}
+
+\gfrecap{
+If the wff of `fact1' is `wffif A then B else C' and the wff of `fact' wff is
+`not A', then the derived wff is `C' and its dependencies are the union of those
+of `fact1' and `fact2'.
+}
+
+\gfexample+
+   ***** declare sentconst A B C; 
+   ...
+
+   ***** assume not A;
+   1   not A     (1)
+   ***** assume wffif A then B else C;
+   2   wffif A then B else C     (2)
+   ***** wffifen 2 1;
+   3   C     (1 2)
++
+
+\gfnotes{}

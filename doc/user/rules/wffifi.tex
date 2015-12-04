@@ -1,0 +1,69 @@
+\gfcommand{wffifi}{wff conditional introduction}
+\index{wffifi}
+
+\gfsyntax{
+	wffifi \ARG{wff} \ARG{fact1} \ARG{fact2};
+}
+
+\gfdescription{
+\renewcommand{\arraystretch}{0.5}
+\[
+\begin{array}{l}
+\\ \\ \\ 
+%\\ \\
+\mbox{{\em wif}} \  I  
+\end{array}
+\ \ 
+\begin{array}{cc}
+%\\ \\
+\begin{array}{c}
+{[A]}\\
+\vdots\\
+B
+\end{array}
+\ \ \ 
+\begin{array}{c}
+{[\neg A]}\\
+\vdots\\
+C
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+\mbox{{\em wffif}} \ A \ \mbox{{\em then}} \ B \ \mbox{{\em else}} \ C 
+\end{array}
+\end{array}
+\]
+\renewcommand{\arraystretch}{1}
+
+If \ARG{wff} is {\tt A}, \ARG{fact1}'s wff is {\tt B} and \ARG{fact2}'s wff is
+{\tt C}, then the conclusion is {\tt wffif A then B else C}.
+The rule discharges all the dependencies of {\em fact}$_1$ whose wff is {\tt A}
+and of {\em fact}$_2$ whose wff is {\tt not A}.
+}
+
+\gfrecap{
+If `wff' is `A', the wff of `fact1' is `B' and the wff of `fact2' is `C', then
+the conclusion is `wffif A then B else C'.
+The rule discharges all the dependencies of `fact1' whose wff is `A' and of
+`fact2' whose wff is `not A'.
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   ...
+   ***** assume A;
+   1   A     (1)
+   ***** assume not A;
+   2   not A     (2)
+   ***** wffifi A 1 2;
+   3   wffif A then A else (not A)
+   ***** wffifi A 2 1;
+   4   wffif A then (not A) else A     (1 2)
+   ***** wffifi not A 2 1;
+   5   wffif (not A) then (not A) else A     (1)
+   ***** wffifi not A 1 2;
+   6   wffif (not A) then A else (not A)     (1 2)
++
+
+\gfnotes{}

@@ -1,0 +1,353 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:43:56 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: asciitab.fol
+;; Date: Wed Oct 20 10:47:50 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ****************************************************************************
+; *                                                                          *
+; *   setting the ascii table for the FOL reader                             *
+; *                                                                          *
+; *   IMPORTANT: before modifying the content of this file you               *
+; *   are strongly raccomended to read the scan.doc file.                    *
+; *                                                                          *
+; ****************************************************************************
+;
+(DEFCONSTANT ASCIICHR
+(LIST 
+'IGNCHAR   ;  Code:   0;  Char: #\NULL
+'IGNCHAR   ;  Code:   1;  Char: #\^A
+'IGNCHAR   ;  Code:   2;  Char: #\^B
+'IGNCHAR   ;  Code:   3;  Char: #\^C
+'IGNCHAR   ;  Code:   4;  Char: #\^D
+'IGNCHAR   ;  Code:   5;  Char: #\^E
+'IGNCHAR   ;  Code:   6;  Char: #\^F
+'IGNCHAR   ;  Code:   7;  Char: #\BELL
+'IGNCHAR   ;  Code:   8;  Char: #\BACKSPACE
+'IGNCHAR   ;  Code:   9;  Char: #\TAB
+'IGNCHAR   ;  Code:  10;  Char: #\LINEFEED
+'IGNCHAR   ;  Code:  11;  Char: #\^K
+'IGNCHAR   ;  Code:  12;  Char: #\PAGE
+'IGNCHAR   ;  Code:  13;  Char: #\RETURN
+'IGNCHAR   ;  Code:  14;  Char: #\^N
+'IGNCHAR   ;  Code:  15;  Char: #\^O
+'IGNCHAR   ;  Code:  16;  Char: #\^P
+'IGNCHAR   ;  Code:  17;  Char: #\^Q
+'IGNCHAR   ;  Code:  18;  Char: #\^R
+'IGNCHAR   ;  Code:  19;  Char: #\^S
+'IGNCHAR   ;  Code:  20;  Char: #\^T
+'IGNCHAR   ;  Code:  21;  Char: #\^U
+'IGNCHAR   ;  Code:  22;  Char: #\^V
+'IGNCHAR   ;  Code:  23;  Char: #\^W
+'IGNCHAR   ;  Code:  24;  Char: #\^X
+'IGNCHAR   ;  Code:  25;  Char: #\^Y
+'IGNCHAR   ;  Code:  26;  Char: #\^Z
+'IGNCHAR   ;  Code:  27;  Char: #\ESCAPE
+'IGNCHAR   ;  Code:  28;  Char: #\^\
+'IGNCHAR   ;  Code:  29;  Char: #\^]
+'IGNCHAR   ;  Code:  30;  Char: #\^~
+'IGNCHAR   ;  Code:  31;  Char: #\^?
+'IGNCHAR   ;  Code:  32;  Char: #\SPACE
+'IDCHAR    ;  Code:  33;  Char: #\!
+'IDCHAR    ;  Code:  34;  Char: #\"
+'IDCHAR    ;  Code:  35;  Char: #\#
+'IDCHAR    ;  Code:  36;  Char: #\$
+'IDCHAR    ;  Code:  37;  Char: #\%
+'IDCHAR    ;  Code:  38;  Char: #\&
+'IDDELCHAR ;  Code:  39;  Char: #\'
+'DELCHAR   ;  Code:  40;  Char: #\(
+'DELCHAR   ;  Code:  41;  Char: #\)
+'IDDELCHAR ;  Code:  42;  Char: #\*
+'IDDELCHAR ;  Code:  43;  Char: #\+
+'DELCHAR   ;  Code:  44;  Char: #\,
+'IDDELCHAR ;  Code:  45;  Char: #\-
+'DELCHAR   ;  Code:  46;  Char: #\.
+'IDDELCHAR ;  Code:  47;  Char: #\/
+'NUMCHAR   ;  Code:  48;  Char: #\0
+'NUMCHAR   ;  Code:  49;  Char: #\1
+'NUMCHAR   ;  Code:  50;  Char: #\2
+'NUMCHAR   ;  Code:  51;  Char: #\3
+'NUMCHAR   ;  Code:  52;  Char: #\4
+'NUMCHAR   ;  Code:  53;  Char: #\5
+'NUMCHAR   ;  Code:  54;  Char: #\6
+'NUMCHAR   ;  Code:  55;  Char: #\7
+'NUMCHAR   ;  Code:  56;  Char: #\8
+'NUMCHAR   ;  Code:  57;  Char: #\9
+'DELCHAR   ;  Code:  58;  Char: #\:
+'DELCHAR   ;  Code:  59;  Char: #\;
+'IDDELCHAR ;  Code:  60;  Char: #\<
+'IDDELCHAR ;  Code:  61;  Char: #\=
+'IDDELCHAR ;  Code:  62;  Char: #\>
+'IDDELCHAR ;  Code:  63;  Char: #\?
+'IDDELCHAR ;  Code:  64;  Char: #\@
+'IDCHAR    ;  Code:  65;  Char: #\A
+'IDCHAR    ;  Code:  66;  Char: #\B
+'IDCHAR    ;  Code:  67;  Char: #\C
+'IDCHAR    ;  Code:  68;  Char: #\D
+'IDCHAR    ;  Code:  69;  Char: #\E
+'IDCHAR    ;  Code:  70;  Char: #\F
+'IDCHAR    ;  Code:  71;  Char: #\G
+'IDCHAR    ;  Code:  72;  Char: #\H
+'IDCHAR    ;  Code:  73;  Char: #\I
+'IDCHAR    ;  Code:  74;  Char: #\J
+'IDCHAR    ;  Code:  75;  Char: #\K
+'IDCHAR    ;  Code:  76;  Char: #\L
+'IDCHAR    ;  Code:  77;  Char: #\M
+'IDCHAR    ;  Code:  78;  Char: #\N
+'IDCHAR    ;  Code:  79;  Char: #\O
+'IDCHAR    ;  Code:  80;  Char: #\P
+'IDCHAR    ;  Code:  81;  Char: #\Q
+'IDCHAR    ;  Code:  82;  Char: #\R
+'IDCHAR    ;  Code:  83;  Char: #\S
+'IDCHAR    ;  Code:  84;  Char: #\T
+'IDCHAR    ;  Code:  85;  Char: #\U
+'IDCHAR    ;  Code:  86;  Char: #\V
+'IDCHAR    ;  Code:  87;  Char: #\W
+'IDCHAR    ;  Code:  88;  Char: #\X
+'IDCHAR    ;  Code:  89;  Char: #\Y
+'IDCHAR    ;  Code:  90;  Char: #\Z
+'DELCHAR   ;  Code:  91;  Char: #\[
+'ESCCHAR   ;  Code:  92;  Char: #\\
+'DELCHAR   ;  Code:  93;  Char: #\]
+'IDDELCHAR ;  Code:  94;  Char: #\^
+'IDCHAR    ;  Code:  95;  Char: #\_
+'IDDELCHAR ;  Code:  96;  Char: #\`
+'IDCHAR    ;  Code:  97;  Char: #\a
+'IDCHAR    ;  Code:  98;  Char: #\b
+'IDCHAR    ;  Code:  99;  Char: #\c
+'IDCHAR    ;  Code: 100;  Char: #\d
+'IDCHAR    ;  Code: 101;  Char: #\e
+'IDCHAR    ;  Code: 102;  Char: #\f
+'IDCHAR    ;  Code: 103;  Char: #\g
+'IDCHAR    ;  Code: 104;  Char: #\h
+'IDCHAR    ;  Code: 105;  Char: #\i
+'IDCHAR    ;  Code: 106;  Char: #\j
+'IDCHAR    ;  Code: 107;  Char: #\k
+'IDCHAR    ;  Code: 108;  Char: #\l
+'IDCHAR    ;  Code: 109;  Char: #\m
+'IDCHAR    ;  Code: 110;  Char: #\n
+'IDCHAR    ;  Code: 111;  Char: #\o
+'IDCHAR    ;  Code: 112;  Char: #\p
+'IDCHAR    ;  Code: 113;  Char: #\q
+'IDCHAR    ;  Code: 114;  Char: #\r
+'IDCHAR    ;  Code: 115;  Char: #\s
+'IDCHAR    ;  Code: 116;  Char: #\t
+'IDCHAR    ;  Code: 117;  Char: #\u
+'IDCHAR    ;  Code: 118;  Char: #\v
+'IDCHAR    ;  Code: 119;  Char: #\w
+'IDCHAR    ;  Code: 120;  Char: #\x
+'IDCHAR    ;  Code: 121;  Char: #\y
+'IDCHAR    ;  Code: 122;  Char: #\z
+'DELCHAR   ;  Code: 123;  Char: #\{
+'IDDELCHAR ;  Code: 124;  Char: #\|
+'DELCHAR   ;  Code: 125;  Char: #\}
+'IDCHAR    ;  Code: 126;  Char: #\~
+'IGNCHAR   ;  Code: 127;  Char: #\RUBOUT
+'IGNCHAR   ;  Code: 128;  Char: #\
+'IGNCHAR   ;  Code: 129;  Char: #\
+'IGNCHAR   ;  Code: 130;  Char: #\
+'IGNCHAR   ;  Code: 131;  Char: #\
+'IGNCHAR   ;  Code: 132;  Char: #\IND
+'IGNCHAR   ;  Code: 133;  Char: #\NEL
+'IGNCHAR   ;  Code: 134;  Char: #\SSA
+'IGNCHAR   ;  Code: 135;  Char: #\ESA
+'IGNCHAR   ;  Code: 136;  Char: #\HTS
+'IGNCHAR   ;  Code: 137;  Char: #\HTJ
+'IGNCHAR   ;  Code: 138;  Char: #\VTS
+'IGNCHAR   ;  Code: 139;  Char: #\PLD
+'IGNCHAR   ;  Code: 140;  Char: #\PLU
+'IGNCHAR   ;  Code: 141;  Char: #\RI
+'IGNCHAR   ;  Code: 142;  Char: #\SS2
+'IGNCHAR   ;  Code: 143;  Char: #\SS3
+'IGNCHAR   ;  Code: 144;  Char: #\DCS
+'IGNCHAR   ;  Code: 145;  Char: #\PU1
+'IGNCHAR   ;  Code: 146;  Char: #\PU2
+'IGNCHAR   ;  Code: 147;  Char: #\STS
+'IGNCHAR   ;  Code: 148;  Char: #\CCH
+'IGNCHAR   ;  Code: 149;  Char: #\MW
+'IGNCHAR   ;  Code: 150;  Char: #\SPA
+'IGNCHAR   ;  Code: 151;  Char: #\EPA
+'IGNCHAR   ;  Code: 152;  Char: #\
+'IGNCHAR   ;  Code: 153;  Char: #\
+'IGNCHAR   ;  Code: 154;  Char: #\
+'IGNCHAR   ;  Code: 155;  Char: #\CSI
+'IGNCHAR   ;  Code: 156;  Char: #\ST
+'IGNCHAR   ;  Code: 157;  Char: #\OSC
+'IGNCHAR   ;  Code: 158;  Char: #\PM
+'IGNCHAR   ;  Code: 159;  Char: #\APC
+'IGNCHAR   ;  Code: 160;  Char: #\ 
+'IGNCHAR   ;  Code: 161;  Char: #\!
+'IGNCHAR   ;  Code: 162;  Char: #\"
+'IGNCHAR   ;  Code: 163;  Char: #\#
+'IGNCHAR   ;  Code: 164;  Char: #\$
+'IGNCHAR   ;  Code: 165;  Char: #\%
+'IGNCHAR   ;  Code: 166;  Char: #\&
+'IGNCHAR   ;  Code: 167;  Char: #\'
+'IGNCHAR   ;  Code: 168;  Char: #\(
+'IGNCHAR   ;  Code: 169;  Char: #\)
+'IGNCHAR   ;  Code: 170;  Char: #\*
+'IGNCHAR   ;  Code: 171;  Char: #\+
+'IGNCHAR   ;  Code: 172;  Char: #\,
+'IGNCHAR   ;  Code: 173;  Char: #\-
+'IGNCHAR   ;  Code: 174;  Char: #\.
+'IGNCHAR   ;  Code: 175;  Char: #\/
+'IGNCHAR   ;  Code: 176;  Char: #\0
+'IGNCHAR   ;  Code: 177;  Char: #\1
+'IGNCHAR   ;  Code: 178;  Char: #\2
+'IGNCHAR   ;  Code: 179;  Char: #\3
+'IGNCHAR   ;  Code: 180;  Char: #\4
+'IGNCHAR   ;  Code: 181;  Char: #\5
+'IGNCHAR   ;  Code: 182;  Char: #\6
+'IGNCHAR   ;  Code: 183;  Char: #\7
+'IGNCHAR   ;  Code: 184;  Char: #\8
+'IGNCHAR   ;  Code: 185;  Char: #\9
+'IGNCHAR   ;  Code: 186;  Char: #\:
+'IGNCHAR   ;  Code: 187;  Char: #\;
+'IGNCHAR   ;  Code: 188;  Char: #\<
+'IGNCHAR   ;  Code: 189;  Char: #\=
+'IGNCHAR   ;  Code: 190;  Char: #\>
+'IGNCHAR   ;  Code: 191;  Char: #\?
+'IGNCHAR   ;  Code: 192;  Char: #\@
+'IGNCHAR   ;  Code: 193;  Char: #\A
+'IGNCHAR   ;  Code: 194;  Char: #\B
+'IGNCHAR   ;  Code: 195;  Char: #\C
+'IGNCHAR   ;  Code: 196;  Char: #\D
+'IGNCHAR   ;  Code: 197;  Char: #\E
+'IGNCHAR   ;  Code: 198;  Char: #\F
+'IGNCHAR   ;  Code: 199;  Char: #\G
+'IGNCHAR   ;  Code: 200;  Char: #\H
+'IGNCHAR   ;  Code: 201;  Char: #\I
+'IGNCHAR   ;  Code: 202;  Char: #\J
+'IGNCHAR   ;  Code: 203;  Char: #\K
+'IGNCHAR   ;  Code: 204;  Char: #\L
+'IGNCHAR   ;  Code: 205;  Char: #\M
+'IGNCHAR   ;  Code: 206;  Char: #\N
+'IGNCHAR   ;  Code: 207;  Char: #\O
+'IGNCHAR   ;  Code: 208;  Char: #\P
+'IGNCHAR   ;  Code: 209;  Char: #\Q
+'IGNCHAR   ;  Code: 210;  Char: #\R
+'IGNCHAR   ;  Code: 211;  Char: #\S
+'IGNCHAR   ;  Code: 212;  Char: #\T
+'IGNCHAR   ;  Code: 213;  Char: #\U
+'IGNCHAR   ;  Code: 214;  Char: #\V
+'IGNCHAR   ;  Code: 215;  Char: #\W
+'IGNCHAR   ;  Code: 216;  Char: #\X
+'IGNCHAR   ;  Code: 217;  Char: #\Y
+'IGNCHAR   ;  Code: 218;  Char: #\Z
+'IGNCHAR   ;  Code: 219;  Char: #\[
+'IGNCHAR   ;  Code: 220;  Char: #\\
+'IGNCHAR   ;  Code: 221;  Char: #\]
+'IGNCHAR   ;  Code: 222;  Char: #\^
+'IGNCHAR   ;  Code: 223;  Char: #\_
+'IGNCHAR   ;  Code: 224;  Char: #\`
+'IGNCHAR   ;  Code: 225;  Char: #\a
+'IGNCHAR   ;  Code: 226;  Char: #\b
+'IGNCHAR   ;  Code: 227;  Char: #\c
+'IGNCHAR   ;  Code: 228;  Char: #\d
+'IGNCHAR   ;  Code: 229;  Char: #\e
+'IGNCHAR   ;  Code: 230;  Char: #\f
+'IGNCHAR   ;  Code: 231;  Char: #\g
+'IGNCHAR   ;  Code: 232;  Char: #\h
+'IGNCHAR   ;  Code: 233;  Char: #\i
+'IGNCHAR   ;  Code: 234;  Char: #\j
+'IGNCHAR   ;  Code: 235;  Char: #\k
+'IGNCHAR   ;  Code: 236;  Char: #\l
+'IGNCHAR   ;  Code: 237;  Char: #\m
+'IGNCHAR   ;  Code: 238;  Char: #\n
+'IGNCHAR   ;  Code: 239;  Char: #\o
+'IGNCHAR   ;  Code: 240;  Char: #\p
+'IGNCHAR   ;  Code: 241;  Char: #\q
+'IGNCHAR   ;  Code: 242;  Char: #\r
+'IGNCHAR   ;  Code: 243;  Char: #\s
+'IGNCHAR   ;  Code: 244;  Char: #\t
+'IGNCHAR   ;  Code: 245;  Char: #\u
+'IGNCHAR   ;  Code: 246;  Char: #\v
+'IGNCHAR   ;  Code: 247;  Char: #\w
+'IGNCHAR   ;  Code: 248;  Char: #\x
+'IGNCHAR   ;  Code: 249;  Char: #\y
+'IGNCHAR   ;  Code: 250;  Char: #\z
+'IGNCHAR   ;  Code: 251;  Char: #\{
+'IGNCHAR   ;  Code: 252;  Char: #\|
+'IGNCHAR   ;  Code: 253;  Char: #\}
+'IGNCHAR   ;  Code: 254;  Char: #\~
+'IGNCHAR   ;  Code: 255;  Char: #\NEWLINE
+)) 
+
+
+;  character table
+
+(DEFCONSTANT NULL 0)
+(DEFCONSTANT TAB  9)
+(DEFCONSTANT LF   10)
+(DEFCONSTANT VT   11)
+(DEFCONSTANT FF   12)
+(DEFCONSTANT CR   13)
+(DEFCONSTANT SP   32)
+
+(DEFCONSTANT UPARROW (CHR2SYM (LIST  94)))
+(DEFCONSTANT CARET   (CHR2SYM (LIST   4)))
+(DEFCONSTANT COLON   (CHR2SYM (LIST  58)))
+(DEFCONSTANT SEMI    (CHR2SYM (LIST  59)))
+(DEFCONSTANT LPAR    (CHR2SYM (LIST  40)))
+(DEFCONSTANT RPAR    (CHR2SYM (LIST  41)))
+(DEFCONSTANT DOT     (CHR2SYM (LIST  46)))
+(DEFCONSTANT LSQB    (CHR2SYM (LIST  91)))
+(DEFCONSTANT RSQB    (CHR2SYM (LIST  93)))
+(DEFCONSTANT COMMA   (CHR2SYM (LIST  44)))
+(DEFCONSTANT LANGLE  (CHR2SYM (LIST  60)))
+(DEFCONSTANT RANGLE  (CHR2SYM (LIST  62)))
+(DEFCONSTANT SLASH   (CHR2SYM (LIST  47)))
+(DEFCONSTANT STAR    (CHR2SYM (LIST  42)))
+(DEFCONSTANT EQUAL   (CHR2SYM (LIST  61)))
+(DEFCONSTANT CULB    (CHR2SYM (LIST 123)))
+(DEFCONSTANT CURB    (CHR2SYM (LIST 125)))
+(DEFCONSTANT PLUS    (CHR2SYM (LIST  43)))
+(DEFCONSTANT MINUS   (CHR2SYM (LIST  45)))

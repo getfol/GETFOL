@@ -1,0 +1,273 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Thu Nov 11 14:44:14 MET 1993
+;;
+;; This GETFOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 1.001
+;; This file is a GETFOL source file: fapfif.fol
+;; Date: Thu Nov 11 14:42:45 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ***********************************************************************
+; *                                                                     *
+; *  This file contains all the routines for natural deduction proof    *
+; *  building using if rules.                                           *
+; *                                                                     *
+; ***********************************************************************
+;
+; TERMIFE: Term if elimination command
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   termife <fact1> <fact2> <termif> OPT[occ <seq_of_natnum>]         *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   termife preconditions: <fact2>'s wff must be <termif>'s condition *
+; *   termife rule function: substitutes <termif> with <termif>'s       * 
+; *     "then part" (thenof(<termif>)) in <fact1>'s wff.                *
+; *     In the case <termif> is not a subexpression of                  *
+; *     <fact1>'s wff, no substitution takes place and a new fact is    *
+; *     asserted whose wff is equal to <fact1>'s wff.			*
+; *   If the optional part "occ <seq_of_natnum>" is not specified,      *
+; *   the substitution is performed in all occurences of <termif> in    *
+; *   <fact1>'s wff. If "occ <seq_of_natnum>" is specified, then        *
+; *   the substitution is performed in each occurrence in <seq_of_natnum>
+; *   appearing in <fact1>'s wff.					*
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM termife (fact1 fact2 termif occurrences)
+  (IFN (EQUALEXP (fact-get-wff fact2) (ifof termif))
+       (FERRM0 
+        "The wff of the second fact must be the condition of the ifterm")
+       (LET ((occ_or_all (IFN (MTL? occurrences) occurrences 'ALL) ))
+         (proof-termife fact1 fact2 termif occ_or_all))))
+			
+(DEFLAM proof-termife (fact1 fact2 termif occ_or_all)
+  (proof-add-line 
+    (substexp+occ termif (thenof termif) (fact-get-wff fact1) occ_or_all)
+    (fact-union-dep fact1 fact2)
+    (reason-mak 'TERMIFE
+		(ras4-mak(fact_ra-mak fact1)
+			 (fact_ra-mak fact2)
+			 (term_ra-mak termif)
+			 (occurences_ra-mak occ_or_all))) ))
+
+; TERMIFEN: Term if elimination command (with a negation of the condition)
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   termifen <fact1> <fact2> <termif> OPT[occ <seq_of_natnum>]        *
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   termifen preconditions: <fact2>'s wff must be the negation of     *
+; *     <termif>'s condition                                            *
+; *   termifen rule function: like termife.                             *
+; * NOTE:                                                               *
+; *   <fact2>'s wff must be the nagation of <termif>'s condition and no *
+; *   viceversa. If <termif> = trmif not A then t1 else t2,             *
+; *                 <fact2>'s wff = A, the rule preconditions are not   *
+; *                   satisfied                                         *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM termifen (fact1 fact2 termif occurrences)
+  (IFN (EQUALEXP (fact-get-wff fact2) (mknot (ifof termif)))
+       (FERRM0 "The wff of the second fact must be the negation of the condition of the ifterm")
+       (LET ((occ_or_all (IFN (MTL? occurrences) occurrences 'ALL) ))
+	(proof-termifen fact1 fact2 termif occ_or_all))))
+
+(DEFLAM proof-termifen (fact1 fact2 termif occ_or_all)
+  (proof-add-line 
+    (substexp+occ termif (elseof termif) (fact-get-wff fact1) occ_or_all)
+    (fact-union-dep fact1 fact2)
+    (reason-mak 'TERMIFEN
+		(ras4-mak (fact_ra-mak fact1)
+			  (fact_ra-mak fact2)
+			  (term_ra-mak termif)
+			  (occurences_ra-mak occ_or_all))) ))
+
+; TERMIFEN: Term if introduction command 
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   termifi <fact1> <fact2> <wff> <term1> <term2>			*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   termifi preconditions: <fact1>'s and <fact2>'s wffs must only     *
+; *     differ because of <term1> in <fact1>'s wff in place of <term2>  *
+; *   termifen rule function: it replaces in <fact1>' wff <term1>       *
+; *     with "iftrm <wff> then <term1> else <term2>", dischaarging any  *
+; *     assumption in <fact1>'s dependencies whose wff is equal to <wff>*
+; *     and any assumption in <fact2>'s dependencies whose wff is equal *
+; *     "not <wff>".							*
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM termifi (fact1 fact2 wff term1 term2)
+  (IFN (EQUALEXP
+         (substexp+occ term1 term2 (fact-get-wff fact1) 'ALL)
+         (fact-get-wff fact2))
+       (FERRM0 "termif introduction requires two facts with wffs that differ only for the two terms given in input")
+       (proof-termifi fact1 fact2 wff term1 term2)))
+
+(DEFLAM proof-termifi (fact1 fact2 wff term1 term2)
+  (proof-add-line 
+     (substexp+occ term1 
+                   (mktrmif wff term1 term2)
+                   (fact-get-wff fact1) 
+                   'ALL)
+     (deplist-union 
+       (deplist-del-wff wff 
+                        (fact-get-deplist fact1))
+       (deplist-del-wff (mknot wff)
+                        (fact-get-deplist fact2)) )
+     (reason-mak 'TERMIFI
+		 (ras5-mak (fact_ra-mak fact1)
+			   (fact_ra-mak fact2)
+			   (wff_ra-mak wff)
+			   (term_ra-mak term1)
+			   (term_ra-mak term2))) ))
+
+; WFFIFE: Wff if elimination command
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   wffife <fact1> <fact2> 						*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   wffife preconditions: <fact1>'s wff must be a wffif  and          *
+; *     <fact2>'s wff must be <fact1> wff's condition.			*
+; *   wffife rule function: deduce a fact whose wff is the          	*
+; *     "then part" (thenof(<wffif>)) of <fact1>'s wff.                 *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM wffife (fact1 fact2)
+  (IFN (WFFIF (fact-get-wff fact1))
+       (FERRM0 "wffif elimination requires a wffif (as first argument)")
+       (IFN (IFOF-EQUAL (fact-get-wff fact1)
+                  (fact-get-wff fact2))
+            (FERRM0 "wffif elimination requires a wff equal to the conditional
+                     of the first wff (as second argument)")
+            (proof-wffife fact1 fact2) )))
+
+(DEFLAM proof-wffife (fact1 fact2)
+  (proof-add-line 
+     (thenof (fact-get-wff fact1))
+     (fact-union-dep fact1 fact2)
+     (reason-mak 'WFFIFE (ras2-mak (fact_ra-mak fact1)
+				   (fact_ra-mak fact2))) ))
+
+(DEFLAM IFOF-EQUAL (wff1 wff2)
+  (EQUALEXP (ifof wff1) wff2))
+
+; WFFIFE: Wff if elimination command (with a negation)
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   wffifen <fact1> <fact2> 						*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   wffife preconditions: <fact1>'s wff must be a wffif  and          *
+; *     <fact2>'s wff must be the negation of <fact1> wff's condition   *
+; *   wffife rule function: deduce a fact whose wff is the          	*
+; *     "else part" (elseof(<wffif>)) of <fact1>'s wff.                 *
+; *                                                                     *
+; * NOTE:                                                               *
+; *   <fact2>'s wff must be the nagation of the condition and no        *
+; *   viceversa. If <fact1>'s wff = wffif not A then B else C,          *
+; *                 <fact2>'s wff = A, the rule preconditions are not   *
+; *                   satisfied                                         *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM wffifen (fact1 fact2)
+  (IFN (WFFIF (fact-get-wff fact1))
+       (FERRM0 "wffifn elimination requires an wffif (as its first argument)")
+       (IFN (IFOF-EQUAL-NEG (fact-get-wff fact1)
+                            (fact-get-wff fact2))
+            (FERRM0 "wffifn elimination requires a wff negation of the conditional of the first wff (as second argument)")
+            (proof-wffifen fact1 fact2) )))
+
+(DEFLAM proof-wffifen (fact1 fact2)
+  (proof-add-line 
+     (elseof (fact-get-wff fact1))
+     (fact-union-dep fact1 fact2)
+     (reason-mak 'WFFIFEN
+		 (ras2-mak (fact_ra-mak fact1)
+			   (fact_ra-mak fact2))) ))
+
+(DEFLAM IFOF-EQUAL-NEG (wff1 wff2)
+  (EQUALEXP (mknot (ifof wff1)) wff2))
+
+; WFFIFI: Wff if introduction command 
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *   wffifi <wff> <fact1> <fact2> 					*
+; *                                                                     *
+; * DESCRIPTION                                                         *
+; *   wffifi preconditions: NONE					*
+; *   wffife rule function: deduce a fact whose wff is the          	*
+; *     "wffif <wff> then <<fact1>'s wff> else <<fac2t>'s wff>".        *
+; *     The rule discharges any assumption in <fact1>'s dependencies    *
+; *     whose wff is equal to <wff>					*
+; *     and any assumption in <fact2>'s dependencies whose wff is equal *
+; *     "not <wff>".                                                    *
+; ***********************************************************************
+;
+(DEFLAM wffifi (wff fact1 fact2)
+  (proof-add-line 
+     (mkwffif wff (fact-get-wff fact1) (fact-get-wff fact2))
+     (deplist-union 
+       (deplist-del-wff wff 
+                        (fact-get-deplist fact1))
+       (deplist-del-wff (mknot wff)
+                        (fact-get-deplist fact2)) )
+     (reason-mak 'WFFIFI (ras3-mak (wff_ra-mak wff)
+				   (fact_ra-mak fact1)
+				   (fact_ra-mak fact2)))))

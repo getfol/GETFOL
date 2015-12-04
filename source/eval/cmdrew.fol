@@ -1,0 +1,224 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:36:00 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdrew.fol
+;; Date: Wed Oct 20 10:44:54 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;****************************************************************************
+;*                                                                          *
+;*                                                                          *
+;*                       cmdrew.fol                                         *
+;*                                                                          *
+;*                                                                          *
+;* This  file  contains  the  routines  for :                               *
+;* -parsing  of the commands to set and "assert" simpsets                   *
+;*  (commands are SETBASICSIMP, SETCOMPSIMP, ASSERTSIMP)                    *
+;* -parsing of the REWRITE command.                                         *
+;*                                                                          *
+;* The external routines used in this file are in simpset.*, rewrite.fol.   *
+;*                                                                          *
+;****************************************************************************
+
+
+;**************************************************************************
+;*                                                                        *
+;*  SETBASICSIMP                                                          *
+;*                                                                        *
+;* (mknewcommand (QUOTE SETBASICSIMP)(QUOTE FOL)(QUOTE SETBASICSIMP#) MTL)*
+;*                                                                        *
+;**************************************************************************
+
+;;; The syntax of a SETBASICSIMP command.
+
+; < SETBASICSIMP COMMAND > := SETBASICSIMP <folsym> AT 
+;  			      ALT[FACTS { <factrep> } | WFFS  { <wffrep>  }];
+
+(DEFLAM SETBASICSIMP# ()
+ (LET ((label (FOLSYM# "The SETBASICSIMP command"))) 
+  (IF (SIMPLAB? label)
+   (GERRM0 label " is already the label of a simpset")
+   (IF (BNSIMPLAB? label)
+    (GERRM0 label " is the label of a builtin simpset, you can't use it")
+    (IF (ISF (TKC@ 'AT)) (REMSG1 "AT")
+     (LET ((typ (IF (IST (TKC@ (QUOTE WFFS))) (QUOTE WFFS)
+                 (IF (IST (TKC@ (QUOTE FACTS))) (QUOTE FACTS)
+                  (REMSG1 "WFFS or FACTS")))))
+      (LET ((rules (RULES# typ)))
+       (SEQ
+        (ENDL)
+        (setbasicsimp label typ rules)))))))))
+
+(DEFLAM RULES# (typ)
+ (IF (ISF (TKC@ CULB)) (REMSG1 "{ ")
+  (LET ((rules (IF (EQ typ (QUOTE WFFS))(WFFREP#)(FACTREP#))))
+   (IF (ISF (TKC@ CURB)) (REMSG1 "} ")
+    rules))))
+
+(DEFLAM  setbasicsimp (label typ rules)
+ (IF (EQ typ (QUOTE WFFS))
+  (SEQ
+   (wffs2simpinterface label rules)
+   (wffs2simp label rules (QUOTE SETBASICSIMP)))
+  (SEQ
+   (facts2simpinterface label rules) 
+   (facts2simp label rules (QUOTE SETBASICSIMP)))))
+
+
+;**************************************************************************
+;*                                                                        *
+;*  SETCOMPSIMP                                                           *
+;*                                                                        *
+;* (mknewcommand (QUOTE SETCOMPSIMP) (QUOTE FOL)(QUOTE SETCOMPSIMP#) MTL) *
+;*                                                                        *
+;**************************************************************************
+
+;;; The syntax of a SETCOMPSIMP command.
+
+; < SETCOMPSIMP COMMAND > := SETCOMPSIMP <folsym> AT <simpset-expr>;
+
+(DEFLAM SETCOMPSIMP# ()
+ (LET ((label (FOLSYM# "The SETCOMPSIMP command"))) 
+  (IF (BASICSIMPLAB? label)
+   (GERRM0 label " is already the label of a basic simpset")
+   (IF (BNSIMPLAB? label)
+    (GERRM0 label " is the label of a builtin simpset, you can't use it")
+    (IF (ISF (TKC@ (QUOTE AT))) (REMSG1 "AT")
+     (LET ((simplabs (SIMPSETEXPR#)))
+      (SEQ
+       (ENDL)
+       (setcompsimp label simplabs))))))))
+
+(DEFLAM  setcompsimp (label simplabs)
+ (simplabs2simp label simplabs (QUOTE SETCOMPSIMP)))
+
+
+;**************************************************************************
+;*                                                                        *
+;*  ASSERTSIMP                                                            *
+;*                                                                        *
+;* (mknewcommand (QUOTE ASSERTSIMP) (QUOTE FOL)(QUOTE ASSERTSIMP#) MTL)   *
+;*                                                                        *
+;**************************************************************************
+
+;;; The syntax of a ASSERTSIMP command.
+
+; < ASSERTSIMP COMMAND > := ASSERTSIMP <simplab>;
+
+(DEFLAM ASSERTSIMP# ()
+ (LET ((label (REQ# (QUOTE SIMPLAB@) (QUOTE "This command ")
+               (QUOTE " a simpset label or a simpset expression"))))
+  (IF (BNSIMPLAB? label)
+   (GERRM0 label " is the label of a builtin simpset, you can't assert it.")
+   (SEQ
+    (ENDL)
+    (assertsimp label)))))
+
+(DEFLAM assertsimp (label)
+ (LET ((wffs (simplab2wffs label)))
+  (IF (MTL? wffs)
+   (SIMPSET-EPRINC2 label " does not contain any wff to assert.")
+   (simpwffs2prooflines
+    wffs (reason-mak 'ASSERTSIMP (ras1-mak (simpsetlabel_ra-mak label))) ))))
+
+(DEFLAM simpwffs2prooflines(wffs reason)
+ (IF (MTL? wffs) (NOP)
+  (SEQ
+   (proof-add-line (FIRST wffs) Emptydeplist reason)
+   (simpwffs2prooflines (REST wffs) reason))))
+
+
+;**********************************************************************
+;*                                                                    *
+;*  REWRITE                                                           *
+;*                                                                    *
+;* (mknewcommand (QUOTE REWRITE) (QUOTE FOL) (QUOTE REWRITE#) MTL)    *
+;*                                                                    *
+;**********************************************************************
+
+;;; The syntax of a REWRITE command.
+
+; < REWRITE COMMAND > := REWRITE ALT[<wff>|<fact>|<term>] BY <simpset-expr>;
+
+(DEFLAM REWRITE# ()
+ (LET ((exp (EXPGET#))
+       (labs (IF (IST (TKC@ (QUOTE BY)))
+              (SIMPSETEXPR#)
+              (LIST (QUOTE LOGICTREE)))))
+  (SEQ
+   (ENDL)
+   (rewrite exp labs))))
+
+(DEFLAM EXPGET# ()
+ (LET ((wff (WFF@)))
+  (IF (IST wff) wff
+   (LET ((fact (FACT@)))
+    (IF (IST fact)(fact-get-wff fact)
+     (LET ((term (TERM@)))
+      (IF (IST term) term
+       (REMSG1 "A wff, a fact or a term"))))))))
+
+(DEFLAM rewrite (exp labs)
+ (SEQ
+; The list of the simpsets used by the rewriter is in the
+; global variable USED-SIMPS.
+  (usedsimps-ini)
+  (LET ((rr (exprewrite (COPY exp) (simplabs2amf labs) 0 TRUE)))
+   (IF (NOSIMP? rr)
+    (REWRITE-printexp exp ": No simplification is possible")
+    (LET ((wff (IF (TERM exp) (mkequ exp (rr-get-exp rr))
+                (IF (EQ True (rr-get-exp rr)) exp
+                 (IF (EQ False (rr-get-exp rr)) (mknot exp)
+                  (mkiff exp (rr-get-exp rr)))))))
+     (proof-add-line 
+      wff 
+      (facts-union-dep (simplabs2facts (usedsimps-get)))
+      (reason-mak 'REWRITE (ras2-mak (exp_ra-mak exp)
+				    (simpsetlabels_ra-mak labs)))))))))

@@ -1,0 +1,274 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:44:45 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: top.fol
+;; Date: Wed Oct 20 10:48:24 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*****************************************************************************
+;*                                                                           *
+;*                           Top level reader                                *
+;*                                                                           *
+;*****************************************************************************
+
+;*****************************************************************************
+;*                                                                           *
+;*                          BASIC STARTUP ROUTINES                           *
+;*                                                                           *
+;*     SYSBOOT performs the following actions:                               *
+;*        0. initialize I/O                                                  *
+;*        1. load the fixfile                                                *
+;*        2. load the debugfile                                              *
+;*        3. start the SYSTEM (ie. print out BANNER and reset input channel) *
+;*        4. load the startup file                                           *
+;*        5. start the listen-act-respond loop                               *
+;*                                                                           *
+;*     SYSBACK performs the following actions:                               *
+;*        0. reset input channel                                             *
+;*        1. reset mark stack                                                *
+;*        2. print out a message                                             *
+;*                                                                           *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM SYSBOOT ()
+ (SEQ
+  (HGKM-INITIO)                              ;Initialize I/O system.
+  (LET ((FIX-CHAN (TRAP (HGKM-ISOPEN (SYS-GET-FIXFILE (SYSMASTER-GET))))))
+   (IF (ERROR-OCCURRED? FIX-CHAN)
+    (NOP)
+    (SEQ
+     (SELECT (TRAP-GET-RESULT FIX-CHAN))
+     (HGKM-LOAD-FROM-CHANNEL)
+     (HGKM-CLOSE (TRAP-GET-RESULT FIX-CHAN)))))
+  (LET ((DEBUG-CHAN (TRAP (HGKM-ISOPEN (SYS-GET-DEBUGFILE (SYSMASTER-GET))))))
+   (IF (ERROR-OCCURRED? DEBUG-CHAN)
+    (NOP)
+    (SEQ
+     (SELECT (TRAP-GET-RESULT DEBUG-CHAN))
+     (HGKM-LOAD-FROM-CHANNEL)
+     (HGKM-CLOSE (TRAP-GET-RESULT DEBUG-CHAN)))))
+  (FIRST-CALL)))
+
+
+(DEFLAM FIRST-CALL ()
+  (SEQ
+   (PRINC-BANNER)
+   (CRLF)
+   (HGKM-PRINC "Hi!  I am ")
+   (HGKM-PRINC (SYS-GET-NAME (SYSMASTER-GET)))
+   (HGKM-PRINC " - a Fantastically Overrated Logician.")
+   (CRLF)
+   (HGKM-PRINC "This is version ")
+   (HGKM-PRINC (SYS-GET-VERSION (SYSMASTER-GET)))
+   (HGKM-PRINC ", ")
+   (HGKM-PRINC (SYS-GET-RELEASE (SYSMASTER-GET)))
+   (CRLF)
+   (markstack-ini)
+   (inpchanstack-ini)
+   (backup-ini)
+   (HGKM-INITIO)
+   (TOP#) ))
+
+(DEFUN PRINC-BANNER ()
+ (IF (IST (SYS-GET-BANNER (SYSMASTER-GET)))
+  (HGKM-PRINC (SYS-GET-BANNER (SYSMASTER-GET))) (NOP)))
+
+(DEFUN SUPPRESS-BANNER () (SYS-SET-BANNER (SYSMASTER-GET) MTL))
+
+(DEFLAM SYSBACK ()
+  (SEQ
+   (CRLF)
+   (PRINTMES "Hi!  Glad you're back.  What would you like to talk about now?")
+   (markstack-ini)
+   (RESET-INPUT)
+   (TOP#) ))
+
+;;;  Top level FOL
+;*****************************************************************
+;*                                                               *
+;*      The top level of FOL is a                                *
+;*                                                               *
+;*          listen - act - respond                               *
+;*                                                               *
+;*      loop.                                                    *
+;*      Each input line (listen) is terminated by a ";"          *
+;*      An FOL conversation consists of a sequence of lines.     *
+;*                                                               *
+;*                                                               *
+;*     Listen:                                                   *
+;*        NO&ERROR: command terminated correctly.                *
+;*        DONE    : end of session                               *
+;*        LINE    : error in current command                     *
+;*        $HGKM-EOF$: end of file or mark.                       *
+;*                                                               *
+;*****************************************************************
+;
+;;;  lineselect# : select the next line
+
+(DEFLAM TOP# ()
+    (PGM ()
+LOOP (FLUSH) (CRLF)
+     (PROMPT-PRINTOUT)
+     (LET ((Y (LINESELECT#)))
+      (IF (EQ Y 'NO&ERROR) (NOP)
+       (IF (EQ Y 'DONE) (SEQ (RESET-INPUT) (GOTO END))
+        (IF (EQ Y 'LINE)
+         (IF (EQ SELECTED-INPUT STANDARD-INPUT) (NOP)
+            (SEQ
+              (CRLF)
+              (PRINTMES2 "Error occurred while fetching "
+               (CHANNEL-GET-FNAME (inpchanstack-first)))
+              (PRINTMES "All nested fetches have been closed.")
+              (RESET-ALL-INPUT) ))
+         (IF (EQ Y $HGKM-EOF$)
+           (IF (EQ SELECTED-INPUT STANDARD-INPUT)
+            (SEQ
+             (RESET-INPUT)
+             (GOTO END))
+            (SEQ
+             (IO-EPRINC2 "I am finished fetching "
+              (CHANNEL-GET-FNAME (inpchanstack-first)))
+             (markstack-pop)
+             (POP-INCHANNEL)))
+         (SEQ (RESET-INPUT) (PRINTMES "Unknown error!!!") (GOTO END)))))))
+     (GOTO LOOP)
+END))
+
+
+(DEFLAM PROMPT-PRINTOUT ()
+ (HGKM-PRINC %DEFAULT-SYSTEM-PROMPT%))
+
+(DEFLAM LINESELECT# ()
+ (LET ((Y  (TRAP (SEQ (TOKEN) (DOLINE (CUR-TOKEN))) )))
+  (IF (ERROR-OCCURRED? Y) Y 'NO&ERROR)))
+
+(DEFLAM DOLINE (X)
+ (IF (EQ X SEMI) MTL
+  (SEQ
+   (HGKM-APPLY (GET-FUN (GETCMND (CAPITALIZE X))) MTL)
+   (IF (BACKUP-EMPTY?)
+    (NOP)
+    (IF (EQ (CAPITALIZE X) (QUOTE BACKUP))
+     (NOP)
+     (BACKUPLINE-PRINC))))))
+
+;;;
+;;;  Routine for the parsing of the ";".
+;;;  To be called at the end of any parsing routine for commands.
+;;;  This function performs the probing of commands
+;;;
+
+(DEFLAM ENDL ()
+ (IFN (EQ (CUR-TOKEN) SEMI)
+  (FERRM1 "You have a legal command not ending with a semi-colon.")
+  (COMMAND-EPRINC)))
+
+
+;;; nested file fetching
+;*****************************************************************************
+;*                                                                           *
+;*   SYNTAX                                                                  *
+;*        (RESET-INPUT)              -- reset input channel                  *
+;*        (RESET-ALL-INPUT)          -- reset all input channels, but stdio  *
+;*        (PUSH-INCCHANNEL)          -- push channel in input channel stack  *
+;*        (POP-INCHANNEL)            -- pop channel from input channel stack *
+;*                                                                           *
+;*   DESCRIPTION                                                             *
+;*     GETFOL permits nested file fetching.  In order to do good error       *
+;*     recovery GETFOL keeps track of what the depth RESET-INPUT is to       *
+;*     close all open nested fetching files and to direct subsequent output  *
+;*     to the terminal.                                                      *
+;*                                                                           *
+;*     The stack of input channels currently opened is kept in the data      *
+;*     type %INPUTCHAN-STK%                                                  *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM RESET-INPUT ()
+  (IF (INPUTCHANSTK-EMPTY?)
+      (SETQ SELECTED-INPUT STANDARD-INPUT) 
+      (SEQ 
+        (HGKM-CLOSE  (inpchanstack-first))
+        (inpchanstack-pop))))
+
+(DEFLAM RESET-ALL-INPUT ()
+  (IF (INPUTCHANSTK-EMPTY?)
+      (SETQ SELECTED-INPUT STANDARD-INPUT) 
+      (SEQ 
+        (HGKM-CLOSE  (inpchanstack-first))
+        (inpchanstack-pop)
+		(RESET-ALL-INPUT))))
+
+;;;
+;;; push a character input channel
+;;;
+
+(DEFLAM PUSH-INCCHANNEL (FNAME)	
+ (LET ((CURR-CHANNEL (TRAP (HGKM-ICOPEN FNAME))))
+  (IF (ERROR-OCCURRED? CURR-CHANNEL)
+   (FERRM0 "Trying to fetch. File not found!")
+   (LET ((CHANNEL (TRAP-GET-RESULT CURR-CHANNEL) ))
+    (SEQ
+     (inpchanstack-push CHANNEL)
+     (SELECT CHANNEL))))))
+
+;;;
+;;; pop one level
+;;;
+
+(DEFLAM POP-INCHANNEL ()
+  (SEQ
+    (HGKM-CLOSE  (inpchanstack-first))
+    (inpchanstack-pop)
+    (IF (INPUTCHANSTK-EMPTY?) 
+      (SETQ SELECTED-INPUT STANDARD-INPUT)
+      (SELECT (inpchanstack-first)) ) ) ) 
+

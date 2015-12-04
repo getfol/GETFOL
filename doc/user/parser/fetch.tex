@@ -1,0 +1,35 @@
+\gfcommand{fetch}{fetches {\GF} file}
+\index{fetch}
+
+\gfsyntax{
+   fetch \ARG{file} \OPT{from \ARG{mark1}} \OPT{to \ARG{mark2}};
+}
+
+\gfdescription{
+   Redirects the standard input to the file \ARG{file}; all {\GF} commands
+   between \ARG{mark1} and \ARG{mark2} are executed.
+}
+
+\gfrecap{
+Fetches commands from the file `file'.
+All commands between `mark1' and `mark2' are executed.
+}
+
+\gfexample+
+  ***** fetch exmarks.tst;
+  ...
+  ***** fetch exmarks.tst to m1;
+  ...
+  ***** fetch exmarks.tst from m1 to m2;
+  ...
+  ***** fetch exmarks.tst from m2;
++
+
+\gfnotes{
+   Only Unix file names are supported.
+   The file path name can be absolute or relative to the current directory.
+   Nested fetches (and marking) are allowed.
+   If no marks are specified, then the whole file is fetched.
+   See the command {\tt mark} in this section to set marks in a file.
+}
+

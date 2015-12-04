@@ -1,0 +1,144 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: imeta.fol
+;; Date: Wed Oct 20 10:46:31 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; *******************************************************************
+; *                                                                 *
+; * This file contains initialization stuff for operations form meta*
+; *                                                                 *
+; *******************************************************************
+
+;******************************************************************
+;*                                                                *
+;* SETTING COMMANDS FOR META
+;*                                                                *
+;******************************************************************
+
+;  Mattach 
+(mknewcommand (QUOTE MATTACH) (QUOTE FOL) (QUOTE META) (QUOTE MATTACH#) FALSE)
+
+;  Reflection command
+(mknewcommand (QUOTE REFLECT) (QUOTE FOL) (QUOTE META) (QUOTE REFL#)    FALSE)
+
+;******************************************************************
+;*                                                                *
+;* SETTING PROBE TOKENS FOR META
+;*                                                                *
+;******************************************************************
+
+(probes-add-probe 'REFLECT TRUE)
+
+;******************************************************************
+;*                                                                *
+;* SETTING SHOW TOKENS FOR META
+;*                                                                *
+;******************************************************************
+
+;NO SHOW FOR META
+
+
+;SCANSORTLIST INITIALIZATION
+; *******************************************************************
+; *                                                                 *
+; * We memorize all the sorts which have predefined scanning        *
+; * functions; note that the order of the initialization is not     *
+; * casual but goes in a way that more general sorts are after the  *
+; * lessgeneral ones.                                               *
+; * To understand why this is useful look how it is implemented     *
+; * "sortfun-get".                                                   *
+; *                                                                 *
+; * This initialization is needed in order to parse from a          *
+; * metatheory terms in the theory of the sort given below          *
+; *                                                                 *
+;********************************************************************
+;
+(sortfuns-empty)
+
+;logical operators
+(sortfun-add (sortfun-mak 'SENTCONN 'SENTCONN#))
+(sortfun-add (sortfun-mak 'QUANT    'QUANT#))
+(sortfun-add (sortfun-mak 'SORT     'SORT#))
+
+;either APPLSYM or INDSYM or SENTSYM
+(sortfun-add (sortfun-mak 'DECSYM 'DECSYM#))
+
+;Facts: The corresponding "scanning" routine parses not a fact data
+;structure, but the label of a fact.
+(sortfun-add (sortfun-mak 'FACT     'FACT#))
+
+;wffs
+(sortfun-add (sortfun-mak 'WFF      'WFF#))
+(sortfun-add (sortfun-mak 'WFFIF    'WFFIF#))
+(sortfun-add (sortfun-mak 'QUANTWFF 'QUANTWFF#))
+(sortfun-add (sortfun-mak 'AWFF     'AWFF#)) 
+
+;terms
+(sortfun-add (sortfun-mak 'TERM     'TERM#))
+(sortfun-add (sortfun-mak 'TERMIF   'TERMIF#))	
+(sortfun-add (sortfun-mak 'INDSYM   'INDSYM#))
+(sortfun-add (sortfun-mak 'INDVAR   'INDVAR#))	
+(sortfun-add (sortfun-mak 'INDPAR   'INDPAR#))	
+(sortfun-add (sortfun-mak 'INDCONST 'INDCONST#))
+
+;sentential symbols
+(sortfun-add (sortfun-mak 'SENTSYM  'SENTSYM#))
+(sortfun-add (sortfun-mak 'SENTPAR  'SENTPAR#))
+(sortfun-add (sortfun-mak 'SENTCONST 'SENTCONST#))
+
+;either FUNCONST or PREDCONST
+(sortfun-add (sortfun-mak 'APPLSYM  'APPLSYM#))
+
+;predicate symbols
+(sortfun-add (sortfun-mak 'PREDSYM  'PREDSYM#))
+(sortfun-add (sortfun-mak 'PREDPAR   'PREDPAR#))
+(sortfun-add (sortfun-mak 'PREDCONST 'PREDCONST#))
+
+;function symbols
+(sortfun-add (sortfun-mak 'FUNSYM   'FUNSYM#))	
+(sortfun-add (sortfun-mak 'FUNPAR   'FUNPAR#))
+(sortfun-add (sortfun-mak 'FUNCONST  'FUNCONST#))
+
+

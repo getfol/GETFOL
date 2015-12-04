@@ -1,0 +1,230 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: symls.hgk
+;; Date: Wed Oct 20 10:46:18 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                       symls.hgk                                *
+;*                                                                *
+;*                                                                *
+;* This file contains the data structures for the storage  of     *
+;* the language of a context.                                     *
+;* The basic data structures are symbol label spaces (symls),     *
+;* defined in part 1. of this file.                               *
+;* The symbols of a context may be either shared or non shared    *
+;* with the other contexts of the system.                         *
+;* Therefore there are two data structures, one for shared and    *
+;* and one for non shared symbols of the current context.         *
+;* Part 2. defines the symls containing the symbols shared        *
+;* between the contexts of the current system: cur-sys-symls.     *
+;* Part 3. defines the symls containing the symbols which belong  *
+;* only to the current context: cur-cxt-symls.                    *
+;* Part 4. contains the definition of the symls containing all    *
+;* the symbols (both shared and non-shared) belonging to the      *
+;* current context: cur-symls.                                    *
+;*                                                                *
+;******************************************************************
+
+
+;******************************************************************
+;*                                                                *
+;*                  PART 1: symls                                 *
+;*                                                                *
+;* A symls is a collection of label spaces, each of them being    *
+;* indexed by a syntactic type. symls are used to represent       *
+;* collection of symbols (i.e. the symbols of a logical language) *
+;* A symls is implemented as an HGKM symbol, in whose properties  *
+;* are stored the label spaces.                                   *
+;*                                                                *
+;*                                                                *
+;* SYNTAX and DESCRIPTION                                         *
+;*                                                                *
+;* (symls-mak label) returns an empty symls.                      *
+;*                                                                *
+;* (symls-get-ls symls typ) returns the label space in symls      *
+;* addressed by the type typ.                                     *
+;*                                                                *
+;* (symls-set-ls symls typ ls) sets the label space in symls      *
+;* addressed by the type typ to be ls.                            *
+;*                                                                *
+;* (symls-add-lse symls typ lse) adds lse to the label space      *
+;* in symls addressed by the type typ.                            *
+;*                                                                *
+;* (symls-del-sym symls typ sym) deletes sym from the label space *
+;* in symls addressed by the type typ.                            *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM symls-mak (LABEL)
+ (LET ((SYMLS (MAKE-UNINTERNED LABEL)))
+  (SEQ
+   (SETPROP SYMLS MTL 'Sentconn)
+   (SETPROP SYMLS MTL 'Quant)
+   (SETPROP SYMLS MTL 'Ifwff)
+   (SETPROP SYMLS MTL 'Iftrm)
+
+   (SETPROP SYMLS MTL 'Sentconst)
+   (SETPROP SYMLS MTL 'Sentpar)
+   (SETPROP SYMLS MTL 'Indconst)
+   (SETPROP SYMLS MTL 'Indvar)
+   (SETPROP SYMLS MTL 'Indpar)
+   (SETPROP SYMLS MTL 'Funconst)
+   (SETPROP SYMLS MTL 'Funpar)
+   (SETPROP SYMLS MTL 'Predconst)
+   (SETPROP SYMLS MTL 'Predpar)
+   SYMLS)))
+
+(DEFSUB symls-get-ls (SYMLS TYP)    (GETPROP SYMLS TYP))
+(DEFSUB symls-set-ls (SYMLS TYP LS) (SETPROP SYMLS LS  TYP))
+
+(DEFSUB symls-add-lse (SYMLS TYP LSE)
+ (symls-set-ls SYMLS TYP (ls-add-lse LSE (symls-get-ls SYMLS TYP))))
+(DEFSUB symls-del-sym (SYMLS TYP SYM)
+ (symls-set-ls SYMLS TYP (ls-del-obj SYM (symls-get-ls SYMLS TYP))))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                 PART 2: cur-sys-symls                          *
+;*                                                                *
+;* cur-sys-symls is a data structure containing the symbols       *
+;* which are shared between the contexts of the current system.   *
+;* It is implemented as a symls stored in a global variable.      *
+;*                                                                *
+;*                                                                *
+;* SYNTAX and DESCRIPTION                                         *
+;*                                                                *
+;* (cur-sys-symls-ini) initializes cur-sys-symls                  *
+;*                                                                *
+;* (cur-sys-symls-get) returns cur-sys-symls                      *
+;*                                                                *
+;* (cur-sys-symls-set symls) sets the content of cur-sys-symls    *
+;* to the argument symls.                                         *
+;*                                                                *
+;* (cur-sys-symls-get-ls typ) returns the label space in          *
+;* cur-sys-symls addressed by the type typ.                       *
+;*                                                                *
+;* (cur-sys-symls-add-lse typ lse) adds lse to the label space    *
+;* in cur-sys-symls addressed by the type typ.                    *
+;*                                                                *
+;* (cur-sys-symls-del-sym typ sym) deletes sym from the label     *
+;* space in cur-sys-symls addressed by the type typ.              *
+;*                                                                *
+;******************************************************************
+
+(DEFSUB cur-sys-symls-ini () (SETQ CurSysSYMLS (symls-mak 'CSSYMLS)))
+(DEFSUB cur-sys-symls-get () CurSysSYMLS)
+(DEFSUB cur-sys-symls-set (SYMLS) (SETQ CurSysSYMLS SYMLS))
+
+(DEFSUB cur-sys-symls-get-ls  (TYP)     (symls-get-ls  CurSysSYMLS TYP))
+(DEFSUB cur-sys-symls-add-lse (TYP LSE) (symls-add-lse CurSysSYMLS TYP LSE))
+(DEFSUB cur-sys-symls-del-sym (TYP SYM) (symls-del-sym CurSysSYMLS TYP SYM))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                 PART 3: cur-cxt-symls                          *
+;*                                                                *
+;* cur-cxt-symls is a data structure containing the symbols       *
+;* which belong only to the current context.                      *
+;* It is implemented as a symls stored in a global variable.      *
+;*                                                                *
+;*                                                                *
+;* SYNTAX and DESCRIPTION                                         *
+;*                                                                *
+;* (cur-cxt-symls-ini) initializes cur-cxt-symls                  *
+;*                                                                *
+;* (cur-cxt-symls-get) returns cur-cxt-symls                      *
+;*                                                                *
+;* (cur-cxt-symls-set symls) sets the content of cur-cxt-symls    *
+;* to the argument symls.                                         *
+;*                                                                *
+;* (cur-cxt-symls-get-ls typ) returns the label space in          *
+;* cur-cxt-symls addressed by the type typ.                       *
+;*                                                                *
+;* (cur-cxt-symls-add-lse typ lse) adds lse to the label space    *
+;* in cur-cxt-symls addressed by the type typ.                    *
+;*                                                                *
+;* (cur-cxt-symls-del-sym typ sym) deletes sym from the label     *
+;* space in cur-cxt-symls addressed by the type typ.              *
+;*                                                                *
+;******************************************************************
+
+
+(DEFSUB cur-cxt-symls-ini () (SETQ CurCxtSYMLS (symls-mak 'CCSYMLS)))
+(DEFSUB cur-cxt-symls-get () CurCxtSYMLS)
+(DEFSUB cur-cxt-symls-set (SYMLS) (SETQ CurCxtSYMLS SYMLS))
+
+(DEFSUB cur-cxt-symls-get-ls  (TYP)     (symls-get-ls  CurCxtSYMLS TYP))
+(DEFSUB cur-cxt-symls-add-lse (TYP LSE) (symls-add-lse CurCxtSYMLS TYP LSE))
+(DEFSUB cur-cxt-symls-del-sym (TYP SYM) (symls-del-sym CurCxtSYMLS TYP SYM))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                    PART 4: cur-symls                           *
+;*                                                                *
+;* cur-symls is an abstract data structure containing all the     *
+;* symbols of the current context (both shared and non-shared).   *
+;* It is the union of cur-sys-symls and cur-cxt-symls.            *
+;*                                                                *
+;*                                                                *
+;* SYNTAX and DESCRIPTION                                         *
+;*                                                                *
+;* (cur-symls-get-ls typ) is the only operation allowed on        *
+;* cur-symls. Given a type as argument it returns the label space *
+;* union of the label spaces which are addressed by it in         *
+;* cur-sys-symls and cur-cxt-symls.                               *
+;*                                                                *
+;******************************************************************
+
+(DEFSUB cur-symls-get-ls (TYP)
+ (APPEND (cur-cxt-symls-get-ls TYP) (cur-sys-symls-get-ls TYP)))
+

@@ -1,0 +1,309 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: simpset.fol
+;; Date: Wed Oct 20 10:45:21 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ***********************************************************************
+; *                                                                     *
+; *          simpset.fol                                                *
+; *                                                                     *
+; * PART 1: The routines from GETFOL's logic to the simpset world.      *
+; * - FROM wffs     TO     simpsets			                *
+; * - FROM facts    TO     simpsets		    		        *
+; *                                                                     *
+; * PART 2: The routines that implement an interface between            * 
+; *         GETFOL's logic and the simpset world.                       *
+; * - FROM wffs     TO     the interface			        *
+; * - FROM facts    TO     the interface	    		        *
+; *                                                                     *
+; * PART 3: The routines from the simpset world to GETFOL's logic.      *
+; * - FROM simpsets TO     wffs				                *
+; * - FROM simpsets TO     facts		    		        *
+; *                                                                     *
+; * PART 4: The routines from the simpset world to the simpset world    *
+; * - FROM simpsets TO     simpsets			                *
+; *                                                                     *
+; ***********************************************************************
+
+
+; ********************************************************************
+; * 								     *
+; *  PART 1: The routines from GETFOL's logic to the simpset world.  *
+; *								     *
+; ********************************************************************
+
+;(wffs2simp label wffs reason)                    ---> simpset
+;(facts2simp label facts reason)                  ---> simpset
+
+
+
+; ********************************************************************
+; * 								     *
+; *  1.1-FROM facts  TO simpsets				     *
+; *								     *
+; ********************************************************************
+
+; facts2simp adds to the user simpsets a simpset.
+(DEFLAM facts2simp(label facts reason)
+ (simps-add (simp-mak label (facts2amf facts label) (LIST label) reason)))
+
+(DEFLAM facts2amf (facts label)
+ (IF (MTL? facts) (amf-mak-empty)
+  (amf-union 
+   (fact2amf 
+    (fact-get-wff (FIRST facts))
+    (fact-get-deplist (FIRST facts)) 
+    label) 
+   (facts2amf (REST facts) label))))
+
+; fact2amf performs these steps:
+;  1. It sets uqv as the union of the outermost universally quantified 
+;     variables and sets wff1 as the result returned by wff2normwff;
+;  2. It sets lhs-rule as left side of wff1 and sets rhs-rule as right 
+;     side of wff1;
+;  3. It sets leaf as the pair: rhs-rule, label;
+;  4. It sets uqv1 as the union of uqv and the set of parameters of
+;     lhs-rule that don't occurr in deplist;
+;  5. It returns the amf so obtained:
+;     a. mtree is the result returned by the function mtree-build&setleaf;
+;     b. mrn is the set difference between the parameters of lhs-rule
+;        and uqv1.
+
+(DEFLAM fact2amf (wff deplist label)
+ (LET ((uqv  (CAR (wff-get-prefixuq MTL wff)))
+       (wff1 (wff2normwff wff)))
+  (LET ((lhs-rule (lhs wff1))
+        (rhs-rule (rhs wff1)))
+   (LET ((leaf (leaf-mak rhs-rule label))
+         (uqv1 (UNION uqv (IF (MTL? deplist)
+                           (parameters lhs-rule)
+                           (SUBTRACT
+                            (parameters lhs-rule)
+                            (facts-get-parameters deplist))))))
+      (amf-mak
+       (mtree-build&setleaf lhs-rule leaf (UNION (bound lhs-rule) uqv1))
+       (frees1 lhs-rule uqv1))))))
+;       ---------------------
+;       This is to avoid name conflicts, in the case that
+;       the expression to rewrite is a quantified wff.
+
+
+;  wff2normwff performs these steps:
+;  1. It sets wff1 as wff without the outermost universally 
+;     quantifiers;
+;  2. It sets wff2 as wff1, if wff1 is an equiwff, 
+;     otherwise as wff1 iff True;
+;  3. It controls if there are parameters that occurr
+;     in the right side of wff2 but not in the in left side
+;     (to keep correctness);
+;  4. It returns wff2 after renamining its variables. 
+
+(DEFLAM wff2normwff(wff)
+ (LET ((wff1 (CDR (wff-get-prefixuq MTL wff))))
+  (LET ((wff2 (IF (EQUIWFF wff1) wff1 (mkiff wff1 True))))
+   (IFN (MTL? (SUBTRACT 
+               (parameters (rhs wff2)) 
+               (parameters (lhs wff2))))
+    (SEQ 
+     (PRINTMES "There are free variables or parameters in the right part")
+     (PRINTMES "of a rewrite rule that don't occurr in the left part!")
+     (ENDM))
+    (quantvars-rename wff2)))))
+
+;This function renames the quantified variables of exp
+(DEFLAM quantvars-rename(exp)
+ (IF (SIMPLE exp) exp 
+  (IF (QUANTWFF exp)
+   (LET ((newexp (CAR (quantvar-rename exp))))
+    (mkquant (quantof newexp) (bvarof newexp)
+     (quantvars-rename (matrix newexp))))
+   (appl-mak (appl-get-functor exp)
+    (MAPCAR 'quantvars-rename (appl-get-args exp))))))
+
+(DEFLAM quantvar-rename (quantwff)
+ (LET ((oldvar (bvarof quantwff)))
+  (LET ((newlabel (sym2symn (outnam oldvar))))
+   (LET ((newvar (indsym-create 'Indvar newlabel (sort oldvar)
+                  (simpsym_sact-mak newlabel))))
+    (CONS
+     (mkquant (quantof quantwff) newvar
+      (substexp oldvar newvar (matrix quantwff)))
+     (CONS oldvar newvar))))))
+
+(DEFLAM quantvar-unrename (wff oldvar_newvar)
+ (LET ((oldvar (CAR oldvar_newvar))
+       (newvar (CDR oldvar_newvar)))
+  (IF (HGKM-MEMQ oldvar (UNION (frees wff) (bound wff)))
+   (LET ((declab (newlabel-mak (outnam oldvar))))
+    (LET ((decvar (indsym-declare 'Indvar declab (sort oldvar) 
+                   (indsym_sact-mak declab))))
+     (SUBST decvar newvar wff)))
+   (SUBST oldvar newvar wff))))
+
+
+; ********************************************************************
+; * 								     *
+; *  PART 1.2 : FROM wffs     TO     simpsets			     *
+; *								     *
+; ********************************************************************
+
+; wffs2simp adds to the user simpsets a simpset.
+
+(DEFLAM wffs2simp (label wffs reason)
+ (simps-add (simp-mak label (wffs2amf wffs label) (LIST label) reason)))
+
+(DEFLAM wffs2amf (wffs label)
+ (IF (MTL? wffs) (amf-mak-empty)
+  (amf-union
+   (wff2amf (FIRST wffs) label)
+   (wffs2amf (REST wffs) label))))
+
+; A wff is considered as a fact without dependecies
+(DEFLAM wff2amf (wff label) (fact2amf wff Emptydeplist label))
+
+
+; ********************************************************************
+; * 								     *
+; *  PART 2: The routines that implement an interface between        * 
+; *          GETFOL's logic and the simpset world.                   *
+; *								     *
+; ********************************************************************
+
+;(wffs2simpinterface label wffs)                ---> simpset interface
+;(facts2simpinterface label facts)              ---> simpset interface
+
+; *************************************************************************
+; * 								          *
+; *  PART 2.1 : FROM wffs TO the interface                                *
+; *								          *
+; *************************************************************************
+
+(DEFLAM wffs2simpinterface (label wffs)
+ (simpsinterface-add (simpinterface-mak label wffs MTL)))
+
+; ********************************************************************
+; * 								     *
+; *  PART 2.2 : FROM facts TO the interface 			     *
+; *								     *
+; ********************************************************************
+
+(DEFLAM facts2simpinterface (label facts)
+ (simpsinterface-add (simpinterface-mak label MTL facts)))
+
+
+; ********************************************************************
+; * 								     *
+; *  PART 3: The routines from the simpset world to GETFOL's logic.  *
+; *								     *
+; ********************************************************************
+
+;(simplabs2wffs labs)                   ---> wffs
+;(simplabs2facts labs)                  ---> facts
+
+; ********************************************************************
+; * 								     *
+; *  PART 3.1 : FROM simpsets     TO  wffs			     *
+; *								     *
+; ********************************************************************
+
+(DEFLAM simplabs2wffs(labs)
+ (IF (MTL? labs) MTL
+  (UNION (simplab2wffs (FIRST labs))(simplabs2wffs (REST labs)))))
+
+(DEFLAM simplab2wffs(lab)
+ (IF (BNSIMPLAB? lab) MTL
+  (IF (BASICSIMPLAB? lab)
+   (simpinterface-get-wffs (simpsinterface-get-simpinterface lab))
+   (simplabs2wffs (simp-get-labs (simps-get-simp lab))))))
+
+; ********************************************************************
+; * 								     *
+; *  PART 3.2 : FROM simpsets     TO  facts			     *
+; *								     *
+; ********************************************************************
+
+(DEFLAM simplabs2facts(labs)
+ (IF (MTL? labs) MTL
+  (UNION (simplab2facts (FIRST labs))(simplabs2facts (REST labs)))))
+
+(DEFLAM simplab2facts(lab)
+ (IF (BNSIMPLAB? lab) MTL
+  (IF (BASICSIMPLAB? lab)
+   (simpinterface-get-facts (simpsinterface-get-simpinterface lab))
+   (simplabs2facts (simp-get-labs (simps-get-simp lab))))))
+
+
+; *********************************************************************
+; * 								      *
+; *  PART 4: The routines from the simpset world to the simpset world *
+; *								      *
+; *********************************************************************
+
+;(simplabs2simp labs)                   ---> simpset
+
+; ********************************************************************
+; * 								     *
+; *  PART 4.1: FROM simpsets     TO  simpsets			     *
+; *								     *
+; ********************************************************************
+
+; simplabs2simp adds to the user simpsets a simpset. 
+
+(DEFLAM simplabs2simp (label simplabs reason)
+ (IF (SIMPLAB? label)
+  (SEQ
+   (SIMPSET-EPRINC3 "Attention! " label " is already the label of a simpset.")
+   (simps-modify (simp-mak label (simplabs2amf simplabs) simplabs reason)))
+  (simps-add (simp-mak label (simplabs2amf simplabs) simplabs reason))))
+
+; simplabs2amf makes an amf union.
+(DEFLAM simplabs2amf (simplabs)
+ (IF (MTL? simplabs) (amf-mak-empty)
+  (amf-union (simplab2amf (FIRST simplabs))(simplabs2amf (REST simplabs)))))
+
+(DEFLAM simplab2amf (simplab)
+ (IF (BNSIMPLAB? simplab)
+  (simp-get-amf (bnsimps-get-simp simplab))
+  (simp-get-amf (simps-get-simp simplab))))

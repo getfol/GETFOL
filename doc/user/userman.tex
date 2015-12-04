@@ -1,0 +1,87 @@
+%............................... USER MANUAL .................................
+%.............................................................................
+
+\documentstyle[12pt]{../styfiles/GFmanual}
+
+\title{GETFOL Manual}
+\author{\bf Fausto Giunchiglia}
+\date{7 March 1994}
+\version{2.0}
+\abstract{
+	  {\GF} is an interactive reasoning system.
+	  We use it as an environment for studying epistemological issues.
+	  We try to look at questions like: which notions are
+	  important for the development of mechanized reasoning systems?
+	  What kind of conversations do we want to have with them?
+	  What parts of logic should we use to represent such notions?
+	  How should logic be embedded in a conversational reasoning system?
+	}
+\addresses{
+     \begin{tabular}[c]{l}
+       {\bf Fausto Giunchiglia}           \\
+       Mechanized Reasoning Group		  \\
+		 IRST, Povo, 38050 Trento, Italy  \\
+		 e-mail: {\tt fausto@irst.it}     \\
+		 phone: +39 461 314436
+	\end{tabular}	
+}
+\published{
+  \begin{tabular}{l}
+	  DIST Technical Report No. 92-0010 (1994). \\
+	  DIST -- University of Genoa,\\
+	  Via Opera Pia 11A, 16145 Genova, Italy.\\ \\
+  \end{tabular}
+}
+
+%% \newcommand{\gfbibliography}{%
+%% \bibliography{/home/tarski/staff/mrg/biblio/bib/a-l,%
+%% /home/tarski/staff/mrg/biblio/bib/m-z,userman}}
+\newcommand{\gfbibliography}{\bibliography{}}
+
+%% \makeindex
+\begin{document}
+	%  ............................. COVER ..................................
+	\thispagestyle{empty}
+	\maketitle
+
+	%  ........................ TABLE OF CONTENTS ...........................
+	\newpage
+	\pagenumbering{roman}
+	\tableofcontents
+
+	\newpage
+	\pagenumbering{arabic}
+	\pagestyle{headings}
+
+	%  ........................... INTRODUCTION ............................
+	\input{intro/intro.tex}
+
+	%  .............................. MODULES ..............................
+	\input{parser/parser}
+	\input{admin/admin}
+ 	\input{language/language}
+ 	\input{proof/proof}
+ 	\input{nd/nd}
+	\input{rules/rules}
+ 	\input{decide/deciders}
+ 	\input{eval/evaluator}
+ 	\input{context/context}
+ 	\input{meta/meta}
+ 
+	% ........................... QUICK REFERENCE ..........................
+	\newpage
+	\appendix
+	\input{appendix/openprob.tex}
+
+	\newpage
+	\input{appendix/commands.tex}
+
+	% ............................. BIBLIOGRAPHY ...........................
+	\newpage
+	\bibliographystyle{alpha}
+    \gfbibliography
+	
+	% ................................ INDEX ...............................
+	\newpage
+	\input{userman.ind}
+\end{document}

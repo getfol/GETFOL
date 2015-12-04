@@ -1,0 +1,502 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: exp.hgk
+;; Date: Wed Oct 20 10:45:54 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;****************************************************************************
+;****************************************************************************
+;*                                                                          *
+;*                            exp.hgk                                       *
+;*                                                                          *
+;* Contains the primitive operations for building, decomposing and          *
+;* categorising expressions.                                                *
+;*                                                                          *
+;*    1- Basic syntactic operations.                                        *
+;*    2- Syntactic primitives for logical expressions.                      *
+;*    3- The fixed logical language.                                        *
+;*    4- Equivalence primitives.                                            *
+;*    5- Predicates for categorising expressions.                           *
+;*                                                                          *
+;****************************************************************************
+;****************************************************************************
+
+
+; The syntactic definition of an expression:
+
+;       <EXP>      ::=  <SIMPLE> | <APPL>
+;
+;       <SIMPLE>   ::=  <atom>
+;       <APPL>     ::=  (CONS <FUNCTOR> <ARGS>)
+
+;       <FUNCTOR>  ::=  <atom>
+;       <ARGS>     ::=  (LIST <EXP1> ... <EXPn>)  {n >= 1}
+
+
+; The exp.hgk code provides the syntactic routines for building, decomposing
+; and categorising the data structures representing expressions. The
+; arguments to the functions are assumed to belong to the syntactic
+; category indicated by the variable name used.
+
+; The code is organised around the syntactic categories of expressions,
+; each category having a categorising predicate which accepts any
+; expression as argument. The categories each have constructors
+; and destructors which presume arguments of the indicated category.
+
+
+;****************************************************************************
+;*                                                                          *
+;* 1- Basic Syntactic Operations                                            *
+;*                                                                          *
+;****************************************************************************
+
+
+(DEFSUB SIMPLE 	(EXP) (ATOMIC? EXP))
+(DEFSUB APPL 	(EXP) (NOT (SIMPLE EXP)) )
+
+(DEFSUB appl-mak (FUNC ARGS) (CONS FUNC ARGS))
+
+(DEFSUB appl-get-functor (APPL) (CAR APPL))
+(DEFSUB appl-get-args (APPL) (CDR APPL))
+
+
+;Applications of arity 1
+
+(DEFSUB appl1-mak (FUNC ARG) (LIST FUNC ARG))
+
+(DEFSUB appl1-get-arg (APPL1) (CADR APPL1))
+
+
+;Applications of arity 2
+
+(DEFSUB appl2-mak (FUNC ARG1 ARG2) (LIST FUNC ARG1 ARG2))
+
+(DEFSUB appl2-get-lf (APPL2) (CADR APPL2))
+(DEFSUB appl2-get-rt (APPL2) (CADDR APPL2))
+
+
+;Applications of arity 3
+
+(DEFSUB appl3-mak (FUNC ARG1 ARG2 ARG3) (LIST FUNC ARG1 ARG2 ARG3))
+
+(DEFSUB appl3-get-1  (APPL3) (CADR APPL3))
+(DEFSUB appl3-get-2  (APPL3) (CADDR APPL3))
+(DEFSUB appl3-get-3  (APPL3) (CADDDR APPL3))
+
+
+;****************************************************************************
+;*                                                                          *
+;* 2- Syntactic primitives for logical expressions                          *
+;*                                                                          *
+;****************************************************************************
+
+
+;       <QUANTWFF> ::=  (appl2-mak <QUANT> <INDVAR> <WFF>)
+;       <IFEXP>    ::=  (appl3-mak <IFSYM> <WFF> <EXP> <EXP>)
+;       <CONNAPPL> ::=  (mkappl <SENTCONN> (LIST <WFF1> ... <WFFn>))
+;       <PREDAPPL> ::=  (mkappl <PREDSYM> (LIST <TERM1> ... <TERMn>))
+;       <FUNAPPL>  ::=  (mkappl <FUNSYM> (LIST <TERM1> ... <TERMn>))
+
+
+; *****************************************************************
+; *                                                               *
+; *   QUANTWFF : Quantified wff                                   *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB QUANTWFF (EXP) (AND (APPL EXP) (QUANT (appl-get-functor EXP))))
+
+(DEFSUB mkquant  (QUANT INDVAR WFF) (appl2-mak QUANT INDVAR WFF))
+
+(DEFSUB quantof (QUANTWFF) (appl-get-functor QUANTWFF))
+(DEFSUB bvarof (QUANTWFF) (appl2-get-lf QUANTWFF))
+(DEFSUB matrix (QUANTWFF) (appl2-get-rt QUANTWFF))
+
+
+; *****************************************************************
+; *                                                               *
+; *   IFEXP : Conditional exp                                     *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB IFEXP (EXP) (AND (APPL EXP) (IFSYM (appl-get-functor EXP))))
+
+(DEFSUB mkif (IFSYM WFF EXP1 EXP2) (appl3-mak IFSYM WFF EXP1 EXP2))
+
+(DEFSUB condof (IFEXP) (appl-get-functor IFEXP))
+(DEFSUB ifof (IFEXP) (appl3-get-1 IFEXP))
+(DEFSUB thenof (IFEXP) (appl3-get-2 IFEXP))
+(DEFSUB elseof (IFEXP) (appl3-get-3 IFEXP))
+
+; *****************************************************************
+; *                                                               *
+; *   CONNAPPL : Connective Application                           *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB CONNAPPL (EXP) (AND (APPL EXP) (SENTCONN (appl-get-functor EXP))))
+
+(DEFSUB connappl-mak (C WFFS) (appl-mak C WFFS))
+
+(DEFSUB connappl-get-conn (CONNAPPL) (appl-get-functor CONNAPPL))
+(DEFSUB connappl-get-args (CONNAPPL) (appl-get-args CONNAPPL))
+
+(DEFSUB connappl1-mak (C WFF) (appl1-mak C WFF))
+
+(DEFSUB connappl1-get-arg (CONNAPPL1) (appl1-get-arg CONNAPPL1))
+
+(DEFSUB connappl2-mak (C WFF1 WFF2) (appl2-mak C WFF1 WFF2))
+
+(DEFSUB connappl2-get-lf (CONNAPPL2) (appl2-get-lf CONNAPPL2))
+(DEFSUB connappl2-get-rt (CONNAPPL2) (appl2-get-rt CONNAPPL2))
+
+
+; *****************************************************************
+; *                                                               *
+; *   PREDAPPL : Predicate Applications                           *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB PREDAPPL (EXP) (AND (APPL EXP) (PREDSYM (appl-get-functor EXP))))
+
+(DEFSUB predappl-mak (P TRMS) (appl-mak P TRMS))
+
+(DEFSUB predappl-get-pred (PREDAPPL) (appl-get-functor PREDAPPL))
+(DEFSUB predappl-get-args (PREDAPPL) (appl-get-args PREDAPPL))
+
+(DEFSUB predappl1-mak (P TRM) (appl1-mak P TRM))
+
+(DEFSUB predappl1-get-arg (PREDAPPL1) (appl1-get-arg PREDAPPL1))
+
+(DEFSUB predappl2-mak (P TRM1 TRM2) (appl2-mak P TRM1 TRM2))
+
+(DEFSUB predappl2-get-lf (PREDAPPL2) (appl2-get-lf PREDAPPL2))
+(DEFSUB predappl2-get-rt (PREDAPPL2) (appl2-get-rt PREDAPPL2))
+
+
+; *****************************************************************
+; *                                                               *
+; *   Function Applications                                       *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB FUNAPPL (EXP) (AND (APPL EXP) (FUNSYM (appl-get-functor EXP))))
+
+(DEFSUB funappl-mak (F TRMS) (appl-mak F TRMS))
+
+(DEFSUB funappl-get-fun (FUNAPPL) (appl-get-functor FUNAPPL))
+(DEFSUB funappl-get-args (FUNAPPL) (appl-get-args FUNAPPL))
+
+(DEFSUB funappl1-mak (F TRM) (appl1-mak F TRM))
+
+(DEFSUB funappl1-get-arg (FUNAPPL1) (appl1-get-arg FUNAPPL1))
+
+(DEFSUB funappl2-mak (F TRM1 TRM2) (appl2-mak F TRM1 TRM2))
+
+(DEFSUB funappl2-get-lf (FUNAPPL2) (appl2-get-lf FUNAPPL2))
+(DEFSUB funappl2-get-rt (FUNAPPL2) (appl2-get-rt FUNAPPL2))
+
+; *****************************************************************
+; *                                                               *
+; * 3- The fixed logical language                                 *
+; *                                                               *
+; *****************************************************************
+
+
+;       <TERMIF>   ::=  (mkif Trmif <WFF> <TERM> <TERM>)
+
+;       <EQU>      ::=  (predappl2-mak Equality <TERM> <TERM>)
+
+;       <NEG>      ::=  (connappl1-mak Negation <WFF>)
+;       <CONJ>     ::=  (connappl2-mak Conjunction <WFF> <WFF>)
+;       <DISJ>     ::=  (connappl2-mak Disjunction <WFF> <WFF>)
+;       <IMP>      ::=  (connappl2-mak Implication <WFF> <WFF>)
+;       <IFF>      ::=  (connappl2-mak Equivalence <WFF> <WFF>)
+
+;       <FORALL>   ::=  (mkquant Uniquant <INDVAR> <WFF>)
+;       <EXISTS>   ::=  (mkquant Exiquant <INDVAR> <WFF>)
+
+;       <WFFIF>    ::=  (mkif Wffif <WFF> <WFF> <WFF>)
+
+;       <FALSITY>  ::=  False
+;       <TRUTH>    ::=  True
+
+; *****************************************************************
+; *                                                               *
+; *   TERMIF : Term conditional                                   *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB TERMIF (EXP)
+ (AND (IFEXP EXP) (EQ (condof EXP) Trmif)))
+
+(DEFSUB mktrmif (WFF TRM1 TRM2) (mkif Trmif WFF TRM1 TRM2))
+
+;For destructors use (ifof TERMIF) (thenof TERMIF) (elseof TERMIF)
+
+
+; *****************************************************************
+; *                                                               *
+; *   EQU : Equality                                              *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB EQU (EXP)
+ (AND (PREDAPPL EXP) (EQ (predappl-get-pred EXP) Equality)))
+
+(DEFSUB mkequ (TRM1 TRM2) (predappl2-mak Equality TRM1 TRM2))
+
+(DEFSUB lfequ (IFF) (predappl2-get-lf IFF))
+(DEFSUB rtequ (IFF) (predappl2-get-rt IFF))
+
+; *****************************************************************
+; *                                                               *
+; *   NEG : Negation                                              *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB NEG (EXP)
+ (AND (CONNAPPL EXP) (EQ (connappl-get-conn EXP) Negation)) )
+
+(DEFSUB mknot (WFF)	(connappl1-mak Negation WFF))
+
+(DEFSUB body  (NEG)     (connappl1-get-arg NEG))
+
+
+; *****************************************************************
+; *                                                               *
+; *   CONJ : Conjunction                                          *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB CONJ (EXP)
+ (AND (CONNAPPL EXP) (EQ (connappl-get-conn EXP) Conjunction)) )
+
+(DEFSUB mkand (WFF1 WFF2) (connappl2-mak Conjunction WFF1 WFF2))
+
+(DEFSUB lfand (CONJ)      (connappl2-get-lf CONJ))
+(DEFSUB rtand (CONJ)      (connappl2-get-rt CONJ))
+
+
+; *****************************************************************
+; *                                                               *
+; *   DISJ : Disjunction                                          *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB DISJ (EXP)
+   (AND (CONNAPPL EXP) (EQ (connappl-get-conn EXP) Disjunction)))
+
+(DEFSUB mkor  (WFF1 WFF2) (connappl2-mak Disjunction WFF1 WFF2))
+
+(DEFSUB lfor  (DISJ)      (connappl2-get-lf DISJ))
+(DEFSUB rtor  (DISJ)      (connappl2-get-rt DISJ))
+
+
+; *****************************************************************
+; *                                                               *
+; *   IMP : Implication                                           *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB IMP   (EXP)
+ (AND (CONNAPPL EXP) (EQ (connappl-get-conn EXP) Implication)) )
+
+(DEFSUB mkimp (WFF1 WFF2) (connappl2-mak Implication WFF1 WFF2))
+
+(DEFSUB hypot (IMP)       (connappl2-get-lf IMP))
+(DEFSUB concl (IMP)       (connappl2-get-rt IMP))
+
+; *****************************************************************
+; *                                                               *
+; *   IFF : Logical Equivalence                                   *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB IFF (EXP)
+ (AND (CONNAPPL EXP) (EQ (connappl-get-conn EXP) Equivalence)))
+
+(DEFSUB mkiff (WFF1 WFF2) (connappl2-mak Equivalence WFF1 WFF2))
+
+(DEFSUB lfiff (IFF) (connappl2-get-lf IFF))
+(DEFSUB rtiff (IFF) (connappl2-get-rt IFF))
+
+
+; *****************************************************************
+; *                                                               *
+; *   FORALL : Universal quantification                           *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB FORALL (EXP)
+ (AND (QUANTWFF EXP) (EQ (quantof EXP) Uniquant)) )
+
+(DEFSUB mkforall (INDVAR WFF) (mkquant Uniquant INDVAR WFF))
+
+;For destructors use (bvarof FORALL) (matrix FORALL)
+
+
+; *****************************************************************
+; *                                                               *
+; *   EXISTS : Existential quantification                         *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB EXISTS (EXP)
+ (AND (QUANTWFF EXP) (EQ (quantof EXP) Exiquant)))
+
+(DEFSUB mkexists (INDVAR WFF) (mkquant Exiquant INDVAR WFF))
+
+;For destructors use (bvarof EXISTS) (matrix EXISTS)
+
+
+; *****************************************************************
+; *                                                               *
+; *   WFFIF : WFF conditional                                     *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB WFFIF (EXP)
+ (AND (IFEXP EXP) (EQ (condof EXP) Wffif)))
+
+(DEFSUB mkwffif (WFF WFF1 WFF2) (mkif Wffif WFF WFF1 WFF2))
+
+;For destructors use (ifof WFFIF) (thenof WFFIF) (elseof WFFIF)
+
+
+; *****************************************************************
+; *                                                               *
+; *   FALSITY, TRUTH: truth values                                *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB FALSITY (EXP) (EQ EXP False))
+
+(DEFSUB mkfalsity () False)
+
+
+(DEFSUB TRUTH (EXP) (EQ EXP True))
+
+(DEFSUB mktruth () True)
+
+
+;****************************************************************************
+;*                                                                          *
+;* 4- Equivalence primitives                                                *
+;*                                                                          *
+;****************************************************************************
+
+
+;       <EQUIWFF>  ::=  <EQU> | <IFF>
+
+; This is a hybrid category used by fass.hgk.
+
+
+; *****************************************************************
+; *                                                               *
+; *   EQUIWFF :  Equality or logical equivalence                  *
+; *                                                               *
+; *****************************************************************
+
+(DEFSUB EQUIWFF (EXP) (OR (EQU EXP) (IFF EXP)) )
+
+(DEFSUB lhs (EQUIWFF) (appl2-get-lf EQUIWFF))
+(DEFSUB rhs (EQUIWFF) (appl2-get-rt EQUIWFF))
+
+;****************************************************************************
+;*                                                                          *
+;* 5- Predicates to categorise expressions.                                 *
+;*                                                                          *
+;****************************************************************************
+
+
+;       <TERM>    ::=  <INDSYM> | <TERMIF> | <FUNAPPL>
+;       <AWFF>    ::=  <SENTSYM> | <PREDAPPL>
+;       <CWFF>    ::=  <QUANTWFF> | <WFFIF> | <CONNAPPL>
+;       <WFF>     ::=  <AWFF> | <CWFF>
+
+ 
+; *****************************************************************
+; *                                                               *
+; *   (TERM EXP)  - is EXP a <TERM>?                              *
+; *   (AWFF EXP)  - is EXP an <AWFF>?                             *
+; *   (CWFF EXP)  - is EXP is a <WFF> but not an <AWFF>?          *
+; *   (WFF EXP)   - is EXP is a <WFF>?                            *
+; *                                                               *
+; *****************************************************************
+
+
+(DEFLAM TERM (EXP)
+  (IF (SIMPLE EXP) (INDSYM EXP)
+  (OR (TERMIF  EXP) (FUNAPPL EXP))) )
+
+(DEFLAM AWFF (EXP)
+  (IF (SIMPLE EXP) (SENTSYM EXP)
+  (PREDAPPL EXP) ))
+
+(DEFLAM CWFF (EXP)
+   (OR (WFFIF EXP) (QUANTWFF EXP) (CONNAPPL EXP)) )
+
+(DEFLAM WFF (EXP)
+  (OR (AWFF  EXP) (CWFF EXP)) )
+
+
+
+; ******************************************************************
+; *                                                                *
+; * (LITERAL wff) : returns TRUE iff wff is a:                     *
+; *                                                                *
+; *    a PREDAPPL                                                  *
+; *    a SENTSYM                                                   *
+; *    not wff1, where wff1 is a PREDAPPL or a SENTSYM             *
+; *                                                                *
+; ******************************************************************
+
+
+(DEFLAM LITERAL (wff)
+ (OR (PREDAPPL wff)
+     (OR (SENTSYM wff)
+         (AND (NEG wff) 
+              (OR (PREDAPPL (body wff))
+                  (SENTSYM (body wff)))))))

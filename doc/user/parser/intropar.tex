@@ -1,0 +1,102 @@
+\section{Parser}
+
+This section is intended to explain:
+%
+\begin{itemize}
+	\item
+		the main functionalities of the {\GF} scanning primitives,
+	\item
+		what modifications must be performed in the scanner data
+		structures in order to be able to change its behavior ({\em e.g.} to
+		define a new escape character).
+\end{itemize}
+
+The {\GF} scanner is a {\em backupable} scanner.
+This feature is necessary as the parser works in a top-down fashion and,
+sometimes, needs to backtrack. 
+
+The {\GF} scanner is able to recognize three types of tokens:
+%
+\begin{enumerate}
+	\item {\tt IDTOKEN},
+	\item {\tt NUMTOKEN} and
+	\item {\tt DELTOKEN}.
+\end{enumerate}
+
+The primitives to scan such tokens are \verb+FOLSYM@+, \verb+NATNUM@+ (actually
+no dedicated primitive to scan a \verb+DELTOKEN+ exists).
+
+\verb+TK@+ scans a generic token.
+
+The primitives \verb+SCANSTATUS-GET+ and \verb+SCANSTATUS-RESTORE+ allow
+respectively to save and restore the scanner status.
+They are necessary to restore the status of the scanner in case of
+unsuccessful parsing.
+
+The high level functions \verb+FOLSYM@+, \verb+NATNUM@+, \verb+TK@+ (and other
+not mentioned here for brevity) use the general \verb+TOKEN-GET-NEXT+ routine
+which is also able to {\em bufferize} the tokens already read (reading from
+an input stream is a destructive operation so we need at a some level a
+buffer mechanism if we want to perform backtracking).
+
+The buffer is implemented by the array \verb+TOKENARRAY+ whose dimension is
+given by the macro \verb+TOKENARRAY-DIMENSION+. The max number of tokens
+that can be present in a command line is given by the number returned
+by this macro.
+
+\verb+TOKEN-GET-NEXT+ routine is based on the lower level primitive
+\verb+TOKEN-SCAN+, which reads the next token from the input stream and returns
+its type.
+\verb+TOKEN-SCAN+ is able to identify the type of a token reading (via 
+\verb+CH-GET-NEXT+) its first character and identifying its type (via
+\verb+CHTYPE-GET+).
+
+The characters are divided in the following types:
+
+\begin{enumerate}
+	\item
+		identifiers ({\tt IDCHAR}): see file
+		\verb+ascitab.fol+;
+	\item
+		numbers (positive integers --- {\tt NUMCHAR}):
+		\verb+0 1 2 3 4 5 6 7 8 9+;
+	\item
+		delimiter {\tt DELCHAR}:
+		\verb+( ) , . : ; [ ] { }+;
+	\item
+		ignored char {\tt IGNCHAR}: see file
+		\verb+ascitab.fol+;
+	\item
+		iddelim {\tt IDDELCHAR}:
+        \verb$' * + - / < > = ? @ ^ ` |$;
+	\item
+		escape characters {\tt ESCCHAR}:
+		\verb+\+;
+	\item
+		special handling {\tt SPECCHAR}
+\end{enumerate}
+
+The \verb+IDDELCHAR+s are identifier characters having also the functionality
+of a delimiter, that is no \verb+IDTOKEN+ can contain a character of such
+type but they by themselves may be considered \verb+IDTOKEN+.
+For instance the string \verb+A@B+ will be regarded by the scanner a string
+formed by the three distinct \verb+IDTOKEN+ \verb+A @ B+.
+The escape characters allows to coerce the type of the following
+character to be \verb+IDCHAR+.
+For istance the string \verb+A\@B+ will be regarded by the scanner a string
+formed by the \verb+IDTOKEN A@B+.
+
+The only think important to know at the user level it is how to modify the type
+of a character so that you can, for istance, extend the set of \verb+IDDELCHAR+
+with the character "\verb+_+". To do this you have only to change type
+declaration for the "\verb+_+" character from \verb+IDCHAR+ to \verb+IDDELCHAR+
+in the file {\tt asciitab.fol}.
+
+Finally a low level feature: each time a command line is issued to {\GF} the low
+level scanning primitives store each read character in the {\tt TUPLE
+SCANBUFARRAY}, so that if a syntactic error in the parsing is detected the rest
+of the line will be read and the whole line printed out to show, using an
+"\verb+^+", where the syntatic error has been detected. This useful feature
+imposes (as it is implemented) a limit in the length of a {\GF} command line as
+the dimension of \verb+SCANBUFARRAY+ is fixed by the value returned by the macro
+\verb+SCANBUFARRAY-DIMENSION+.

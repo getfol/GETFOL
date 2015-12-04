@@ -1,0 +1,24 @@
+\gfcommand{moregeneral}{new pairs in the more general relation}
+\index{moregeneral}
+
+\gfsyntax{
+  moregeneral \ARG{sort1} < \ARG{sort2}, \SEQ, \ARG{sortN} >;
+}
+
+\gfdescription{
+  This command makes \ARG{sort1} weakly more general than \ARG{sort2}, \SEQ,
+  \ARG{sortN}.
+}
+
+\gfrecap{
+Makes `sort1' weakly more general than `sort2', ..., `sortN'.
+}
+
+\gfexample+
+   ***** declare sort S1 S2 S3;
+   ...
+
+   ***** moregeneral S1 < S2 S3 >;
+   ***** moregeneral S2 < S1 > ;
+   You realize that this makes equivalent S2 and S1
++

@@ -1,0 +1,47 @@
+\gfcommand{declare sort}{sort declaration}
+\index{declare}
+\index{declare!sort}
+
+\gfsyntax{
+  declare sort \ARG{sym1} \SEQ \ARG{symN};
+}
+
+\gfdescription{
+  The declare sort command declares the \ARG{symI} to be sorts.
+  The \ARG{symI} have to be either new symbols or previously declared unary
+  predicates. 
+}
+
+\gfrecap{
+  Declares the `symI's to be sorts.
+}
+
+\gfexample+
+   ***** declare predconst S1 1;
+   S1 has been declared to be a Predconst
+
+   ***** declare sort S2;
+   S2 has been declared to be a sort
+
+   ***** declare sort S1 S2 S3;
+   The unary predconst S1 has been declared to be a sort
+   S2 is a sort
+   S3 has been declared to be a sort
+
+   ***** declare indvar x [S1];
+   S1 is a sort
+   x has been declared to be an Indvar
+
+   ***** simplify exists x. S1(x);
+   1   exists x. S1(x)     
+
+   ***** simplify forall x. S1(x);
+   2   forall x. S1(x)     
++
+
+\gfnotes{
+  Symbols with no declared sort have the default sort {\tt UNIVERSAL}.
+  If \ARG{symI} is already a sort (as {\tt S2} is in the last
+  example) no error is signaled. If $S$ is a sort, then $\exists x S(x)$
+  and $\forall x S(x)$ are theorems where $x$ is an indvar of sort $S$.
+}

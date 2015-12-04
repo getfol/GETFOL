@@ -1,0 +1,352 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: amf.hgk
+;; Date: Wed Oct 20 10:44:47 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*************************************************************************
+;*                                                                       *
+;*                      amf.hgk                                          *
+;*                                                                       *
+;* PART 1:   THE DATA STRUCTURE OF AN AMF                                *
+;*                                                                       *
+;* PART 2:   THE DATA STRUCTURE USED BUILDING A MATCH TREE               *
+;*                                                                       *
+;* PART 3:   THE DATA STRUCTURE FOR MATCHING ROUTINES                    *
+;*                                                                       *
+;* PART 4:   THE DATA STRUCTURE FOR SUBSTITUTION ROUTINES                *
+;*                                                                       *
+;*************************************************************************
+
+
+; *************************************************************************
+; *                                                                       *
+; *                                                                       *
+; *   PART 1:  THE DATA STRUCTURE OF AN AMF                 	          *
+; *                                                                       *
+; *                                                                       *
+; *************************************************************************
+
+; <amf>          :: = <mtree> <mrn>
+; <mtree>        :: = <constnod-list> . <oldvarnod-list> . <newvarnod-list>
+; <constnod>     :: = <constsym> .  <nodeinfo>
+; <nodeinfo>     :: = ALT[<mtree>|<leaf>]
+; <constsym>     :: = is anything not in the var&par list
+; <oldvarnod>    :: = <oldvarsym> . <nodeinfo>
+; <oldvarsym>    :: = is any member in the var&par list 
+;                     which has already occurred
+; <newvarnod>    :: = <newvarsym> . <nodeinfo>
+; <newvarsym>    :: = is any member in the var&par list
+;                     which has not yet occurred
+; <leaf>         :: = LEAF& . <rhs> . <label>
+; <rhs>          :: = right side of a rule
+; <mrn>          :: = list of free variables
+
+
+; *************************************************************************
+; *                                                                       *
+; *                                                                       *
+; *   PART 1.1: the data structure for leaves				  *
+; *                                                                       *
+; *                                                                       *
+; *************************************************************************
+
+; The leaves of a match tree contain the right side
+; of the rules and a label.
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; + <leaf>         :: = LEAF& . <rhs> . <label>                    +
+; + <rhs>          :: = right side of a rule                       +
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+(DEFSUB LEAF? (obj)(EQ (CAR obj) (QUOTE LEAF&)))
+(DEFSUB leaf-mak (rhs lab)(CONS (QUOTE LEAF&) (CONS rhs lab)))
+(DEFSUB leaf-get-rhs (leaf) (CADR leaf))
+(DEFSUB leaf-get-lab (leaf) (CDDR leaf))
+
+
+; *****************************************************************
+; *                                                               *
+; *   PART 1.2: the data structure for nodes                      *
+; *                                                               *
+; *****************************************************************
+
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; + <constlnod>    :: = <constnod-list>                            +
+; + <constnod>     :: = <constsym> .  ALT[<nod>|<leaf>]            +
+; + <oldvarlnod>   :: = <oldvarnod-list>                           +
+; + <oldvarnod>    :: = <oldvarsym> . ALT[<nod>|<leaf>]            +
+; + <newvarlnod>   :: = <newvarnod-list>                           +
+; + <newvarnod>    :: = <newvarsym> . ALT[<nod>|<leaf>]            +
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+(DEFSUB cnod-mak (constsym info) (CONS constsym info))
+(DEFSUB cnod-get-sym (cnod) (CAR cnod))
+(DEFSUB cnod-get-info (cnod) (CDR cnod))
+(DEFSUB clnod-mak-empty () Alist-empty)
+(DEFSUB CLNOD-EMPTY? (clnod) (ALIST-EMPTY? clnod))
+(DEFSUB clnod-get-first (clnod) (alist-get-first clnod))
+(DEFSUB clnod-get-rest (clnod) (alist-get-rest clnod))
+(DEFSUB clnod-cons (clnod cnod) (alist-cons clnod cnod))
+(DEFSUB clnod-cons-shared (clnod cnod)(alist-cons-shared clnod cnod))
+(DEFSUB clnod-get-cnod (clnod constsym)(CL-ASSOC constsym clnod))
+
+(DEFSUB ovnod-mak (oldvarsym info) (CONS oldvarsym info))
+(DEFSUB ovnod-get-sym (ovnod) (CAR ovnod))
+(DEFSUB ovnod-get-info (ovnod) (CDR ovnod))
+(DEFSUB ovlnod-mak-empty () Alist-empty)
+(DEFSUB OVLNOD-EMPTY? (ovlnod) (ALIST-EMPTY? ovlnod))
+(DEFSUB ovlnod-get-first (ovlnod) (alist-get-first ovlnod))
+(DEFSUB ovlnod-get-rest (ovlnod) (alist-get-rest ovlnod))
+(DEFSUB ovlnod-cons (ovlnod ovnod) (alist-cons ovlnod ovnod))
+(DEFSUB ovlnod-cons-shared (ovlnod ovnod) (alist-cons-shared ovlnod ovnod))
+(DEFSUB ovlnod-get-ovnod (ovlnod oldvarsym) (CL-ASSOC oldvarsym ovlnod))
+
+(DEFSUB nvnod-mak (newvarsym info) (CONS newvarsym info))
+(DEFSUB nvnod-get-sym (nvnod) (CAR nvnod))
+(DEFSUB nvnod-get-info (nvnod) (CDR nvnod))
+(DEFSUB nvlnod-mak-empty () Alist-empty)
+(DEFSUB NVLNOD-EMPTY? (nvlnod) (ALIST-EMPTY? nvlnod))
+(DEFSUB nvlnod-get-first (nvlnod) (alist-get-first nvlnod))
+(DEFSUB nvlnod-get-rest (nvlnod) (alist-get-rest nvlnod))
+(DEFSUB nvlnod-cons (nvlnod nvnod)(alist-cons nvlnod nvnod))
+(DEFSUB nvlnod-cons-shared (nvlnod nvnod) (alist-cons-shared nvlnod nvnod))
+(DEFSUB nvlnod-get-nvnod (nvlnod nvsym) (CL-ASSOC nvsym nvlnod))
+
+
+; *****************************************************************
+; *                                                               *
+; *    PART 1.3: the data structure for match trees               *
+; *                                                               *
+; *****************************************************************
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +								        +
+; + <matchtree> = <constnod-list> . <oldvarnod-list> . <newvarnod-list> +
+; + 								        +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+(DEFSUB MTREE-EMPTY? (obj) 
+ (AND (CLNOD-EMPTY? (CAR obj))
+  (AND (OVLNOD-EMPTY? (CADR obj)) 
+   (NVLNOD-EMPTY? (CDDR obj)))))
+(DEFSUB mtree-mak (clnod ovlnod nvlnod)(CONS clnod (CONS ovlnod nvlnod)))
+(DEFSUB mtree-mak-empty ()
+ (mtree-mak (clnod-mak-empty) (ovlnod-mak-empty) (nvlnod-mak-empty)))
+(DEFSUB mtree-get-cl (mtree) (CAR mtree))
+(DEFSUB mtree-get-ovl (mtree) (CADR mtree))
+(DEFSUB mtree-get-nvl (mtree) (CDDR mtree))
+(DEFSUB mtree-set-cl (mtree clnod) (SETCAR mtree clnod))
+(DEFSUB mtree-set-ovl (mtree ovlnod) (SETCAR (CDR mtree) ovlnod))
+(DEFSUB mtree-set-nvl (mtree nvlnod) (SETCDR (CDR mtree) nvlnod))
+
+
+; *****************************************************************
+; *                                                               *
+; *   PART 1.4: the data structure for amf                        *
+; *                                                               *
+; *****************************************************************
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; + 								  +
+; + <amf> :: = <matchtree> . <mrn>                                +
+; +								  +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+(DEFSUB amf-mak (mtree mrn) (CONS mtree mrn))
+(DEFSUB amf-mak-empty ()(amf-mak (mtree-mak-empty) MTL))
+(DEFSUB amf-get-mtree (amf) (CAR amf))
+(DEFSUB amf-get-mrn (amf) (CDR amf))
+
+
+; *****************************************************************
+; *                                                               *
+; *    PART 2: THE DATA STRUCTURE USED BUILDING A MATCH TREE      *
+; *                                                               *
+; *****************************************************************
+
+; <occel>      ::= <var_or_par> . <test> 
+; <var_or_par> ::= a variable or a parameter of a rule
+; <test>       ::= TRUE if var_or_par is already occurred, FALSE otherwise.
+
+(DEFSUB occel-mak (var_or_par test) (CONS var_or_par test))
+(DEFSUB occel-get-sym (occel) (CAR occel))
+(DEFSUB occel-get-test (occel) (CDR occel))
+(DEFSUB occel-set-test (occel test) (SETCDR occel test))
+
+(DEFSUB occlist-mak-empty () Alist-empty)
+(DEFSUB occlist-get-occel (occlist var_or_par) (HGKM-ASSOC var_or_par occlist))
+(DEFSUB occlist-add (occlist occel)
+ (alist-add occlist (occel-get-sym occel)(occel-get-test occel)))
+
+(DEFLAM vars&pars2occlist(vars&pars)
+ (IF (MTL? vars&pars) (occlist-mak-empty)
+  (occlist-add 
+   (vars&pars2occlist (REST vars&pars))
+   (occel-mak (FIRST vars&pars) FALSE))))
+
+
+
+; *****************************************************************
+; *                                                               *
+; *  PART 3: THE DATA STRUCTURE FOR MATCHING ROUTINES             *
+; *                                                               *
+; *****************************************************************
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +								  +
+; + <matching-pair> =  TRUE . ALT[<node>|leaf] | FALSE . <INTEGER>+
+; + 								  +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+; the data structure for matching routines in the case of success
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +								  +
+; + <matching-pair-success> =  TRUE . ALT[< node >|<leaf>]        +
+; + 								  +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+(DEFSUB MPSUCC (mp)(EQ (mpsucc-get-res mp) TRUE))
+(DEFSUB mpsucc-mak (info) (CONS TRUE info))
+(DEFSUB mpsucc-get-res (mps) (CAR mps))
+(DEFSUB mpsucc-get-info (mps) (CDR mps))
+
+; the data structure for matching routines in the case of failure
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +								  +
+; + <matching-pair-failure> =  FALSE . < integer >             	  +
+; + 								  +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+(DEFSUB mpfail-mak (int) (CONS FALSE int))
+(DEFSUB mpfail-get-res (mpf) (CAR mpf))
+(DEFSUB mpfail-get-int (mpf) (CDR mpf))
+
+
+; *****************************************************************
+; *                                                               *
+; *  PART 4: THE DATA STRUCTURE FOR SUBSTITUTION ROUTINES         *
+; *                                                               *
+; *****************************************************************
+
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; + 								       +
+; +  <bindings> = <bind-list>                                          +
+; +  <bind>  = <var> . <trm>|<applpar> . <applsym>|<sentpar> . <wff>   +
+; +								       +
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+; this data structure operates on the global variable %BINDINGS%
+
+(DEFSUB bind-mak (old new) (CONS old new))
+(DEFSUB bind-get-old (bind) (CAR bind))
+(DEFSUB bind-get-new (bind) (CDR bind))
+
+(DEFSUB bindings-ini()(SETQ %BINDINGS% MTL))
+(DEFSUB bindings-set(binds) (SETQ %BINDINGS% binds))
+(DEFSUB bindings-get() %BINDINGS%)
+(DEFSUB bindings-add(bind)(bindings-set (CONS bind (bindings-get))))
+(DEFSUB bindings-get-bind (old) (HGKM-ASSOC old (bindings-get)))
+
+; deletes all the bindings up to old
+(DEFLAM bindings-del-binds (old)
+ (IF (MTL? (bindings-get))
+  (ERRMESS 
+   "Unwinding of bindings in quantified exp does not work. Fatal error in matching on amf.")
+  (IF (EQ (bind-get-old (CAR (bindings-get))) old)
+   (bindings-set (CDR (bindings-get)))
+   (SEQ 
+    (bindings-set (CDR (bindings-get)))
+    (bindings-del-binds old)))))
+
+; renbindings and renexp rename old variables in binds and exp
+; with fresh variables to do a safe call to substbindings
+; (i.e. they avoid situations as ((x y) (y x)) in binds)
+
+
+(DEFLAM renbindings(binds)
+ (IF (MTL? binds) MTL
+  (LET ((old (bind-get-old (CAR binds)))
+        (new (bind-get-new (CAR binds))))
+   (LET ((fresh (newlabel-mak old)))
+    (CONS
+     (bind-mak
+      (IF (APPLSYM old)
+       (applsym-create
+        (syntype old) fresh (arity old) (fmaps old) (simpsym_sact-mak fresh))
+       (simpsym-create
+        (syntype old)
+        fresh
+        (sort old)
+        (applsym_sact-mak old MTL)))
+      new)
+     (renbindings (CDR binds)))))))
+
+
+(DEFLAM renexp(exp binds newbinds)
+ (IF (MTL? binds) exp
+  (LET ((old (bind-get-old (CAR binds)))
+        (fresh (bind-get-old (CAR newbinds))))
+   (renexp
+    (IF (APPLSYM old)
+     (SUBST fresh old exp); old isn't an expression
+     (substexp old fresh exp))
+    (CDR binds)
+    (CDR newbinds)))))
+
+
+; substbindings makes a sequence of substitutions in exp.
+; binds =  ((<a1> . <b1>) ... (<an> . <bn>))
+; where each occurrence of an <ai> in exp is to be substituted by <bi>.
+; The substitutions are done sequentially starting with <a1>.
+
+(DEFLAM substbindings (exp binds)
+ (IF (MTL? binds) exp
+  (LET ((old (bind-get-old (CAR binds)))
+        (new (bind-get-new (CAR binds))))
+   (IF (APPLSYM old)
+    (substbindings (SUBST new old exp) (CDR binds)); old isn't an expression
+    (substbindings (substexp old new exp) (CDR binds))))))
+

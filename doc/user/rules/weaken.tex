@@ -1,0 +1,47 @@
+\gfcommand{weaken}{weakening rule}
+\index{weaken}
+
+\gfsyntax{
+	weaken \ALT wk \ARG{fact} by \ARG{fact1} \SEQ \ARG{factN};
+}
+
+\gfdescription{
+	Each \ARG{factI} can be an assumption or, more generally, a fact.
+	In the first case, the derived fact depends on the dependencies of 
+	\ARG{fact} plus those of \ARG{factI}.
+	In the second case, the dependencies of the \ARG{factI} are added to the
+	list of dependencies of \ARG{fact}. 
+}
+
+\gfrecap{
+Each `factI' can be an assumption or, more generally, a fact.
+In the first case, the derived fact depends on the dependencies of `fact' plus
+those of `factI'.
+In the second case, the dependencies of the `factI' are added to the list of
+dependencies of `fact'. 
+}
+
+\gfexample+
+   ***** declare sentconst A B C;
+   ***** assume A A A B B C;
+   1   A     (1)
+   2   A     (2)
+   3   A     (3)
+   4   B     (4)
+   5   B     (5)
+   6   C     (6)
+   ***** axiom AAAA : A;
+   AAAA : A
+   ***** ori 3 4;
+   7   A or B     (3 4)
+   ***** ori 5 6;
+   8   B or C     (5 6)
+   ***** wk 7 by 6 2 1 3;
+   9   A or B     (1 2 3 4 6)
+   ***** wk 1 by 7 8;
+   10   A     (1 3 4 5 6)
+   ***** wk AAAA by 3 7 2 8;
+   11   A     (2 3 4 5 6)
++
+
+\gfnotes{}

@@ -1,0 +1,80 @@
+\gfcommand{eval}{mixed simplifier command}
+\index{eval}
+\label{sec-eval}
+
+\gfsyntax{
+  eval \ARG{wff} \ALT \ARG{fact} \ALT \ARG{term} \OPT{by \ARG{simpexpr}};
+}
+
+\gfdescription{
+  This command evaluates the expression (\ARG{wff}, the wff of \ARG{fact}
+  or \ARG{term} respectively) by combining the semantic evaluation of the
+  expression in the simulation structure and the syntactical rewriting
+  performed by using the union of the rewrite rules indicated by 
+  \ARG{simpexpr}.
+}
+
+\gfrecap{
+  This command evaluates the expression (`wff', the wff of `fact'
+  or `term' respectively) by combining the semantic evaluation of the
+  expression in the simulation structure and the syntactical rewriting
+  performed by using the union of the rewrite rules indicated by 
+  `simpexpr'.
+}
+
+\gfexample+
+   ***** declare indconst a b c;
+   ***** decrep REP;
+   ***** attach a dar [REP]a;
+   a attached to 'a
+   a is the preferred name of a
+   ***** attach b dar [REP]b;
+   b attached to 'b
+   b is the preferred name of b
+   ***** attach c dar [REP]c;
+   c attached to 'c
+   c is the preferred name of c
+   ***** declare funconst G 2;
+   ***** declare indvar x y;
+   ***** setbasicsimp S at wffs {forall x y.G(x y)=x};
+   ***** declare predconst P 1;
+   ***** DEFLAM P(x) (IF (EQ x (QUOTE a)) TRUE 
+                         (IF (EQ x (QUOTE b)) FALSE 
+                          (QUOTE UNDEF&)));
+   ***** attach P to [REP]P;
+   P attached to P
+   ***** eval P(G(a,G(b,c))) by S;
+   1   P(G(a,G(b,c)))     
+   ***** eval P(G(b,c)) and P(c) by S;
+   2   not (P(G(b,c)) and P(c))
+   ***** eval P(G(c,a)) by S;
+   3   P(G(c,a)) iff P(c)   
+   ***** eval forall x.P(G(x x)) by S;
+   4   forall x. P(G(x,x)) iff forall x. P(x)     
+   ***** extension UNIVERSAL by {a b c};
+   Now the extension of UNIVERSAL is fixed to be : (a b c)
+   ***** eval forall x.P(G(x x)) by S;
+   5   not forall x. P(G(x,x)) 
++
+
+\gfnotes{
+  In the case of sorts with extensions (see the command {\tt extension} in section 
+  \ref{sec-sort}) quantification is considered as  {\bf bounded quantification}.
+  In other words, let $P$ be a predicate and $x$ an indvar of sort $S$, where
+  $S$ has extension $\{s_1,\ldots,s_n\}$.
+  Then the following equivalences hold:
+  $$ 
+  \forall x(P(x)\liff P(s_1) \con \ldots P(s_n))
+  $$
+  $$
+  \exists x(P(x)\liff P(s_1) \dis \ldots P(s_n))
+  $$
+  %
+  The command explicitly unfolds universal/existential statements into 
+  their propositional equivalents. The expansion is performed 
+  syntactically, that is the formula $\forall x P(x)$ [$\exists x P(x)$]
+  is rewritten as $P(s_1) \con \ldots \con P(s_n)$
+  [$P(s_1) \dis \ldots \dis P(s_n)$].
+  The expansion mechanism embedded in {\tt simplify} is not used by {\tt eval}.
+}
+

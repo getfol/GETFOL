@@ -1,0 +1,42 @@
+\gfcommand{setprompt}{Redefines the prompt}
+\index{setprompt}
+
+\gfsyntax{
+   setprompt to \ARG{s-expr};
+}
+
+\gfdescription{
+   Sets {\GF}'s prompt  to the value of the s-expression
+   \ARG{s-expr}  followed by  ":: ". It is particularly  useful when  you are
+   working on multiple contexts as you can set the prompt to the value of
+   the current context.
+}
+
+\gfrecap{
+Sets GETFOL's prompt to `s-expr'.
+}
+
+\gfexample+
+   ***** setprompt to (QUOTE myprompt);
+
+   myprompt:: setprompt to (QUOTE Tweedledee\&Tweedledum);
+
+   Tweedledee&Tweedledum:: setprompt to (CAPITALIZE (curcname\-get));
+
+   NOTNAMED&:: namecontext Disneyland;
+   You have named the current context: Disneyland
+
+   DISNEYLAND:: makecontext Cartoonia;
+   You have created the empty context: Cartoonia
+
+   DISNEYLAND:: switchcontext Cartoonia;
+   You are now using context: Cartoonia
+   You are switching to a proof with no name.
+
+   CARTOONIA:: 
++
+
+\gfnotes{
+	The command tries to evaluate the {\em s-expression} passed as argument.
+	Failure of the evaluation causes a crash to the {\HG} evalautor.
+}

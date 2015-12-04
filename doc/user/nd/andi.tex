@@ -1,0 +1,73 @@
+\gfcommand{andi}{and introduction rule}
+\index{andi}\index{ai}
+
+\gfsyntax{
+   andi \ALT ai \ARG{fact1} \OPT{,} \ARG{fact2}; \\
+   andi \ALT ai \ARG{fact11}
+                \OPT{conj \ALT cj \ARG{fact12} conj \ALT cj \ARG{fact13} \SEQ}
+                \OPT{,}
+                \ARG{fact21}
+                \OPT{conj \ALT cj \ARG{fact22} conj \ALT cj \ARG{fact23} \SEQ};
+}
+
+\gfdescription{
+   \[
+   \con I \ \
+   \fraz{A \ \ B}
+        {A \wedge B}
+   \]
+
+   A proof line is derived whose wff is the conjunction of the wffs
+   of \ARG{fact1} and \ARG{fact2} and whose dependencies are the union
+   of the dependencies of \ARG{fact1} and \ARG{fact2}.
+
+   In the second form we have ``conjunctions of facts'' rather than facts.
+   A ``conjunction of facts'' is any parenthesized conjunctive expression in
+   which all conjuncts are facts (\ARG{fact11} {\tt conj} \ARG{fact12} \SEQ).
+   A proof line is derived whose wff is the conjunction of each $fact_{ij}$'s
+   wff and whose dependencies are the union of the dependencies each
+   $fact_{ij}$ depends on.
+}
+
+\gfrecap{
+Applies `and' introduction to the given arguments.
+In its first from a proof line is derived whose formula is the conjuction of
+the formulae of `fact1' and `fact2' and whose dependencies are the union of
+the dependencies of `fact1' and `fact2'.
+In the second form we have ``conjunctions of facts" rather than facts.
+A "conjunction of facts" is any parenthesized conjunctive expression in
+which all conjuncts are facts (`fact11 conj fact12 ...').
+A proof line is derived whose wff is the conjunction of each `factIJ''s
+wff and whose dependencies are the union of the dependencies each
+`factIJ' depends on.
+}
+
+
+\gfexample+
+   ***** declare sentconst A B C D E;
+   ***** assume A B;
+   1   A     (1)
+   2   B     (2)
+
+   ***** andi 1 2;
+   3   A and B     (1 2)
+
+   ***** assume C D E;
+   4   C     (4)
+   5   D     (5)
+   6   E     (6)
+
+   ***** andi 1 conj 2   3;
+   7   (A and B) and (A and B)     (1 2)
+
+   ***** andi 1 conj 2   3 conj 4;
+   8   (A and B) and ((A and B) and C)     (1 2 4)
+
+   ***** andi 1 conj 2 conj 3   4;
+   9   (A and (B and (A and B))) and C     (1 2 4)
++
+
+\gfnotes{
+   A proof line derived by executing the second form can always be derived by
+   a sequence of executions of the command in the first form.
+}

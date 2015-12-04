@@ -1,0 +1,51 @@
+\gfcommand{impe}{implication elimination rule}
+\index{impe}\index{mp}
+
+\gfsyntax{
+   impe \ALT mp \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \imp E  
+   \end{array}
+   \ \  
+   \begin{array}{c}
+      \fraz{A \ \ A \imp B}
+           {B}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   One of the two facts must be an implication and the other one
+   must be its hypothesis.
+   The order of the arguments is not relevant.
+   The command creates a proof line whose wff is the conclusion of the
+   implication and whose dependencies list is the union of the dependencies of
+   \ARG{fact1} and \ARG{fact2}.
+}
+
+\gfrecap{
+One of the two facts must be an implication and the other one must be its
+hypothesis.
+The order of the arguments is not relevant.
+The command creates a proof line whose wff is the conclusion of the implication
+and whose dependencies list is the union of the dependencies of `fact1' and
+`fact2'.
+}
+
+
+\gfexample+
+   ***** declare sentconst A B;
+   ***** assume A A imp B;
+   1  A  (1)
+   2  A imp B  (2)
+
+   ***** impe 1 2;
+   3  B  (1 2)
+
+   ***** impe 2 1;
+   4  B  (1 2)
++

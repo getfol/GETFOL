@@ -1,0 +1,215 @@
+\gfcommand{show}{shows {\GF} information}
+
+\gfsyntax{
+   show \ARG{option};
+}
+
+\gfdescription{
+   Shows {\GF} information. In the example we show some of the
+   options implemented in a {\GF} version.
+   Notice that ``\verb+show show;+" lists the options supported by the show
+   command.
+}
+
+\gfrecap{
+Shows GETFOL information.
+}
+
+\gfexample+
+   ***** comment | ******* SHOW SHOW ******* |
+   ***** show show;
+   The list of show options is the following:
+
+   CONTEXT : WHEREAMI 
+
+   REWRITER : SIMPSET 
+
+   SIMPLIFIER : INT REP 
+
+   DEFINITION : DEFINITION 
+
+   PROOF : PREMISES FACT AXIOM 
+
+   LANGUAGE : LGS MGS MEM SORT TYP SYM 
+
+   SYSTEM : COM SHOW 
+   
+   ***** comment | ******* SHOW WHEREAMI ******* |
+   
+   ***** show whereami;
+   You are now using an unnamed context.
+   You are now using an unnamed proof.
+   
+   ***** comment | ******* SHOW REP and INT ******* |
+   
+   ***** decrep PIPPOREP;
+   ***** attach A dar [PIPPOREP] a;
+   ***** attach C dar [PIPPOREP] c;
+   ***** attach B to  [PIPPOREP] b;
+   
+   ***** show rep PIPPOREP;
+   The designators for the representation: PIPPOREP are:
+   (c . C) (a . A)
+   
+   ***** show int A;
+   The Indconst A is attached to 'a
+   with representation PIPPOREP
+   
+   ***** comment | ******* SHOW SIMPSET ******* |
+   
+   ***** setbasicsimp simp1 at wffs
+   {forall x1.F1(x1)=x1,
+   forall x1 x2.F2(x1 x2)=x1,
+   forall x1 x2 x3.F3(x1 x2 x3)=x1};
+   
+   ***** show simpset simp1;
+   Wffs :
+   forall x1. (F1(x1) = x1)
+   forall x1 x2. (F2(x1,x2) = x1)
+   forall x1 x2 x3. (F3(x1,x2,x3) = x1)
+   
+   ***** setbasicsimp simp2 at facts {1 2};
+   
+   ***** show simpset simp2;
+   Proof lines :  1 2
+   
+   ***** comment | AX1 and AX2 are two axioms |
+   ***** setbasicsimp simp3 at facts {AX1 AX2};
+   ***** show simpset simp3;
+   Axioms :  AX1 AX2
+   
+   ***** setcompsimp simpA at simp1 uni simp2 uni simp3;
+   ***** show simpset simpA;
+   simpA is compound by this list of basic simpsets :
+   (simp1 simp2 simp3)
+   
+   ***** SETCOMPSIMP simpB at simpA dif simp1;
+   ***** show simpset simpB;
+   simpB is compound by this list of basic simpsets :(simp2 simp3)
+   
+   
+   ***** comment | ******* SHOW PROOF, FACT and AXIOM ******* |
+   
+   ***** show proof;
+   1   forall x1. (F1(x1) = x1)     (1)
+   2   forall x1 x2. (F2(x1,x2) = x1)     (2)
+   
+   ***** label fact identity = 1;
+   ***** show fact;
+   identity   1
+   
+   ***** show axiom;
+   AX1 : forall x1. (F1(x1) = x1)
+   AX2 : forall x1 x2. (F2(x1,x2) = x1)
+   
+   ***** comment | ******* SHOW LSG, MGS , MEM and SORT ******* |
+   
+   ***** declare sort a b c d e f g h;
+   moregeneral a < b c d e f g h >;
+   moregeneral b < c d e f g h >;
+   
+   ***** show lgs a;
+   No sort is strictly lessgeneral than a.
+   ***** show lgs b;
+   No sort is strictly lessgeneral than b.
+   
+   ***** show mgs a;
+   The only sort strictly moregeneral than a is UNIVERSAL
+   ***** show mgs f;
+   The only sort strictly moregeneral than f is UNIVERSAL
+   
+   ***** show mem a;
+   No <indsym> is declared to be of sort a.
+   
+   ***** declare indvar x [a];
+   a is a sort
+   x has been declared to be an Indvar
+   ***** declare indvar y [a];
+   a is a sort
+   y has been declared to be an Indvar
+   ***** show mem a;
+   The <indsym>'s declared to be of sort a are
+       y  x  
+   
+   ***** show sort;
+   The symbols declared to be sorts are
+       b  a  UNIVERSAL  
+   
+   ***** comment | ******* SHOW TYP, SYM ******* |
+   
+   ***** show typ INDVAR;
+   The symbols declared to be Indvars are
+       x  y  
+   
+   ***** show sym a;
+   a is declared to be a sort.
+   ***** show sym x;
+   x is declared to be an Indvar of sort a.
+   
+   
+   ***** comment | **************** SHOW PREMISES *************** |
+   
+   ***** declare sentconst A B C;
+   ***** assume A B;
+   1   A     (1)
+   2   B     (2)
+   ***** andi 1 2;
+   3   A and B     (1 2)
+   ***** ori 3 C;
+   4   (A and B) or C     (1 2)
+   ***** andi 3 4;
+   5   (A and B) and ((A and B) or C)     (1 2)
+   ***** show premises 5;
+   5  (A and B) and ((A and B) or C)  (1 2)
+      3  A and B  (1 2)
+      4  (A and B) or C  (1 2)
+   ***** show premises 5 2;
+   5  (A and B) and ((A and B) or C)  (1 2)
+      3  A and B  (1 2)
+         1  A  (1)
+         2  B  (2)
+      4  (A and B) or C  (1 2)
+         3  A and B  (1 2)
+   *****  show premises 5 all;
+   5  (A and B) and ((A and B) or C)  (1 2)
+      3  A and B  (1 2)
+         1  A  (1)
+         2  B  (2)
+      4  (A and B) or C  (1 2)
+         3  A and B  (1 2)
+            1  A  (1)
+            2  B  (2)
+   
+   
+   ***** comment | ******* SHOW COM ******* |
+   
+   ***** show com;
+   The list of commands is the following:
+
+   META : REFLECT MATTACH 
+
+   CONTEXT : COPYLEX SWITCHCONTEXT COPYCONTEXT NAMECONTEXT MAKECONTEXT 
+
+   DECIDER : DECIDE MONADEQ MONAD TAUTEQ TAUT PTAUT 
+
+   EVAL : EVAL 
+
+   SIMPLIFIER : SIMPLIFY LET HARDWARE REPRESENT ATTACH DECREP 
+
+   REWRITER : REWRITE ASSERTSIMP SETCOMPSIMP SETBASICSIMP UNFOLD FOLD CUT
+   CTC CONTRACT WK WEAKEN WFFIFI WFFIFEN WFFIFE TERMIFI TERMIFEN TERMIFE  
+
+   Natural-Deduction : ES EXISTE EXISTI US ALLE UG ALLI IE IFFE II IFFI
+   NE NOTE NI NOTI FE FALSEE FI FALSEI OE ORE OI ORI AE ANDE AI ANDI MP
+   IMPE DED IMPI SUBST THEOREM ASSUME   
+
+   DEFINITION : DEFINE 
+
+   PROOF : LABEL CANCEL AXIOM THEORY 
+
+   LANGUAGE : SWITCHPROOF COPYPROOF NAMEPROOF MAKEPROOF EXTENSION WFF
+   AWFF TERM MOREGENERAL MOSTGENERAL SETFMAP DECLARE  
+
+   SYSTEM : COPYLEX RESET PAGER RESETPROMPT SETPROMPT KNOW HGK SHOW ECHO
+   COMMENT UNPROBE PROBE DEFLAM LOAD MARK FETCH DONE BACKUP  
++

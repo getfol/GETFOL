@@ -1,0 +1,270 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: langdflt.fol
+;; Date: Wed Oct 20 10:46:01 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************************
+;*                                                                            *
+;*                             langdflt.fol                                   *
+;*                                                                            *
+;* The language of the current context is composed by a set of symbols which  *
+;* belong only to the context, and a set of symbols which are shared between  *
+;* all the contexts present in the system. See the file symls.hgk.            *
+;* Currently the shared symbols are fixed once for all while the symbols      *
+;* of a context can be declared.                                              *
+;* This file contains the definition of the defaults of the language.         *
+;*                                                                            *
+;* Part 1. contains the definition of data structures that make sharing       *
+;* of symbols between contexts possible: TRUTHSORT and SysMostgeneral.        *
+;* Part 2. contains the definition of the default cur-sys-symls,              *
+;* which contains logical connectives and quantifiers, conditionals           *
+;* and the equality symbol, and the primitives to handle related              *
+;* phisical variables.                                                        *
+;* Part 3. contains the definition of the default cur-cxt-symls, which        *
+;* contains the only most general sort, and it contains the primitives to     *
+;* handle related phisical variables.                                         *
+;*                                                                            *
+;******************************************************************************
+
+
+
+;******************************************************************************
+;*                                                                            *
+;* Part 1: definition of TRUTHSORT and SysMostgeneral                         *
+;*                                                                            *
+;* These objects are implemented as symbols, but they do not belong           *
+;* to any language. They are used in the sort information of particular       *
+;* symbols of the language, and the only routine which has to deal with       *
+;* them (SUPERSORT) is specially devised for this task.                       *
+;* SysMostgeneral indicates a generic term, while TRUTHSORT indicates         *
+;* a generic wff. For example, the fmap of a quantifier has the form          *
+;* (SysMostgeneral TRUTHSORT => TRUTHSORT), which means that the quantifier   *
+;* maps a term (the individual variable being boud by it) and a wff           *
+;* (the matrix) into a wff.                                                   *
+;*                                                                            *
+;* (dflt-truthsort-mak) returns the default content of TRUTHSORT              *
+;* and (truthsort-ini) initializes TRUTHSORT.                                 *
+;*                                                                            *
+;* (dflt-sysmostgeneral-mak) returns the default content of                   *
+;* SysMostgeneral and (sysmostgeneral-ini) initializes it.                    *
+;*                                                                            *
+;******************************************************************************
+			       
+(DEFLAM dflt-truthsort-mak ()  
+ (LET ((TRUTHSORT-LABEL 'TRUTHSORT))
+  (LET ((TRUTHSORT (predsym-create 'Predconst TRUTHSORT-LABEL 1 MTL
+                    (predsym_sact-mak TRUTHSORT-LABEL MTL))))
+  (PROGN		       
+   (sort-create TRUTHSORT MTL MTL MTL)
+   TRUTHSORT))))	       
+			       
+(DEFLAM truthsort-ini () (SETQ TRUTHSORT (dflt-truthsort-mak)))
+			       
+			       
+(DEFLAM dflt-sysmostgeneral-mak ()
+ (LET ((SYSMOSTGENERAL-LABEL 'SYSUNIVERSAL))
+  (LET ((SYSMOSTGENERAL (predsym-create 'Predconst SYSMOSTGENERAL-LABEL 1 MTL
+                         (predsym_sact-mak SYSMOSTGENERAL-LABEL MTL))))
+  (PROGN		       
+   (sort-create SYSMOSTGENERAL MTL MTL MTL)
+   SYSMOSTGENERAL))))	       
+			       
+(DEFLAM sysmostgeneral-ini ()  
+ (SETQ SysMostgeneral (dflt-sysmostgeneral-mak)))
+			       
+			       
+			       
+;*******************************************************************
+;*                                                                 *
+;* Part 2: default initialization of the current system of contexts*
+;*                                                                 *
+;* The primitives below are used for the initialization of the     *
+;* data structure cur-sys-symls                                    *
+;*                                                                 *
+;* (dflt-sys-symls-mak) returns the default value for cur-sys-symls*
+;* Currently it is executed once at the moment of the initalization*
+;* of the language of the system. It assumes that the global       *
+;* variables TRUTHSORT and SysMostgeneral have already been        *
+;* initialized.                                                    *
+;*                                                                 *
+;* (sys-symls-get-phis symls) takes symls, which is supposed to    *
+;* contain the logical symbols shared between contexts, and        *
+;* extracts the phisics for symbols.                               *
+;*                                                                 *
+;* (cur-sys-symls-set-phis phislist) takes a list of symbols       *
+;* (whose format is the same of the result of sys-symls-get-phis)  *
+;* and sets the value of the related global variables.             *
+;*                                                                 *
+;*******************************************************************
+
+
+(DEFLAM dflt-sys-symls-mak ()
+ (LET ((SSYMLS (symls-mak 'SystemSYMLS)))
+  (SEQ
+   (LET ((True (sentsym-create 'Sentconst 'TRUE (sentsym_sact-mak 'TRUE))))
+    (symls-add-lse SSYMLS 'Sentconst (lse-mak 'TRUE True)))
+   (LET ((False (sentsym-create 'Sentconst 'FALSE (sentsym_sact-mak 'FALSE))))
+    (symls-add-lse SSYMLS 'Sentconst (lse-mak 'FALSE False)))
+   (LET ((Negation (logicsym-create 'Sentconn 'not 1
+          (conn-fmap-build 1) (logicsym_sact-mak 'not 'PRE))))
+    (symls-add-lse SSYMLS 'Sentconn (lse-mak 'not Negation)))
+   (LET ((Conjunction (logicsym-create 'Sentconn 'and 2
+          (conn-fmap-build 2) (logicsym_sact-mak 'and '(INF 750 755)))))
+    (symls-add-lse SSYMLS 'Sentconn (lse-mak 'and Conjunction)))
+   (LET ((Disjunction (logicsym-create 'Sentconn 'or 2
+          (conn-fmap-build 2) (logicsym_sact-mak 'or  '(INF 740 745)))))
+    (symls-add-lse SSYMLS 'Sentconn (lse-mak 'or Disjunction)))
+   (LET ((Implication (logicsym-create 'Sentconn  'imp 2
+          (conn-fmap-build 2) (logicsym_sact-mak 'imp '(INF 730 735)))))
+    (symls-add-lse SSYMLS 'Sentconn (lse-mak 'imp Implication)))
+   (LET ((Equivalence (logicsym-create 'Sentconn 'iff 2
+          (conn-fmap-build 2) (logicsym_sact-mak 'iff '(INF 720 725)))))
+    (symls-add-lse SSYMLS 'Sentconn (lse-mak 'iff Equivalence)))
+   (LET ((Uniquant (logicsym-create 'Quant 'forall 2
+          (quant-fmap-build) (logicsym_sact-mak 'forall MTL))))
+    (symls-add-lse SSYMLS 'Quant (lse-mak 'forall Uniquant)))
+   (LET ((Exiquant (logicsym-create 'Quant 'exists 2
+          (quant-fmap-build) (logicsym_sact-mak 'exists MTL))))
+    (symls-add-lse SSYMLS 'Quant (lse-mak 'exists Exiquant)))
+   (LET ((Wffif (logicsym-create 'Ifwff 'wffif 3
+          (wffif-fmap-build) (logicsym_sact-mak 'wffif MTL))))
+    (symls-add-lse SSYMLS 'Ifwff (lse-mak 'wffif Wffif)))
+   (LET ((Trmif (logicsym-create 'Iftrm 'trmif 3
+          (trmif-fmap-build) (logicsym_sact-mak 'trmif MTL))))
+    (symls-add-lse SSYMLS 'Iftrm (lse-mak 'trmif Trmif)))
+   (LET ((Equality (predsym-create 'Predconst '= 2
+          (equality-fmap-build) (predsym_sact-mak '= 'INF))))
+    (symls-add-lse SSYMLS 'Predconst (lse-mak '= Equality)))
+  SSYMLS)))
+
+
+(DEFLAM sys-symls-get-phis (SSYMLS)
+ (LIST
+  (ls-get-obj 'TRUE   (symls-get-ls SSYMLS 'Sentconst))
+  (ls-get-obj 'FALSE  (symls-get-ls SSYMLS 'Sentconst))
+  (ls-get-obj 'not    (symls-get-ls SSYMLS 'Sentconn))
+  (ls-get-obj 'and    (symls-get-ls SSYMLS 'Sentconn))
+  (ls-get-obj 'or     (symls-get-ls SSYMLS 'Sentconn))
+  (ls-get-obj 'imp    (symls-get-ls SSYMLS 'Sentconn))
+  (ls-get-obj 'iff    (symls-get-ls SSYMLS 'Sentconn))
+  (ls-get-obj 'forall (symls-get-ls SSYMLS 'Quant))
+  (ls-get-obj 'exists (symls-get-ls SSYMLS 'Quant))
+  (ls-get-obj 'wffif  (symls-get-ls SSYMLS 'Ifwff))
+  (ls-get-obj 'trmif  (symls-get-ls SSYMLS 'Iftrm))
+  (ls-get-obj '=      (symls-get-ls SSYMLS 'Predconst))))
+
+
+(DEFLAM cur-sys-symls-set-phis (PHISLIST)
+ (SEQ
+  (SETQ True        (HGKM-NTH 1 PHISLIST))
+  (SETQ False       (HGKM-NTH 2 PHISLIST))
+  (SETQ Negation    (HGKM-NTH 3 PHISLIST))
+  (SETQ Conjunction (HGKM-NTH 4 PHISLIST))
+  (SETQ Disjunction (HGKM-NTH 5 PHISLIST))
+  (SETQ Implication (HGKM-NTH 6 PHISLIST))
+  (SETQ Equivalence (HGKM-NTH 7 PHISLIST))
+  (SETQ Uniquant    (HGKM-NTH 8 PHISLIST))
+  (SETQ Exiquant    (HGKM-NTH 9 PHISLIST))
+  (SETQ Wffif       (HGKM-NTH 10 PHISLIST))
+  (SETQ Trmif       (HGKM-NTH 11 PHISLIST))
+  (SETQ Equality    (HGKM-NTH 12 PHISLIST))))
+
+
+
+;******************************************************************
+;*                                                                *
+;* Part 3: default initialization of the current context.         *
+;*                                                                *
+;* (dflt-cxt-symls-mak) returns a symls containing the default    *
+;* non-shared symbols of a context. Currently the only default    *
+;* symbol is the most general sort UNIVERSAL.                     *
+;* Its construction is a bit difficult because its structure is   *
+;* circular and therefore it can not be performed in one step.    *
+;*                                                                *
+;* (cxt-symls-get-phis symls) takes a cxt-symls, containing the   *
+;* language which is not shared between the contexts, and         *
+;* returns a list of the symbols which have to be stored in       *
+;* global variables to make the code run.                         *
+;* Currently the only symbol which has to be returned is the      *
+;* most general sort of the context.                              *
+;*                                                                *
+;* (cur-cxt-symls-get-phis) returns the same information returned *
+;* by cxt-symls-get-phis, with the difference that it extracts it *
+;* from the current context.                                      *
+;*                                                                *
+;* (cur-cxt-symls-set-phis phislist) takes a list of symbols      *
+;* (as the list returned by one of the functions above)           *
+;* and sets the value of the phisical variables for the           *
+;* language.                                                      *
+;* Currently the only value to be stored is the most general sort.*
+;*                                                                *
+;******************************************************************
+
+
+
+(DEFLAM dflt-cxt-symls-mak ()
+ (LET ((CSYMLS (symls-mak 'ContextSYMLS)))
+  (LET ((MGLABEL 'UNIVERSAL))
+   (LET ((MG (predsym-create 'Predconst MGLABEL 1 'TMPFMAP
+               (predsym_sact-mak MGLABEL MTL))))
+    (SEQ
+     (setfmap MG (fmap-mak (LIST MG) TRUTHSORT))
+     (sort-create MG (LIST MG) (LIST MG) MTL)
+     (symls-add-lse CSYMLS 'Predconst (lse-mak MGLABEL MG))
+     CSYMLS)))))
+
+(DEFLAM cxt-symls-get-phis (CSYMLS)
+ (LIST
+  (ls-get-obj 'UNIVERSAL (symls-get-ls CSYMLS 'Predconst))
+ ))
+
+(DEFLAM cur-cxt-symls-get-phis () (LIST Mostgeneral))
+
+(DEFLAM cur-cxt-symls-set-phis (PHISLIST)
+ (SEQ
+  (SETQ Mostgeneral (HGKM-NTH 1 PHISLIST))
+ ))
+
+

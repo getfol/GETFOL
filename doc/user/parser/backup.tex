@@ -1,0 +1,51 @@
+\gfcommand{backup}{backup of a {\GF} session}
+\index{backup}
+
+\gfsyntax{
+  backup \ARG{file} open;\\
+  backup \ARG{file} close;  
+}
+
+\gfdescription{
+   {\GF} stores in \ARG{file} all the successful commands between the command
+   ``{\tt backup \ARG{file} open}" and the command ``{\tt backup \ARG{file}
+   close}". 
+}
+
+\gfrecap{
+Stores in a file all successfull commands type in GETFOL.
+}
+
+\gfexample+
+   ***** backup file open;
+   I am starting to backup onto file
+   
+   ***** declare sentconst A;
+   ***** assume A;
+   1   A     (1)
+   
+   ***** backup file close;
+   
+   ***** andi 1 1;
+   2   A and A     (1)
+   
+   ***** ^D
+   
+   >Bye.
+   
+   <host-prompt> more file
+   
+   declare sentconst A;
+   
+   assume A;
+   
+   <host-prompt>
++
+
+\gfnotes{
+   Only Unix file names are supported.
+   The file path name can be absolute or relative to the current directory.
+   Multiple open backup files can exist simultaneously.
+   Files must be explicitly closed to guarantee that all the commands
+   are properly stored in the backup file.
+}

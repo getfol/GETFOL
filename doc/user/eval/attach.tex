@@ -1,0 +1,97 @@
+\gfcommand{attach}{semantic attachment}
+\index{attach}
+
+\gfsyntax{
+  attach \ARG{indconst}  to \ALT dar [ rep ] \ARG{sexpr};\\
+  attach \ARG{sentconst} to T \ALT NIL \ALT UNDEF;\\
+  attach \ARG{funconst} \ALT \ARG{predconst} to \ARG{atom};\\
+  attach \ARG{funconst}  to [ \ARG{rep1}, \SEQ, \ARG{repN} = \ARG{repM} ]
+  \ARG{atom};\\
+  attach \ARG{predconst} to [ \ARG{rep1}, \SEQ, \ARG{repN} ] \ARG{atom};
+}
+
+\gfdescription{
+  Defines the attachment for the {\GF} constants.
+  \ARG{repI} can be a representation function or an asterisk; if it is an
+  asterisk or no representation is specified, then the default representation
+  function {\tt UNIVERSALREP} is taken.
+  \ARG{indconst}s can be attached either ``one way'' (using {\tt to}) or ``two ways''
+  (using {\tt dar}).
+  The ``two ways'' attachment tells the semantic interpretation mechanism 
+  that whenever \ARG{sexpr} is computed as the {\HG} representation of 
+  a term $t$, then the attached {\GF} \ARG{indconst} should be returned as the 
+  simplified version of $t$.
+  That is, not only \ARG{sexpr} is the {\HG} representation of \ARG{indconst}, but 
+  \ARG{indconst} is the preferred {\GF} name of (the intended model value denoted 
+  by) the {\HG} object \ARG{sexpr}.
+  \ARG{sentconst}s can be attached to the three possible truth values
+  corresponding to true, false and undefined\cite{kleene1}.
+  This is done by attaching a sentconst to {\tt T}, {\tt NIL}, {\tt UNDEF}
+  respectively.
+  \ARG{funconst}s and \ARG{predconst}s can be attached to a {\HG} \ARG{atom}
+  \cite{giunchiglia35}.
+  \ARG{atom} will be used as the identifier of a {\HG} function, whose number of 
+  arguments is supposed to match the arity of the {\GF} symbol.
+}
+
+\gfrecap{
+Defines the attachment for the GETFOL constants.
+`repI' can be a representation function or an asterisk; if it is an
+asterisk or no representation is specified, then the default representation
+function `UNIVERSALREP' is taken.
+`indconst's can be attached either ``one way'' (using `to') or ``two ways''
+(using `dar').
+The ``two ways'' attachment tells the semantic interpretation mechanism 
+that whenever `sexpr' is computed as the HGKM representation of 
+a term `t', then the attached GETFOL `indconst' should be returned as the 
+simplified version of `t'.
+That is, not only `sexpr' is the HGKM representation of `indconst', but 
+`indconst' is the preferred GETFOL name of (the intended model value denoted 
+by) the HGKM object `sexpr'.
+`sentconst's can be attached to the three possible truth values
+corresponding to true, false and undefined.
+This is done by attaching a sentconst to `T', `NIL', `UNDEF'
+respectively.
+`funconst's and `predconst's can be attached to a HGKM `atom'
+`atom' will be used as the identifier of a HGKM function, whose number of 
+arguments is supposed to match the arity of the GETFOL symbol.
+}
+
+\gfexample+
+   ***** declare indconst a b;
+   ***** declare sentconst s;
+   ***** declare funconst f 1;
+   ***** declare predconst p 1;
+   ***** decrep rep;
+
+   ***** attach a to a;
+   a attached to 'a
+   ***** attach a dar a;
+   a attached to 'a
+   a is the preferred name of a
+   ***** attach a dar [rep]a;
+   a attached to 'a
+   ***** attach a dar [rep]b;
+   a is already an preferred name in this representation
+   ***** attach b dar [rep]a;
+   a has already a preferred name in this representation
+
+   ***** COMMENT | deflam defines an HGKM function |;
+   ***** deflam f(x) x;
+   ***** attach f to f;
+   f attached to f
+   ***** deflam p(x) (IF (EQUAL x (QUOTE a))TRUE FALSE);
+   ***** attach p to p;
+   p attached to p
+   attach f to [repin=repout]f;
+   f attached to f
+   ***** deflam p1(x) (IF (EQUAL x (QUOTE b))TRUE FALSE);
+   ***** attach p to [repin]p1;
+   p attached to p1
+   ***** attach p to [repin]p1;
+   p has already an attachment with these representation informations
+   ***** attach s to T;
+   s attached to 'T
+   ***** attach s to NIL;
+   s has already an attachment
++

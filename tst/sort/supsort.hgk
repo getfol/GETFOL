@@ -1,0 +1,140 @@
+(SETQ a (ls-get-obj 'a (symbol-ls)))
+(SETQ b (ls-get-obj 'b (symbol-ls)))
+(SETQ c (ls-get-obj 'c (symbol-ls)))
+(SETQ d (ls-get-obj 'd (symbol-ls)))
+(SETQ e (ls-get-obj 'e (symbol-ls)))
+(SETQ f (ls-get-obj 'f (symbol-ls)))
+(SETQ g (ls-get-obj 'g (symbol-ls)))
+(SETQ h (ls-get-obj 'h (symbol-ls)))
+
+(SETQ a1 (ls-get-obj 'a1 (symbol-ls)))
+(SETQ a2 (ls-get-obj 'a2 (symbol-ls)))
+(SETQ a3 (ls-get-obj 'a3 (symbol-ls)))
+
+(SETQ b1 (ls-get-obj 'b1 (symbol-ls)))
+(SETQ b2 (ls-get-obj 'b2 (symbol-ls)))
+(SETQ b3 (ls-get-obj 'b3 (symbol-ls)))
+
+(SETQ c1 (ls-get-obj 'c1 (symbol-ls)))
+(SETQ c2 (ls-get-obj 'c2 (symbol-ls)))
+(SETQ c3 (ls-get-obj 'c3 (symbol-ls)))
+
+(SETQ d1 (ls-get-obj 'd1 (symbol-ls)))
+(SETQ d2 (ls-get-obj 'd2 (symbol-ls)))
+(SETQ d3 (ls-get-obj 'd3 (symbol-ls)))
+
+(SETQ e1 (ls-get-obj 'e1 (symbol-ls)))
+(SETQ e2 (ls-get-obj 'e2 (symbol-ls)))
+(SETQ e3 (ls-get-obj 'e3 (symbol-ls)))
+
+(SETQ f1 (ls-get-obj 'f1 (symbol-ls)))
+(SETQ f2 (ls-get-obj 'f2 (symbol-ls)))
+(SETQ f3 (ls-get-obj 'f3 (symbol-ls)))
+
+(SETQ g1 (ls-get-obj 'g1 (symbol-ls)))
+(SETQ g2 (ls-get-obj 'g2 (symbol-ls)))
+(SETQ g3 (ls-get-obj 'g3 (symbol-ls)))
+
+(SETQ h1 (ls-get-obj 'h1 (symbol-ls)))
+(SETQ h2 (ls-get-obj 'h2 (symbol-ls)))
+(SETQ h3 (ls-get-obj 'h3 (symbol-ls)))
+
+(SETQ F (ls-get-obj 'F (symbol-ls)))
+(SETQ G (ls-get-obj 'G (symbol-ls)))
+
+(SETQ Ta `(,G (,F (,F ,|b3|)) (,G (,F ,|h1|) (,F ,|a2|))))
+(SETQ Tb `(,G (,F ,|b3|) (,G (,F (,F ,|h1|)) (,F ,|b1|))))
+(SETQ Tc (appl2-mak G Ta `(,F (,F ,|c1|))))
+(SETQ Td (appl2-mak G Tc `(,G (,F (,F ,|b3|)) (,G (,F ,|h1|) (,F ,|d2|)))))
+(SETQ Tg (appl2-mak G Td `(,G (,F (,F ,|b3|)) (,G (,F ,|h1|) (,F ,|g2|)))))
+
+(DEFLAM SSTEST ()
+ (LIST
+  (SUPERSORT a Ta)
+  (SUPERSORT b Ta)
+  (SUPERSORT c Ta)
+  (SUPERSORT d Ta)
+
+
+  (SUPERSORT e Ta)
+  (SUPERSORT f Ta)
+  (SUPERSORT g Ta)
+  (SUPERSORT h Ta)
+
+
+
+
+  (SUPERSORT a Tb)
+  (SUPERSORT b Tb)
+  (SUPERSORT c Tb)
+  (SUPERSORT d Tb)
+
+
+  (SUPERSORT e Tb)
+  (SUPERSORT f Tb)
+  (SUPERSORT g Tb)
+  (SUPERSORT h Tb)
+
+
+
+
+  (SUPERSORT a Tc)
+  (SUPERSORT b Tc)
+  (SUPERSORT c Tc)
+  (SUPERSORT d Tc)
+
+
+  (SUPERSORT e Tc)
+  (SUPERSORT f Tc)
+  (SUPERSORT g Tc)
+  (SUPERSORT h Tc)
+
+
+
+
+  (SUPERSORT a Td)
+  (SUPERSORT b Td)
+  (SUPERSORT c Td)
+  (SUPERSORT d Td)
+
+
+  (SUPERSORT e Td)
+  (SUPERSORT f Td)
+  (SUPERSORT g Td)
+  (SUPERSORT h Td)
+
+
+
+
+  (SUPERSORT a Tg)
+  (SUPERSORT b Tg)
+  (SUPERSORT c Tg)
+  (SUPERSORT d Tg)
+
+
+  (SUPERSORT e Tg)
+  (SUPERSORT f Tg)
+  (SUPERSORT g Tg)
+  (SUPERSORT h Tg)
+))
+
+(SETQ RESULT
+ '(T NIL NIL NIL NIL NIL NIL NIL
+   T T   NIL NIL NIL NIL NIL NIL
+   T T   T   NIL NIL NIL NIL NIL
+   T T   T   T   NIL NIL NIL NIL
+   T T   T   T   T   T   T   NIL))
+
+(HGKM-PRINC "I am computing ...")
+(SETQ TESTRES (SSTEST))
+(HGKM-PRINC "done! ")
+
+(IF (EQUAL TESTRES RESULT)
+ (SEQ
+  (CRLF) (CRLF)
+  (HGKM-PRINC "SUPERSORT worked properly!!!")
+  (CRLF) (CRLF))
+ (SEQ
+  (CRLF) (CRLF)
+  (HGKM-PRINC "PROBLEMS: SUPERSORT failed the test!!!")
+  (CRLF) (CRLF)))

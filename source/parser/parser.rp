@@ -1,0 +1,114 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Thu Mar 10 11:21:10 MET 1994
+;;
+;; This GETFOL file (parser.rp) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1994 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; general purpose printing routines
+;*****************************************************************************
+;*                                                                           *
+;*  SYNTAX                                                                   *
+;*   (PROBES-EPRINC  PROBELIST)                                              *
+;*   (PROBED-EPRINC1 MSG ACTIVITY)                                           *
+;*   (PROBED-EPRINC2 MSG1 MSG2 ACTIVITY)                                     *
+;*   (PROBED-EPRINC3 MSG1 MSG2 ACTIVITY)                                     *
+;*   (PROBED-EPRINC4 MSG1 MSG2 ACTIVITY)                                     *
+;*                                                                           *
+;*  DESCRIPTION                                                              *
+;*   The following functions are general purpose printing functions to be    *
+;*   used by the higher level functions for probing.                         *
+;*                                                                           *
+;*    probes-eprinc       prints the list of the functions currently probed  *
+;*    probed-eprinc1      prints MSG if ACTIVITY is probed                   *
+;*    probed-eprinc2      prints MSG1 and MSG2 if ACTIVITY is probed         *
+;*    ...                                                                    *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM PROBES-EPRINC (PROBES)
+ (IF (ALIST-EMPTY? PROBES) (NOP)
+  (LET ((PROBE (alist-get-first PROBES) ))
+   (SEQ
+     (PRINTMES3 "Probing function set : " (CAR PROBE) 
+                                          (IF (CDR PROBE) " yes" " no"))
+     (PROBES-EPRINC (alist-get-rest PROBES)) ) )) )
+
+(DEFSUB PROBED-CRLF (PROBENAME) (IF (PROBED? PROBENAME) (CRLF) (NOP)) )
+(DEFSUB PROBED-EPRINC1 (MSG PROBENAME)
+   (IF (PROBED? PROBENAME) (PRINTMES MSG) (NOP)) )
+
+(DEFSUB PROBED-EPRINC2 (MSG1 MSG2 PROBENAME)
+  (IF (PROBED? PROBENAME) (PRINTMES2 MSG1 MSG2) (NOP)) )
+
+(DEFSUB PROBED-EPRINC3 (MSG1 MSG2 MSG3 PROBENAME)
+ (IF (PROBED? PROBENAME) (PRINTMES3 MSG1 MSG2 MSG3) (NOP)) )
+
+(DEFSUB PROBED-EPRINC4 (MSG1 MSG2 MSG3 MSG4 PROBENAME)
+ (IF (PROBED? PROBENAME) (PRINTMES4 MSG1 MSG2 MSG3 MSG4) (NOP)) )
+
+
+;;; specific purpose printing routines
+;*****************************************************************************
+;*                                                                           *
+;*    SYNTAX                                                                 *
+;*     (COMMAND-EPRINC)                                                      *
+;*     (IO-EPRINC)                                                           *
+;*                                                                           *
+;*    DESCRIPTION                                                            *
+;*     The following two functions are used for probing of input and io      *
+;*     respectively.                                                         *
+;*                                                                           *
+;*    NOTE                                                                  *
+;*      The implementation of COMMAND-EPRINC does not follow standard        *
+;*      implementations for probing activities (ie. it does not call a lower *
+;*      level function.                                                      *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFSUB COMMAND-EPRINC () 
+  (IF (PROBED? 'COMMAND) 
+   (SEQ (SCANNED_LINE-PRINT-NOCRLF) (CRLF))
+   (NOP)))
+
+(DEFSUB IO-EPRINC2 (MSG1 MSG2) (PROBED-EPRINC2 MSG1 MSG2 'IO))

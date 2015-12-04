@@ -1,0 +1,142 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: sym.fol
+;; Date: Wed Oct 20 10:46:12 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;****************************************************************************
+;*                                                                          *
+;*                                                                          *
+;*                               sym.fol                                    *
+;*                                                                          *
+;*                                                                          *
+;* This file contains the primitives for creating and deleting the data     *
+;* structure for the symbols of the language.                               *
+;* We have two classes of data structure: SIMPSIMS and APPLSIMS.            *
+;* SYMPSIMS data structures are associated with sentsyms and indsyms.       *
+;* APPLSYMS data structures are associated with funsyms, predsyms and       *
+;* logical symbols of the language (connectives, quantifiers and so on)     *
+;*                                                                          *
+;****************************************************************************
+;
+
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *                Creating a simpsym.                            *
+; *                                                               *
+; *                                                               *
+; * (simpsym-create  TYP SYM SORT SACT)                           *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM simpsym-create (TYP LABEL SORT SACT)
+ (LET ((SYM (MAKE-UNINTERNED LABEL)))
+  (SEQ
+   (settype SYM TYP)
+   (setsort SYM SORT)
+   (setsact SYM SACT)
+   SYM)))
+
+
+; *****************************************************************
+; *                                                               *
+; *                                                               *
+; *              Creating an applsym.                             *
+; *                                                               *
+; *                                                               *
+; * (applsym-create  TYP SYM ARITY FMAP SACT)                     *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+
+(DEFLAM applsym-create (TYP LABEL ARITY FMAPS SACT)
+ (LET ((SYM (MAKE-UNINTERNED LABEL)))
+  (SEQ
+   (settype SYM TYP)
+   (setarit SYM ARITY)
+   (setfmap SYM FMAPS)
+   (setsact SYM SACT)
+   SYM)))
+
+
+
+; *****************************************************************
+; *                                                               *
+; *      Low level primitives for handling SACTS                  *
+; *                                                               *
+; * (simpsym_sact-mak LABEL)                                      *
+; *   Returns the sact for a simple symbol, given a label.        *
+; *                                                               *
+; * (applsym_sact-mak LABEL BPINFO)                               *
+; *   Returns the sact for an application simbol, given a label   *
+; *   and a binding power information.                            *
+; *   An applsym can be prefix, infix or neither.                 *
+; *   In the first case BPINFO may be PRE (this means default     *
+; *   PRBP) or ( PRE <nat> ) ( <nat> is the PRBP)                 *
+; *   In case of infix applsym, BPINFO can be the atom INF or the *
+; *   list ( INF <nat1> <nat2> ), with the same meaning as        *
+; *   previous case.                                              *
+; *   In the other case BPINFO is MTL.                            *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM simpsym_sact-mak (LABEL)
+ (sact-mak MTL MTL MTL MTL LABEL MTL MTL))
+
+(DEFLAM applsym_sact-mak (LABEL BPINFO)
+ (IF (MTL? BPINFO)
+  (sact-mak MTL MTL MTL LABEL LABEL MTL MTL)
+  (IF (ATOMIC? BPINFO)
+   (IF (EQ BPINFO 'PRE)
+    (sact-mak MTL MTL DefaultPRBP LABEL LABEL LABEL MTL)
+    (sact-mak DefaultRBP DefaultLBP MTL LABEL LABEL MTL LABEL))
+   (IF (EQ (CAR BPINFO) 'PRE)
+    (sact-mak MTL MTL (SECOND BPINFO) LABEL LABEL LABEL MTL)
+    (sact-mak (HGKM-NTH 3 BPINFO) (SECOND BPINFO)
+     MTL LABEL LABEL MTL LABEL)))))
+

@@ -1,0 +1,179 @@
+\section{Other rules}
+
+\subsection{Conditional rules}
+\label{sec-cond}
+
+Conditional rules allow us to introduce and eliminate the conditional wffs
+{\wffif} and conditional terms {\termif}.
+
+\begin{bnf}
+	{\wffif}  \sep {\bf wffif} {\wff}$_1$ {\bf then} {\wff}$_2$ {\bf else}
+				   {\wff}$_3$ \\
+	{\termif} \sep {\bf trmif} {\wff} {\bf then} {\term}$_1$ {\bf else}
+				   {\term}$_2$
+\end{bnf}
+
+Note that the {\termif} construct is not first order.
+However, it can easily be shown that {\termif} can be defined as a conservative
+extension of first order logic using an induction on the length of deductions.
+
+\renewcommand{\arraystretch}{0.5}
+\[
+\begin{array}{|c|c||c|c|} \hline 
+\multicolumn{2}{|c||}{\mbox{\bf Introduction rules}} &
+\multicolumn{2}{c|}{\mbox{\bf Elimination rules}} \\ \hline
+\begin{array}{l}
+\\ \\ \\ \\ \\
+\mbox{{\em wif}} \  I  
+\end{array}
+&
+\begin{array}{cc}
+\\ \\
+\begin{array}{c}
+{[A]}\\
+\vdots\\
+B
+\end{array}
+\ \ \ 
+\begin{array}{c}
+{[\neg A]}\\
+\vdots\\
+C
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+\mbox{{\em wffif}} \ A \ \mbox{{\em then}} \ B \ \mbox{{\em else}} \ C 
+\end{array}
+\end{array}
+&
+\begin{array}{l}
+\\ \\ \\ \\ \\
+\mbox{{\em wif}} \  E
+\end{array}
+&
+\begin{array}{cc}
+\\ \\
+\begin{array}{c}
+\\ \\ \\ \\
+A
+\end{array}
+\ \ \ 
+\begin{array}{c}
+\\ \\ \\ \\
+\mbox{{\em wffif}} \ A \ \mbox{{\em then}} \ B \ \mbox{{\em else}} \ C 
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+B
+\end{array}
+\end{array}
+%\fraz{\Gamma \vdash A \ \ \Delta \vdash \mbox{{\em wffif}} \ A \ \mbox{{\em then}} \ B \ 
+%\mbox{{\em else}} \ C}
+%     {\Gamma,\Delta \vdash B}
+\\ %\hline 
+& &
+\begin{array}{l}
+\\ \\ \\ \\ \\
+\mbox{{\em wif}} \  E_{\neg}
+\end{array}
+&
+\begin{array}{cc}
+\\ \\
+\begin{array}{c}
+\\ \\ \\ \\
+\neg A
+\end{array}
+\ \ \ 
+\begin{array}{c}
+\\ \\ \\ \\
+\mbox{{\em wffif}} \ A \ \mbox{{\em then}} \ B \ \mbox{{\em else}} \ C 
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+C
+\end{array}
+\end{array}
+\\ %\hline
+\begin{array}{l}
+\\ \\ \\ \\ \\
+\mbox{{\em tif}} \  I    
+\end{array}
+&
+\begin{array}{cc}
+\\ \\
+\begin{array}{c}
+{[A]}\\
+\vdots\\
+B(t_1)
+\end{array}
+\ \ \ 
+\begin{array}{c}
+{[\neg A]}\\
+\vdots\\
+B(t_2)
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+B(\mbox{{\em termif}} \ A \ \mbox{{\em then}} \ t_1 \ \mbox{{\em else}} \ t_2)
+\end{array}
+\end{array}
+&
+\begin{array}{l}
+\\ \\ \\ \\ \\
+\mbox{{\em tif}} \  E
+\end{array}
+&
+\begin{array}{cc}
+\\ \\
+\begin{array}{c}
+\\ \\ \\ \\
+A
+\end{array}
+\ \ \ 
+\begin{array}{c}
+\\ \\ \\ \\
+B(\mbox{{\em termif}} \ A \ \mbox{{\em then}} \ t_1 \ \mbox{{\em else}} \ t_2)
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+B(t_1)
+\end{array}
+\end{array}
+\\ %\hline 
+& &
+\begin{array}{l}
+\\ \\ \\ \\ \\
+\mbox{{\em tif}} \  E_{\neg}
+\end{array}
+&
+\begin{array}{cc}
+\\ \\
+\begin{array}{c}
+\\ \\ \\ \\
+\neg A
+\end{array}
+\begin{array}{c}
+\\ \\ \\ \\
+B(\mbox{{\em termif}} \ A \ \mbox{{\em then}} \ t_1 \ \mbox{{\em else}} \ t_2)
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+B(t_2)
+\end{array}
+\end{array}
+\\ 
+& & & \\ \hline 
+\end{array}
+\]
+\renewcommand{\arraystretch}{1}
+
+
+\subsection{Structural rules}
+
+Structural rules are useful when performing theorem proving.

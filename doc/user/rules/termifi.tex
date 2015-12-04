@@ -1,0 +1,89 @@
+\gfcommand{termifi}{term conditional introduction}
+\index{termifi}
+
+\gfsyntax{
+	termifi \ARG{fact1} \ARG{fact2} \ARG{wff} \ARG{term1} \ARG{term2};
+}
+
+\gfdescription{
+\renewcommand{\arraystretch}{0.5}
+\[
+\begin{array}{l}
+\\ \\ \\ 
+%\\ \\
+\mbox{{\em tif}} \  I    
+\end{array}
+\ \
+\begin{array}{cc}
+%\\ \\
+\begin{array}{c}
+{[A]}\\
+\vdots\\
+B(t_1)
+\end{array}
+\ \ \ 
+\begin{array}{c}
+{[\neg A]}\\
+\vdots\\
+B(t_2)
+\end{array}
+\\
+\hline\\
+\begin{array}{c}
+B(\mbox{{\em termif}} \ A \ \mbox{{\em then}} \ t_1 \ \mbox{{\em else}} \ t_2)
+\end{array}
+\end{array}
+\]
+\renewcommand{\arraystretch}{1}
+
+If \ARG{fact1}'s wff is {\tt B({\em term}$_1$)} and \ARG{fact2}'s wff is {\tt
+B(\ARG{term2})}, then the proof line's wff is
+{\tt B(iftrm wff then \ARG{term1} else \ARG{term2})}.
+All assumptions in \ARG{fact1}'s dependencies whose formula is \ARG{wff} and all
+assumptions in \ARG{fact2}'s dependencies whose formula is the negation of
+\ARG{wff} are discharged.
+}
+
+\gfrecap{
+Term conditional introduction.
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   ***** declare predconst P 1;
+   ***** declare funconst f 1;
+   ***** declare indpar a b;
+   ***** assume P(trmif A then a else b);
+   1   P(trmif A then a else b)     (1)
+   ***** assume A;
+   2   A     (2)
+   ***** termife 1 2 trmif A then a else b;
+   3   P(a)     (1 2)
+   ***** assume not A;
+   4   not A     (4)
+   ***** termifen 1 4 trmif A then a else b;
+   5   P(b)     (1 4)
+   ***** termifi 3 5 A a b;
+   6   P(trmif A then a else b)     (1)
+   ***** COMMENT | Dependencies are discharged |
+   ***** termifi 3 5 not A a b;
+   7   P(trmif (not A) then a else b)     (1 2 4)
+   ***** COMMENT | Dependencies are NOT discharged |
+   ***** termifi 3 5 B a b;
+   8   P(trmif B then a else b)     (1 2 4)
+   ***** COMMENT | TERMIFI with function symbols |
+   ***** assume P(trmif A then f(a) else f(b));
+   9   P(trmif A then f(a) else f(b))     (9)
+   ***** termife 9 2 trmif A then f(a) else f(b);
+   10   P(f(a))     (2 9)
+   ***** termifen 9 4 trmif A then f(a) else f(b);
+   11   P(f(b))     (4 9)
+   ***** termifen 9 4 trmif A then f(a) else f(b);
+   12   P(f(b))     (4 9)
+   ***** termifi 10 11  A a b;
+   13   P(f(trmif A then a else b))     (9)
+   ***** termifi 10 11 A f(a) f(b);
+   14   P(trmif A then f(a) else f(b))     (9)
++   
+   
+   

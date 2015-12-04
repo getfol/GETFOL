@@ -1,0 +1,191 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{GAC{\etalchar{+}}91}
+
+\bibitem[AG89]{armando1}
+A.~Armando and F.~Giunchiglia.
+\newblock On tautology decision techniques: Complexity and implementation
+  considerations.
+\newblock Technical Report 8911-08, IRST, Trento, Italy, 1989.
+
+\bibitem[AG93]{armando5}
+A.~Armando and E.~Giunchiglia.
+\newblock {E}mbedding {C}omplex {D}ecision {P}rocedures inside an {I}nteractive
+  {T}heorem {P}rover.
+\newblock {\em Annals of Mathematics and Artificial Intelligence},
+  8(3--4):475--502, 1993.
+
+\bibitem[AW74]{aiello2}
+M.~Aiello and Richard Weyhrauch.
+\newblock Checking proofs in the {Meta-Mathematics} of first order logic.
+\newblock Technical Report STAN-CS-74-467, Stanford Computer Science
+  Department, November 1974.
+
+\bibitem[AW80]{aiello1}
+L.~Aiello and R.W. Weyhrauch.
+\newblock Using {Meta-Theoretic} {Reasoning} to do {Algebra}.
+\newblock In W.~Bibel and R.~Kowalski, editors, {\em Proc. of the 5th
+  {C}onference on {A}utomated {D}eduction}, pages 1--13. Springer Verlag, 1980.
+\newblock Lecture Notes in Computer Science No. 87.
+
+\bibitem[BGT91]{basin1}
+D.~Basin, F.~Giunchiglia, and P.~Traverso.
+\newblock Automating meta-theory creation and system extension.
+\newblock In {\em AI*IA 1991, 2nd Conference of the Italian Association for
+  Artificial intelligence}. Springer Verlag, 1991.
+\newblock Also IRST-Technical Report 9101-04.
+
+\bibitem[DG79]{dreben1}
+B.~Dreben and W.D. Goldfarb.
+\newblock {\em The {Decision} problem - {S}olvable classes of quantificational
+  formulas}.
+\newblock Addison-Wesley Publishing Company Inc., 1979.
+
+\bibitem[DLL62]{davis6}
+M.~Davis, G.~Longemann, and D.~Loveland.
+\newblock A machine program for theorem proving.
+\newblock {\em Journal of the ACM}, 5(7), 1962.
+
+\bibitem[DP60]{davis2}
+M.~Davis and H.~Putnam.
+\newblock A computing procedure for quantification theory.
+\newblock {\em Journal of the ACM}, 7:201--215, 1960.
+
+\bibitem[GAC{\etalchar{+}}91]{giunchiglia29}
+F.~Giunchiglia, A.~Armando, A.~Cimatti, E.~Giunchiglia~P. Pecchiari,
+  L.~Serafini, A.~Simpson, and P.~Traverso.
+\newblock {{\tt GETFOL} Programmer Manual - {\tt GETFOL} version 1}.
+\newblock Technical Report 91-0007, DIST - University of Genova, Genova, Italy,
+  1991.
+
+\bibitem[GC91]{giunchiglia35}
+F.~Giunchiglia and A.~Cimatti.
+\newblock {{\tt HGKM} User Manual - {\tt HGKM} version 2}.
+\newblock Technical Report 91-0009, DIST - University of Genova, Genova, Italy,
+  1991.
+
+\bibitem[Giu91a]{giunchiglia22}
+E.~Giunchiglia.
+\newblock Towards a logical treatment of qualitative reasoning.
+\newblock Technical Report 91-0002, DIST - University of Genova, Genoa, Italy,
+  1991.
+\newblock Short version appeared in the proceedings of the `First European
+  Workshop on Qualitative Reasoning about physical systems' - Genoa (Italy) -
+  January 1991.
+
+\bibitem[Giu91b]{giunchiglia26}
+F.~Giunchiglia.
+\newblock Multilanguage systems.
+\newblock In {\em Proceedings of AAAI Spring Symposium on Logical
+  Formalizations of Commonsense Reasoning}, 1991.
+\newblock Also IRST-Technical Report no. 9011-17.
+
+\bibitem[GS88]{giunchiglia3}
+F.~Giunchiglia and A.~Smaill.
+\newblock Reflection in constructive and non-constructive automated reasoning.
+\newblock In H.~Abramson and M.~H. Rogers, editors, {\em Proc. of META-88,
+  Workshop on Metaprogramming in Logic}, pages 123--145. MIT Press, 1988.
+\newblock Also IRST-Technical Report 8902-04 and DAI Research Paper 375,
+  University of Edinburgh.
+
+\bibitem[GS90]{giunchiglia15}
+F.~Giunchiglia and L.~Serafini.
+\newblock Multilanguage systems (provably equivalent to modal logics).
+\newblock Technical Report 9002-05, IRST, Trento, Italy, 1990.
+
+\bibitem[GS91]{giunchiglia14}
+F.~Giunchiglia and L.~Serafini.
+\newblock Multilanguage first order theories of propositional attitudes.
+\newblock In {\em Proceedings 3rd Scandinavian Conference on Artificial
+  Intelligence}, pages 228--240, Roskilde University, Denmark, 1991. IOS Press.
+\newblock Also IRST-Technical Report 9001-02, IRST, Trento, Italy.
+
+\bibitem[GSS92]{giunchiglia28}
+F.~Giunchiglia, L.~Serafini, and A.~Simpson.
+\newblock Hierarchical meta-logics: intuitions, proof theory and semantics.
+\newblock In {\em Proc. of META-92, Workshop on Metaprogramming in Logic},
+  number 649 in LNCS, pages 235--249, Uppsala, Sweden, 1992. Springer Verlag.
+\newblock Also IRST-Technical Report 9101-05, IRST, Trento, Italy.
+
+\bibitem[GT90]{giunchiglia13}
+F.~Giunchiglia and P.~Traverso.
+\newblock Plan formation and execution in a uniform architecture of declarative
+  metatheories.
+\newblock In M.~Bruynooghe, editor, {\em Proc. of META-90, Workshop on
+  Metaprogramming in Logic}, pages 306--322, 1990.
+\newblock Also IRST-Technical Report 9003-12.
+
+\bibitem[GT91a]{giunchiglia27}
+F.~Giunchiglia and P.~Traverso.
+\newblock Reflective reasoning with and between a declarative metatheory and
+  the implementation code.
+\newblock In {\em Proc. of the 12th International Joint Conference on
+  Artificial Intelligence}, pages 111--117, Sydney, 1991.
+\newblock Also IRST-Technical Report 9012-03, IRST, Trento, Italy.
+
+\bibitem[GT91b]{giunchiglia12}
+F.~Giunchiglia and P.~Traverso.
+\newblock {{\tt GETFOL} User Manual - {\tt GETFOL} version 1}.
+\newblock Manual 9109-09, IRST, Trento, Italy, 1991.
+\newblock Also DIST Technical Report 91-0005, DIST, University of Genova.
+
+\bibitem[GT94]{giunchiglia25}
+F.~Giunchiglia and P.~Traverso.
+\newblock A system for multi-level mathematical reasoning.
+\newblock In J.H. Johnson, S.~McKee, and A.~Vella, editors, {\em Artificial
+  Intelligence in Mathematics - Conference Proceedings}, pages 119--134. Oxford
+  University Press, 1994.
+
+\bibitem[GW88]{giunchiglia2}
+F.~Giunchiglia and R.W. Weyhrauch.
+\newblock A multi-context monotonic axiomatization of inessential
+  non-monotonicity.
+\newblock In D.~Nardi and P.~Maes, editors, {\em Meta-level architectures and
+  Reflection}, pages 271--285. North Holland, 1988.
+\newblock Also MRG-DIST Technical Report 9105-02, DIST, University of Genova,
+  Italy.
+
+\bibitem[GW91]{giunchiglia34}
+F.~Giunchiglia and R.W. Weyhrauch.
+\newblock {\tt FOL} {U}ser {M}anual - {{\tt FOL}} version 2.
+\newblock Manual 9109-08, IRST, Trento, Italy, 1991.
+\newblock Also DIST Technical Report 91-0006, DIST, University of Genova.
+
+\bibitem[Kle52]{kleene1}
+S.C. Kleene.
+\newblock {\em Introduction to {Metamathematics}}.
+\newblock North Holland, 1952.
+
+\bibitem[Kle67]{kleene2}
+S.C. Kleene.
+\newblock {\em Mathematical {Logic}}.
+\newblock John Wiley and Sons Inc., 1967.
+
+\bibitem[Pra65]{prawitz1}
+D.~Prawitz.
+\newblock {\em {Natural Deduction} - A proof theoretical study}.
+\newblock Almquist and Wiksell, Stockholm, 1965.
+
+\bibitem[Qui50]{quine3}
+W.~V. Quine.
+\newblock On natural deduction.
+\newblock {\em The Journal of Symbolic Logic}, 15:93--102, 1950.
+
+\bibitem[Wey77]{rww3}
+R.W. Weyhrauch.
+\newblock {A} {U}sers {M}anual for {{\tt FOL}}.
+\newblock Technical Report STAN-CS-77-432, Computer Science Department,
+  Stanford University, 1977.
+
+\bibitem[Wey80]{rww1}
+R.W. Weyhrauch.
+\newblock Prolegomena to a {T}heory of {M}echanized {F}ormal {R}easoning.
+\newblock {\em Artificial Intelligence}, 13(1):133--176, 1980.
+
+\bibitem[Wey82]{rww2}
+R.W. Weyhrauch.
+\newblock An {E}xample of {{\tt FOL}} {U}sing {M}etatheory. {F}ormalizing
+  {R}easoning and {I}ntroducing {D}erived {I}nference {R}ules.
+\newblock In {\em Proceedings of the 6th Conference on Automatic Deduction},
+  1982.
+
+\end{thebibliography}

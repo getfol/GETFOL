@@ -1,0 +1,158 @@
+\begin{theindex}
+
+  \item ae, 73
+  \item ai, 74
+  \item alle, 89
+  \item alli, 91
+  \item ande, 73
+  \item andi, 74
+  \item assertsimp, 139
+  \item assume, 72
+  \item attach, 128
+  \item awff, 34
+  \item axiom, 50
+
+  \indexspace
+
+  \item backup, 8
+
+  \indexspace
+
+  \item cancel, 59
+  \item comment, 16
+  \item contract, 109
+  \item copycontext, 148
+  \item copylex, 149
+  \item copyproof, 60
+  \item cut, 110
+
+  \indexspace
+
+  \item decide, 116
+  \item declare, 35, 40, 41
+    \subitem language, 35
+    \subitem sort, 40
+    \subitem sorted language, 41
+  \item decrep, 130
+  \item ded, 82
+  \item deflam, 17
+  \item done, 9
+
+  \indexspace
+
+  \item echo, 18
+  \item ei, 97
+  \item es, 94
+  \item eval, 144
+  \item existe, 94
+  \item existi, 97
+  \item extension, 42
+
+  \indexspace
+
+  \item falsee, 76
+  \item falsei, 78
+  \item fe, 76
+  \item fetch, 10
+  \item fi, 78
+
+  \indexspace
+
+  \item hardware, 131
+  \item hgk, 19
+
+  \indexspace
+
+  \item ie, 79
+  \item iffe, 79
+  \item iffi, 80
+  \item ii, 80
+  \item impe, 81
+  \item impi, 82
+
+  \indexspace
+
+  \item know natnums, 20
+
+  \indexspace
+
+  \item label, 62
+  \item let, 146
+  \item load, 21
+
+  \indexspace
+
+  \item makecontext, 150
+  \item makeproof, 63
+  \item mark, 11
+  \item mattach, 155
+  \item monad, 117
+  \item monadeq, 119
+  \item moregeneral, 44
+  \item mostgeneral, 45
+  \item mp, 81
+
+  \indexspace
+
+  \item namecontext, 151
+  \item nameproof, 65
+  \item ne, 83
+  \item ni, 84
+  \item note, 83
+  \item noti, 84
+
+  \indexspace
+
+  \item oe, 85
+  \item oi, 87
+  \item ore, 85
+  \item ori, 87
+
+  \indexspace
+
+  \item probe, 12
+  \item ptaut, 120
+
+  \indexspace
+
+  \item reflect, 157
+  \item represent, 132
+  \item reset, 152
+  \item resetprompt, 22
+  \item rewrite, 140
+
+  \indexspace
+
+  \item setfmap, 46
+  \item setprompt, 23
+  \item simplify, 133
+  \item subst, 100
+  \item switchcontext, 153
+  \item switchproof, 67
+
+  \indexspace
+
+  \item taut, 121
+  \item tauteq, 122
+  \item term, 37
+  \item termife, 102
+  \item termifen, 103
+  \item termifi, 104
+  \item theorem, 54
+  \item theory, 56
+
+  \indexspace
+
+  \item ug, 91
+  \item unprobe, 14
+  \item us, 89
+
+  \indexspace
+
+  \item weaken, 111
+  \item wff, 38
+  \item wffife, 106
+  \item wffifen, 107
+  \item wffifi, 108
+
+\end{theindex}

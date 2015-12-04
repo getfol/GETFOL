@@ -1,0 +1,51 @@
+\gfcommand{hardware}{semantic attachment to values of a s-expression}
+\index{hardware}
+
+\gfsyntax{
+  hardware \ARG{indconst} to \ALT dar \ARG{sexpr};\\
+  hardware \ARG{indconst} to \ALT dar [ \ARG{rep} ] \ARG{sexpr};
+}
+
+\gfdescription{
+  This command is similar to the attach command for \ARG{indconst}.
+  The difference is that, if \ARG{sexpr} changes value over time, then so does
+  the value of the attachment.
+  It is a "dynamic attachment" in the sense that it is attached to the values the
+  \ARG{sexpr} assumes over time.
+}
+
+\gfrecap{
+This command is similar to the attach command for `indconst'.
+The difference is that, if `sexpr' changes value over time, then so does
+the value of the attachment.
+It is a "dynamic attachment" in the sense that it is attached to the values the
+`sexpr' assumes over time.
+}
+
+\gfexample+
+   ***** declare indconst clock t0 t1;
+   ***** attach t0 to 0;
+   t0 attached to '0
+   ***** attach t1 to 1;
+   t1 attached to '1
+   ***** hardware clock to time;
+   clock attached to time
+   ***** done;
+   >(SETQ time 0)
+   0
+   >(GETFOL)
+   Hi!  Glad your back.  What would you like to talk about now?
+   ***** simplify clock = t0;
+   1   clock = t0     
+   ***** done;
+   >(SETQ time 1)
+   1
+   >(GETFOL)
+   Hi!  Glad your back.  What would you like to talk about now?
+   ***** simplify clock = t1;
+   2   clock = t1     
++
+
+\gfnotes{
+  This command gives the possibility of changing the intended model. 
+}

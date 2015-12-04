@@ -1,0 +1,49 @@
+\gfcommand{unprobe}{silent mode}
+\index{unprobe}
+
+\gfsyntax{
+   unprobe \ARG{activity};\\
+   unprobe all;
+}
+
+\gfdescription{
+   Some {\GF} {\em activities} can be executed either in verbose
+   or in silent mode.
+
+   {\tt unprobe} \ARG{activity} sets the silent mode for commands in
+   \ARG{activity}.
+
+   {\tt unprobe all} sets all activities to silent mode .
+}
+
+\gfrecap{
+Set/unset verbose mode for certain activities.  
+}
+
+\gfexample+
+   ***** declare sentconst D E F;
+   declare sentconst B E F;
+   D has been declared to be a Sentconst
+   E has been declared to be a Sentconst
+   F has been declared to be a Sentconst
+   
+   ***** unprobe all;
+   unprobe all;
+
+   ***** probe;
+   Probing function set : COMMAND no
+   Probing function set : IO no
+   Probing function set : DECLARE no
+   Probing function set : PROOF no
+   Probing function set : ATTACH no
+   Probing function set : SIMPLIFY no
+   Probing function set : SIMPSET no
+   Probing function set : REWRITE no
+   Probing function set : EVAL no
+   Probing function set : CONTEXT no
+   Probing function set : REFLECT no
+   
+   ***** declare sentconst H G K;
++
+
+\gfnotes{}

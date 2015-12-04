@@ -1,0 +1,130 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: decsymls.hgk
+;; Date: Wed Oct 20 10:45:50 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                       decsymls.hgk                             *
+;*                                                                *
+;* This file contains the low level routines to transform the     *
+;* format of logical symbols into the format of low level data    *
+;* structure.                                                     *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+
+
+;******************************************************************
+;*                                                                *
+;* Creation of different cathegories of symbols.                  *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM sentsym-create (TYP LABEL SACT)
+ (simpsym-create TYP LABEL TRUTHSORT SACT))
+(DEFLAM indsym-create  (TYP LABEL SORT SACT)
+ (simpsym-create TYP LABEL SORT SACT))
+
+(DEFLAM funsym-create  (TYP LABEL ARITY FMAPS SACT)
+ (applsym-create TYP LABEL ARITY FMAPS SACT))
+(DEFLAM predsym-create (TYP LABEL ARITY FMAPS SACT)
+ (applsym-create TYP LABEL ARITY FMAPS SACT))
+(DEFLAM logicsym-create (TYP LABEL ARITY FMAPS SACT)
+ (applsym-create TYP LABEL ARITY FMAPS SACT))
+
+
+
+;******************************************************************
+;*                                                                *
+;* Construction of fmaps for different cathegories of symbols.    *
+;*                                                                *
+;******************************************************************
+
+; Fmap for function symbols
+(DEFLAM fun-default_fmap-build (ARITY)
+ (fmap-mak (LIST-N Mostgeneral ARITY) Mostgeneral))
+
+; Fmaps for function symbols
+(DEFSUB fun-default_fmaps-build (arity) (LIST (fun-default_fmap-build arity)))
+
+; Fmaps for declared predicate symbols
+(DEFLAM predsym-fmap-build (ARITY)
+ (fmap-mak (LIST-N Mostgeneral ARITY) TRUTHSORT))
+
+; Fmaps for logical connectives
+(DEFLAM conn-fmap-build (ARITY)
+ (fmap-mak (LIST-N TRUTHSORT ARITY) TRUTHSORT))
+
+; Fmaps for conditionals
+(DEFLAM wffif-fmap-build () (conn-fmap-build 3))
+(DEFLAM trmif-fmap-build ()
+ (fmap-mak (LIST TRUTHSORT SysMostgeneral SysMostgeneral) SysMostgeneral))
+
+;Fmaps for quantifiers
+(DEFLAM quant-fmap-build ()
+ (fmap-mak (LIST SysMostgeneral TRUTHSORT) TRUTHSORT))
+
+; Fmaps for the equality symbol
+(DEFLAM equality-fmap-build ()
+ (fmap-mak (LIST SysMostgeneral SysMostgeneral) TRUTHSORT))
+
+
+;******************************************************************
+;*                                                                *
+;* Construction of sacts for different cathegories of symbols.    *
+;*                                                                *
+;******************************************************************
+
+; Sacts for simple symbol
+(DEFLAM sentsym_sact-mak  (SYM) (simpsym_sact-mak SYM))
+(DEFLAM indsym_sact-mak   (SYM) (simpsym_sact-mak SYM))
+
+; Sacts for application symbols
+(DEFLAM funsym_sact-mak   (SYM BPINFO) (applsym_sact-mak SYM BPINFO))
+(DEFLAM predsym_sact-mak  (SYM BPINFO) (applsym_sact-mak SYM BPINFO))
+(DEFLAM logicsym_sact-mak (SYM BPINFO) (applsym_sact-mak SYM BPINFO))

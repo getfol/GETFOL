@@ -1,0 +1,158 @@
+\section{Systems and Modules}
+\label{sysmod}
+
+It is common practice during the development of a software package
+to design it as set of interacting components.
+The main advantages are the ease of development and maintenance
+as well as the flexibility of the resulting system.
+Modularity allows both the development and the maintenance activities
+to be confined inside the modules.
+Furthermore, having encapsulated the functionalities of the system inside
+modules, it is possible to build different applications simply by assembling
+in different ways the available modules.
+
+In the following we will refer to the application to be built by means
+of the term {\it system} and to the components to be assembled
+with the term {\it modules}.
+
+\subsection{Modules}
+
+A module consists of a set of files containing source code.
+The configuration of a module is kept in a data structure containing the
+following slots:
+
+\begin{itemize}
+	\item {\bf name}:
+		a string containing the name of the module.
+	\item {\bf files}:
+		a list of data structures containing the following information for each
+		file of the module: 
+		%
+		\begin{itemize}
+			\item the name of the source file,
+			\item the name of the object file,
+			\item the mode flag for the file.
+		\end{itemize}
+		%
+		{\it mode} is a flag indicating whether the interpreted or the compiled
+		version of the file is to be loaded while assembling the module.
+%
+% The S-expressions are added to the existing FILES
+% list by means of the action:
+% (MODULE-ADD-FILE MODULE SRCFILE OBJFILE MODE)
+% The module configuration file usually contains a
+% sequence of such actions.
+%
+	\item {\bf srcdir}:
+		the name of the directory containing the source files of the module.
+	\item {\bf objdir}:
+		the name of the directory containing the compiled files of the module.
+	\item {\bf docdir}
+		the name of the directory containing the documentation of the module.
+	\item {\bf docfile}
+		the name of the file containing the documentation of the module.
+	\item {\bf mode}
+		is a flag. If it is set to {\tt INTERPRETED} then all
+		the source files of the module are loaded ignoring the {\em modes}
+		associated to the files.
+		If it is set to {\tt COMPILED} then the modes associated to the files are
+		taken into account.
+\end{itemize}
+
+Usually all the instructions needed to configure a module are stored in a
+file ({\em module configuration file}).
+An example of module configuration file (for the {\em decide} module)
+is given in figure~\ref{modcfg}.
+
+\begin{figure}
+ \input{inclfile/modcfg}
+ \caption{
+	Configuration file for the {\em decide} module
+ }
+ \label{modcfg}
+\end{figure}
+
+
+\subsection{Systems}
+
+A system is a whole application.
+A system is built by assembling a set of modules.
+The configuration of a system is kept in a data structure containing the
+following slots:
+
+\begin{itemize}
+	\item {\bf name}:
+		a string containing the name of the system.
+	\item {\bf version}:
+		a string containing the version number of the system.
+	\item {\bf release}:
+		 a string containing the month and the year.
+	\item {\bf banner}:
+		a string containing the banner of the system.
+	\item {\bf modules}:
+		list of the modules of the system.
+	\item {\bf mode}:
+		a flag such that if it is set to {\tt INTERPRETED} then all
+		the source files of the system are loaded indipendently of the {\em
+		modes} associated to the modules and to the files.
+		If it is set to {\tt COMPILED} then the modes associated to the modules
+		and to the files are taken into account.
+	\item {\bf fixfile}:
+		the path name of the file containing the source code that has been
+		modified since the system has been compiled.
+		This file is loaded each time the system is run.
+	\item {\bf debugfile}:
+		path name of the file containing the code that the user wants to be
+		loaded in each time the system is run. 
+		Useful for debugging.
+	\item {\bf startfile}:
+		path name of the file containing GETFOL instructions which are to be
+		executed at start-up.
+	\item {\bf scrdir}:
+		path name of the directory containing source code.
+	\item {\bf docdir}:
+		path name of the directory containing documentation files.
+	\item {\bf objdir}:
+		path name of the directory containing object files;
+	\item {\bf docfile}:
+		path name of the file containing the documentation of  the system.
+\end{itemize}
+
+An example of system configuration file (for the {\tt GETFOL} system)
+is depicted in figure~\ref{syscfg}.
+
+\begin{figure}
+ \input{inclfile/syscfg}
+ \caption{Configuration file for the {\tt GETFOL} system}
+ \label{syscfg}
+\end{figure}
+
+A system is a hierarchical structure that can be regarded as a tree
+whose root branches into the modules which, in turn, branch into a set
+of leaves consisting of the files containing the source code.
+
+Task of the installation facilities is to run across such a tree and to
+build up the corresponding system.
+The primitive operations are the loading of the source or the compiled files
+for each module of the system.
+Before loading a compiled file, the installation facilities verify that
+it is up to date with respect to the corresponding source file.
+If it is not the case the source file is automatically compiled and the old
+compiled file is substituted with the new one that is finally loaded.
+
+{\it Mode flags} are particularly useful for debugging.
+Mode flags can be associated to the source files,
+to the modules and to the system itself.
+The mode flag associated to the files indicates whether the source file
+or the corresponding compiled file is to be loaded.
+The mode flags of the system and of the modules allows you to alter this
+situation in the following sense.
+If the mode flag of a module is {\tt INTERPRETED} then all the source files
+of the module, regardless of their own flag mode, are loaded.
+Analogously the mode flag of a system set to {\tt INTERPRETED} forces the
+loading of all the source files of all its modules (i.e. no compiled file
+is loaded).
+The mode flag of a file set to {\tt COMPILED} forces the compiled file
+to be loaded, while the mode flag of the system or of a module set to
+{\tt COMPILED} delegates the choice to the mode flags of the corresponding 
+components.

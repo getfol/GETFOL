@@ -1,0 +1,102 @@
+\gfcommand{ori}{or introduction rule}
+\index{ori}\index{oi}
+
+\gfsyntax{
+   ori \ALT oi \ARG{fact} \OPT{,} \ARG{wff} \OPT{,} \OPT{lr \ALT rl};\\
+   ori \ALT oi \ARG{fact} \OPT{,} \ARG{fact1} \ALT \ARG{wff1} 
+       disj \ALT dj \ARG{fact2} \ALT \ARG{wff2} disj \ALT dj \SEQ
+       \OPT{,} \OPT{lr \ALT rl};
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \dis I
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+   \fraz{A}
+        {A \dis B}
+   \end{array}
+   \ \ \ 
+   \begin{array}{c}
+   \fraz{A}
+        {B \dis A}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   The command creates a new fact whose wff is the disjunction of \ARG{fact}'s
+   wff and \ARG{wff}.
+   The option {\tt lr \ALT rl} specifies the order of the disjuncts:
+   {\bf lr} stands for ``left-right'' and it means that the left disjunct is 
+   \ARG{fact}'s wff and the right one is \ARG{wff}; {\tt rl} viceversa.
+   If no order is specified, then {\tt lr} is the default.
+   The new proof line inherits \ARG{fact}'s dependencies.
+
+   In the second form, the command accepts ``disjunctions of facts and wffs''
+   as second argument.
+   A ``disjunctions of facts and wffs'' is any parenthesized disjunctive
+   expression in which all disjuncts are facts (\ARG{fact1} {\tt disj} 
+   \ARG{fact2} \SEQ), wffs (\ARG{wff1} {\tt disj} \ARG{wff2} \SEQ)
+   or facts and wffs (\ARG{fact1} {\tt disj} \ARG{wff2} \SEQ).
+   The derived formula is the disjunction of the formulae.
+   It depends on the assumptions \ARG{fact} and  all the \ARG{factI}s 
+   depend on.
+}
+
+\gfrecap{
+The command creates a new fact whose wff is the disjunction of `fact''s
+formula and `wff'.
+The option `lr \ALT rl' specifies the order of the disjuncts:
+`lr' stands for ``left-right" and it means that the left disjunct is 
+the formula of `fact' and the right one is `wff'; `rl' viceversa.
+If no order is specified, then `lr' is the default.
+The new proof line inherits dependencies of `fact'.
+In the second form, the command accepts ``disjunctions of facts and wffs"
+as second argument.
+A ``disjunctions of facts and wffs" is any parenthesized disjunctive
+expression in which all disjuncts are facts (`fact1 disj fact2 ...), 
+wffs (wff1 disj wff2 ...) or facts and wffs (fact1 disj wff2 ...).
+The derived formula is the disjunction of the formulae.
+It depends on the assumptions `fact' and  all the `factI's 
+depend on.
+}
+
+\gfexample+
+   ***** declare sentconst A B;
+   ...
+
+   ***** assume A;
+   1  A  (1);
+   ***** ori 1 B;
+   2  A or B  (1)
+   ***** ori 1 B lr ;
+   3  A or B (1)
+   ***** ori 1 B rl ;
+   4  B or A  (1)
+
+   ***** reset;
+   ***** declare sentconst A B C D E;
+   ...
+
+   ***** assume A B C;
+   1  A  (1);
+   2  B  (2);
+   3  C  (3);
+
+   ***** ori 1 B dj C rl;
+   4  (B or C) or A   (1)
+
+   ***** ori 1 2 dj 3;
+   5  A or (B or C)   (1)
+
+   ***** ori 1 2 dj D dj 3 dj E rl;
+   6  (B or (D or (C or E))) or A   (1)
++
+
+\gfnotes{
+   A proof line derived by executing the second form can always be derived by
+   a sequence of executions of the command in the first form.
+}

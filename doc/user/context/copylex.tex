@@ -1,0 +1,47 @@
+\gfcommand{copylex}{Language declaration through contexts}
+\index{copylex}
+
+\gfsyntax{
+	copylex	\ARG{ctx-name};
+}
+
+\gfdescription{
+	This command copies in the current context all the symbols and sorts
+	declared in the context {\em ctx-name}.
+	The command has no effects in the case there is at least a symbol in the
+	current context that has the same name as a symbol in the context
+	{\em ctx-name}.
+}
+
+\gfrecap{
+This command copies in the current context all the symbols and sorts
+declared in the context `ctx-name'.
+The command has no effects in the case there is at least a symbol in the
+current context that has the same name as a symbol in the context `ctx-name'.
+}
+
+
+\gfexample+
+   ***** declare indconst a b;
+   ***** declare sentconst A B;
+   ***** declare sort S1 S2;
+   ***** namecontext C1;
+   You have named the current context: C1
+   ***** makecontext C2;
+   You have created the empty context: C2
+   ***** switchcontext C2;
+   You are now using context: C2
+   You are switching to a proof with no name.
+   ***** probe declare;
+   ***** copylex C1;
+   S1 has been declared to be a sort
+   S2 has been declared to be a sort
+   A has been declared to be a Sentconst
+   B has been declared to be a Sentconst
+   a has been declared to be an Indconst
+   b has been declared to be an Indconst
+   ***** copylex C1;
+   COPYLEX cannot be done: A has already been declared
+   ***** copylex C2;
+   You cannot copy the lex of the current context
++

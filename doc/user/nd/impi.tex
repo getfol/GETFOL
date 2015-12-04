@@ -1,0 +1,51 @@
+\gfcommand{impi}{implication introduction rule}
+\index{impi}\index{ded}
+
+\gfsyntax{
+   impi \ALT ded  \ARG{fact1} \OPT{, \ALT imp} \ARG{fact};\\
+   impi \ALT ded  \ARG{wff} \OPT{, \ALT imp} \ARG{fact};
+}
+
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \\ \\ \\
+      \imp I   
+   \end{array}
+   \ \  
+   %
+   \begin{array}{c}
+      {[A]}\\
+      \vdots\\
+      B\\
+      \hline\\
+      A \imp B
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   The wff derived is the implication of the wffs of \ARG{fact1} and
+   \ARG{fact2}. It depends on all the dependencies of \ARG{fact2} less 
+   {\em all the lines} whose wff is the same as \ARG{fact1}'s wff (in the 
+   first form) or \ARG{wff} (in the second form).
+}
+
+\gfrecap{
+The wff derived is the implication of the wffs of `fact1' and `fact2'.
+It depends on all the dependencies of `fact2' less all the lines whose wff is
+the same as `fact1''s wff (in the first form) or `wff' (in the second form).
+}
+   
+\gfexample+
+   ***** declare sentconst A;
+   ***** assume A;
+   1  A  (1)
+
+   ***** impi 1 1;
+   2  A imp A  
+
+   ***** impi A 1;
+   3  A imp A 
++

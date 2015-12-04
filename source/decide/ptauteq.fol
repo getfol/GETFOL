@@ -1,0 +1,365 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 16:29:09 MET 1993
+;;
+;; This GETFOL file (ptauteq.fol) was created in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1991-1993 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*****************************************************************
+;*                                                               *
+;* SYNTAX                                                        *
+;*                                                               *
+;*      (EQ_TAUTOLOGY? wff oldsubs)                              *
+;*                                                               *
+;* DESCRIPTION                                                   *
+;*                                                               *
+;*  Checks if wff is a tautology with equality.                  *
+;*                                                               *
+;*****************************************************************
+(DEFLAM ptauteq (wff)
+ (SEQ 
+  (assgn-init)
+  (EQ_TAUTOLOGY? wff)))
+
+(DEFLAM EQ_TAUTOLOGY? (wff)
+ (EQ_TAUTOLOGY1? wff MTL))
+
+(DEFLAM EQ_TAUTOLOGY1? (wff oldsubs)
+ (LET ((extsubs (subs2extsubs wff oldsubs)))
+  (IF (NCONSIS extsubs) TRUE
+   (LET ((nwff (PEVAL wff extsubs)))
+    (LET ((stats (stats-mak nwff)))
+     (LET ((subs (eq_stats2subs stats)))
+      (IF (DTLDO? subs) TRUE
+       (IFN (UNDEF-SUBS? subs) (EQ_TAUTOLOGY1? nwff (APPEND subs oldsubs))
+        (IF (MTL? stats) (TRUTH (PEVAL nwff MTL))
+         (LET ((pc (eq_pc2subs-get stats)))
+          (AND (EQ_TAUTOLOGY1? nwff (LCONS (sub-mak pc (mkfalsity)) oldsubs))
+               (EQ_TAUTOLOGY1? nwff (LCONS (sub-mak pc (mktruth)) oldsubs)))))))))))))
+
+; In this function is encoded the heuristic of TAUTEQ: we prefer to
+; subtitute equalities as they may produce inconsistency.
+;
+(DEFLAM eq_pc2subs-get (stats) (eq_pc2subs-get1 0 MTL stats))
+(DEFLAM eq_pc2subs-get1 (occn pc stats)
+ (LET ((stat (FIRST stats)))
+  (IF (MTL? stat) pc
+   (LET ((new_occn (IF (EQU (stat-get-pc stat))
+                       (TIMES 3 (stat-get-occn stat))
+                       (stat-get-occn stat))))
+    (IF (GT new_occn occn) 
+     (eq_pc2subs-get1 new_occn (stat-get-pc stat) (REST stats))
+     (eq_pc2subs-get1 occn pc (REST stats)))))))
+
+; This function puts in subs only those preds that are not unifiable
+; with preds occurring with opposite polarity.
+; Currently the test for unifiability is very weak: two pred are unifiable
+; if they have the same predicative letter.  A more sophisticated approach
+; consists in taking into account of equalities.
+; Note that if a pred occurs both positively and negatively, it will not
+; be put in automatically, as it is unifiable with itself.
+
+(DEFLAM eq_stats2subs (STATS) (eq_stats2subs1 STATS MTL))
+(DEFLAM eq_stats2subs1 (STATS SUBSTS)
+ (IF (MTL? STATS) SUBSTS
+  (LET ((stat (FIRST STATS)))
+   (LET ((TLDO (stat-get-tldo stat)))
+    (IF (DISMTLDO TLDO) (DISMTLDO-mak)
+     (LET ((val (IF (POSPOL TLDO) (mkfalsity)
+                 (IF (NEGPOL TLDO) (mktruth) %UNDEF%))))
+      (IFN (EQ val %UNDEF%)
+       (eq_stats2subs1 (REST STATS)
+        (LCONS (sub-mak (stat-get-pc stat) val) SUBSTS))
+       (IF (EQU (stat-get-pc stat))
+        (eq_stats2subs1 (REST STATS) SUBSTS)
+       (LET ((POL (stat-get-gpol stat)))
+        (LET ((val (IF (POSPOL POL) (mkfalsity)
+                    (IF (NEGPOL POL) (mktruth) %UNDEF%))))
+         (IFN (EQ val %UNDEF%)
+          (IF (SIMPLE (stat-get-pc stat))
+           (eq_stats2subs1 (REST STATS)
+            (LCONS (sub-mak (stat-get-pc stat) val) SUBSTS))
+           (IF (opposite_pred-exists? (stat-get-pc stat) (IST val))
+            (eq_stats2subs1 (REST STATS) SUBSTS)
+            (eq_stats2subs1 (REST STATS)
+             (LCONS (sub-mak (stat-get-pc stat) val) SUBSTS))))
+          (eq_stats2subs1 (REST STATS) SUBSTS))))))))))))
+
+; Returns TRUE if in stat there exists a pred having the same predicative
+; letter of predappl but with opposite polarity wrt that specified by FLAG,
+; FALSE otherwise.
+;
+(DEFLAM opposite_pred-exists? (predappl FLAG)
+ (opposite_pred-exists1? predappl FLAG (stats-get)))
+
+(DEFLAM opposite_pred-exists1? (predappl FLAG stats)
+ (IF (MTL? stats) FALSE
+  (LET ((info (FIRST stats)))
+   (IF (EQ (predappl-get-pred predappl)
+           (appl-get-functor (stat-get-pc info)))
+    (IF (IST FLAG)
+     (IF (POSPOL (stat-get-gpol info)) TRUE
+      (opposite_pred-exists1? predappl FLAG (REST stats)))
+     (IF (NEGPOL (stat-get-gpol info)) TRUE
+      (opposite_pred-exists1? predappl FLAG (REST stats))))
+    (opposite_pred-exists1? predappl FLAG (REST stats))))))
+    
+; Note that we initialize preds and equs with a fresh (ie distinguished)
+; dotted pairs by invoking equivs-mak&get-empty. Such data structures
+; then updated by:
+;    - preds&equs-add-wff_pred&equ
+;    - preds&equs-add-wff_pred&equ
+; it is useful to pred&equ-set. The lists built by pred&equ-set have
+; the following form: ( MTL . <list> ) , so we have to extract <list>
+; to get right information.
+; This trick allows us to avoid to use global variables.
+;
+; It creates the equivalence lists of indconst, then builds the equivalence
+; lists of preds verifying their consistency, finally builds the
+; equivalence lists of equs verifying their consistency.
+;
+(DEFLAM subs2extsubs (wff substs)
+ (LET ((ic_equivs (ic_equivs-mak&get substs)))
+  (IF (NCONSIS ic_equivs) (NCONSIS-mak)
+   (LET ((preds (equivs-mak&get-empty)) (equs (equivs-mak&get-empty)))
+    (SEQ
+     (preds&equs-add-wff_pred&equ wff preds equs)
+     (preds&equs-add-subs_pred&equ substs preds equs)
+     (LET ((substs1 (substs-add-preds 
+                     (pred_equivs-mak&get (CDR preds) ic_equivs)
+                     substs)))
+      (IF (NCONSIS substs1) substs1
+       (substs-add-equs
+        (pred_equivs-mak&get (CDR equs) ic_equivs)
+        substs1))))))))
+
+;WARNING: subtle side-effect!
+;
+(DEFLAM ic_equivs-mak&get (substs)
+ (LET ((equivs (equivs-mak&get-empty)))
+  (IF (NCONSIS (ic_equivs-mak&get1 substs equivs)) (NCONSIS-mak)
+   (CDR equivs))))
+
+(DEFLAM ic_equivs-mak&get1 (substs equivs)
+ (IF (NCONSIS substs) (NCONSIS-mak)
+  (IF (MTL? substs) TRUE
+   (LET ((sub (FIRST substs)))
+    (IF (EQU (sub-get-subed sub))
+     (IF (FALSITY (sub-get-subing sub))
+      (IF (EQ (lfequ (sub-get-subed sub)) (rtequ (sub-get-subed sub)))
+       (NCONSIS-mak)
+       (ic_equivs-mak&get1 (REST substs) equivs))
+      (SEQ
+       (equivs-add-rel (lfequ (sub-get-subed sub))
+                       (rtequ (sub-get-subed sub))
+                       equivs)
+       (ic_equivs-mak&get1 (REST substs) equivs)))
+     (ic_equivs-mak&get1 (REST substs) equivs))))))
+
+(DEFLAM equivs-add-rel (ic1 ic2 equivs)
+ (LET ((eql1 (equiv_list-get ic1 equivs)) 
+       (eql2 (equiv_list-get ic2 equivs)))
+  (IFN (MTL? eql1)
+   (IFN (MTL? eql2)
+    (IF (EQ eql1 eql2) (NOP)
+     (SEQ
+      (NCONC eql1 eql2)
+      (equiv_list-del eql2 equivs)))
+    (OBJ-INSERT ic2 eql1))
+   (IFN (MTL? eql2) (OBJ-INSERT ic1 eql2)
+    (OBJ-INSERT (LIST ic1 ic2) equivs)))))
+
+(DEFLAM equiv_list-get (el equivs)
+ (IF (MTL? equivs) MTL
+  (IF (HGKM-MEMBER el (FIRST equivs)) (FIRST equivs)
+   (equiv_list-get el (REST equivs)))))
+
+; EQUAL in the old version
+;
+(DEFLAM equiv_list-del (eql equivs)
+ (IF (MTL? equivs) (NOP)
+  (IF (EQ eql (FIRST equivs)) (SETFIRST equivs NIL)
+   (equiv_list-del eql (REST equivs)))))
+
+
+(DEFLAM preds&equs-add-wff_pred&equ (wff preds equs)
+ (IF (SIMPLE wff) (NOP)
+  (IF (EQU wff) (OBJ-INSERT wff equs)
+   (IF (PREDAPPL wff) (OBJ-INSERT wff preds)
+    (IF (CONNAPPL wff)
+     (preds&equs-add-wff_pred&equ* (connappl-get-args wff) preds equs)
+     (IF (WFFIF wff) 
+      (SEQ
+       (preds&equs-add-wff_pred&equ (ifof wff) preds equs)
+       (preds&equs-add-wff_pred&equ (thenof wff) preds equs)
+       (preds&equs-add-wff_pred&equ (elseof wff) preds equs))
+      (IF (QUANTWFF wff) (error-trap 'NOTPROP 'PTAUTEQ)
+       (REMSG1 "preds&equs-add-wff_pred&equ: <wff> with unknown syntax. Fatal error !!!"))))))))
+     
+(DEFLAM preds&equs-add-wff_pred&equ* (wff* preds equs)
+ (IF (MTL? wff*) (NOP)
+  (SEQ (preds&equs-add-wff_pred&equ (FIRST wff*) preds equs)
+       (preds&equs-add-wff_pred&equ* (REST wff*) preds equs))))
+
+(DEFLAM preds&equs-add-subs_pred&equ (substs preds equs)
+ (IF (MTL? substs) (NOP)
+  (SEQ
+   (LET ((PC (sub-get-subed (FIRST substs))))
+    (IF (EQU PC) (OBJ-INSERT PC equs)
+     (IF (PREDAPPL PC) (OBJ-INSERT PC preds)
+      (NOP))))
+   (preds&equs-add-subs_pred&equ (REST substs) preds equs))))
+
+(DEFLAM pred_equivs-mak&get (preds ic_equivs)
+ (LET ((pred_equivs (equivs-mak&get-empty)))
+  (SEQ (pred_equivs-mak&get1 preds ic_equivs pred_equivs)
+       (CDR pred_equivs))))
+
+; For each pred in preds 3 situations may occur:
+; 1. pred is in an equivalence list  --->  (NOP)
+; 2. pred belongs to an equivalence list, but it is not actually present
+;    in that list  ---> insert pred in that equivalence list
+; 3. pred doesn't belong to any already existing equivalence list --->
+;    create a new equivalence list
+;
+; NOTE: the representative of a list is the first element of the list
+;
+(DEFLAM pred_equivs-mak&get1 (preds ic_equivs pred_equivs)
+ (IF (MTL? preds) (NOP)
+  (SEQ
+   (LET ((pred (FIRST preds)))
+    (IFN (MTL? (equiv_list-get pred pred_equivs)) (NOP)
+     (LET ((repr (repr_pred-get pred ic_equivs)))
+      (LET ((equiv_list (equiv_list-get repr pred_equivs)))
+       (IFN (MTL? equiv_list) (OBJ-INSERT pred equiv_list)
+        (IF (EQUAL repr pred) (NOP)
+         (OBJ-INSERT (LIST repr pred) pred_equivs)))))))
+   (pred_equivs-mak&get1 (CDR preds) ic_equivs pred_equivs))))
+
+(DEFLAM repr_pred-get (predappl ic_equiv_list)
+ (predappl-mak (predappl-get-pred predappl)
+               (repr_args-get (predappl-get-args predappl) ic_equiv_list) ))
+
+(DEFLAM repr_args-get (args ic_equiv)
+ (IF (MTL? args) MTL
+  (LCONS (repr_ic-get (FIRST args) ic_equiv)
+         (repr_args-get (REST args) ic_equiv))))
+
+(DEFLAM repr_ic-get (ic ic_equiv)
+ (LET ((equiv (equiv_list-get ic ic_equiv)))
+  (IF (MTL? equiv) ic (CAR equiv))))
+
+; It verifies the consistency of each equivalence list, adds new subtitutions
+; pairs to substs and updates, if necessary, the substitution value of
+; the representative element of each equivalence list.
+; It returns TRUE if no inconsistence has been detected, FALSE otherwise.
+;
+(DEFLAM substs-add-preds (equivs substs)
+ (IF (MTL? equivs) substs
+  (LET ((equiv (FIRST equivs)))
+   (LET ((val (repr-get-val equiv substs)))
+    (IF (NCONSIS val) (NCONSIS-mak)
+     (substs-add-preds (REST equivs)
+                       (extsubs-mak&get val equiv substs)))))))
+
+; It returns:
+; - NCONSIS if in equivs there are two elements with discording
+;   substitution values;
+; - Rrue if in equivs there is at least an element with substitution
+;   value True and there is no element with subtitution value False;
+; - False if in equivs there is at least an element with substitution
+;   value False and there is no element with subtitution value True;
+; - the representative of the class if none of the previous cases occurs.
+;
+(DEFLAM repr-get-val (equiv subs)
+ (repr-get-val1 equiv subs (FIRST equiv)))
+ 
+(DEFLAM repr-get-val1 (equiv subs repr)
+ (IF (MTL? equiv) repr
+  (LET ((sub (HGKM-ASSOC (FIRST equiv) subs)))
+   (IF (MTL? sub)
+    (repr-get-val1 (REST equiv) subs repr)
+    (IF (OR (TRUTH (sub-get-subing sub)) (FALSITY (sub-get-subing sub)))
+     (IF (OR (TRUTH repr) (FALSITY repr))
+      (IF (EQ (sub-get-subing sub) repr)
+       (repr-get-val1 (REST equiv) subs repr)
+       (NCONSIS-mak))
+      (repr-get-val1 (REST equiv) subs (sub-get-subing sub)))
+     (repr-get-val1 (REST equiv) subs repr))))))
+
+; If the repr has no truth-value associated in subst, then it is substituted
+; for all the other elements of the equivalence class.
+;
+(DEFLAM extsubs-mak&get (val equivs substs)
+ (IF (OR (TRUTH val) (FALSITY val))
+  (extsubs-mak&get1 val equivs substs)
+  (extsubs-mak&get1 val (REST equivs) substs)))
+
+(DEFLAM extsubs-mak&get1 (val equivs substs)
+ (IF (MTL? equivs) substs
+  (LCONS (sub-mak (FIRST equivs) val)
+         (extsubs-mak&get1 val (REST equivs) substs))))
+
+; It verifies the consistency of each equivalence list wrt the substitution
+; sun, adds new subtitutions
+; pairs to substs and updates, if necessary, the substitution value of
+; the representative element of each equivalence list.
+; It returns the extended substitution if inconsistency is not detected,
+; NCONSIS otherwise.
+;
+; NOTE: if an equivalence list contains an identity (e.g. an equ of the
+; form t = t), then it is surely the representative of that list, except
+; for the situation in which multiple identities exist.
+;
+(DEFLAM substs-add-equs (equivs substs)
+ (IF (MTL? equivs) substs
+  (LET ((equiv (FIRST equivs)))
+   (LET ((val (repr-get-val equiv substs)))
+    (IF (NCONSIS val) (NCONSIS-mak)
+     (IF (FALSITY val)
+      (LET ((repr (FIRST equiv)))
+       (IF (EQ (lfequ repr) (rtequ repr)) (NCONSIS-mak)
+        (substs-add-equs (REST equivs)
+                         (extsubs-mak&get val equiv substs))))
+      (substs-add-equs (REST equivs)
+                       (extsubs-mak&get val equiv substs))))))))

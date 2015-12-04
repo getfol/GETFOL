@@ -1,0 +1,33 @@
+\gfcommand{monadeq}{first order decider for monadic formulas with equality}
+\index{monadeq}
+
+\gfsyntax{
+  monadeq \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+
+
+\gfdescription{
+It tries to establish whether the input formula is deducible from the
+specified facts by using {\tt nnf}, {\tt reduce}, {\tt phexp} and finally
+{\tt ptauteq}.
+}
+
+\gfrecap{
+It tries to establish whether the input formula is deducible from the
+specified facts by using nnf, reduce, phexp and finally ptauteq.
+}
+
+\gfexample+
+   ***** declare predconst P 1;
+   ***** declare funconst f 3;
+   ***** declare indvar x y z;
+   ***** declare indpar a b;
+
+   *****comment | *** MONADEQ EXAMPLES *** |
+   ***** monadeq forall x. exists y. (x=y);
+   1   forall x. exists y. (x=y)
+   ***** monadeq forall x.  forall y. (x=y imp (P(x) imp P(y)));
+   2   forall x.  forall y. (x=y imp (P(x) imp P(y)))
+   ***** monad (x=y imp (P(x) imp P(y))) by 2;
+   3   (x=y imp (P(x) imp P(y)))  (2)
++

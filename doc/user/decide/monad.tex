@@ -1,0 +1,65 @@
+\gfcommand{monad}{first order decider for monadic formulas}
+\index{monad}
+
+\gfsyntax{
+  monad \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+
+\gfdescription{
+It tries to establish whether the input formula is deducible from the
+specified facts by using {\tt nnf}, {\tt reduce}, {\tt phexp} and finally
+{\tt ptaut}.
+}
+
+\gfrecap{
+It tries to establish whether the input formula is deducible from the
+specified facts by using nnf, reduce, phexp and finally ptaut.
+}
+
+\gfexample+
+   ***** declare predconst P 1;
+   ***** declare funconst f 3;
+   ***** declare indvar x y z;
+   ***** declare indpar a b;
+   
+   *****comment | *** MONAD EXAMPLES *** |
+   ***** monad forall x. exists y. (P(x) imp P(y));
+   1   forall x. exists y. (P(x) imp P(y))
+   ***** monad exists y. forall x. (P(x) imp P(y));
+   2   exists y. forall x. (P(x) imp P(y))
+   ***** monad exists y. forall x. ((P(x) imp P(y)) or P(x));
+   3   exists y. forall x. ((P(x) imp P(y)) or P(x))
+   
+   ***** monad forall x. exists y.
+    wffif P(trmif P(y) then x else y)
+     then P(trmif P(y) 
+             then trmif P(y) 
+                   then x 
+                   else trmif P(y) 
+                         then x 
+                         else y 
+             else y) 
+          or TRUE
+     else P(y) or TRUE;
+   4   forall x. exists y. 
+       (wffif P(trmif P(y) then x else y) 
+         then (P(trmif P(y) 
+                 then 
+                 (trmif P(y) 
+                   then x 
+                   else (trmif P(y) then x else y)) 
+               else y) or TRUE) else (P(y) or TRUE))
+   ***** monad forall x. exists y. wffif P(x) then P(y) else not P(y);
+   5   forall x. exists y. (wffif P(x) then P(y) else (not P(y)))  
+   ***** monad forall y. exists x. (P(f(a,b,x)) or not P(f(a,b,y)));
+   6   forall y. exists x. (P(f(a,b,x)) or (not P(f(a,b,y))))
+   ***** monad exists z. forall y. exists x. (P(f(z,b,x)) or not P(f(x,b,z)));
+   7   exists z. forall y. exists x. (P(f(z,b,x)) or (not P(f(x,b,z)))) 
+   ***** monad exists z. forall y. exists x. (P(f(z,b,x)) or not P(f(x,b,y)));
+   7   exists z. forall y. exists x. (P(f(z,b,x)) or (not P(f(x,b,y)))) 
++
+   
+\gfnotes{
+   The name ``{\tt monad}" is due to the fact that the monadic predicate
+calculus is subset of the class of formulas decided by such a decider.
+}   

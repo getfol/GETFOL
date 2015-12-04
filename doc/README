@@ -1,0 +1,39 @@
+                                    README
+
+This README file describes the contents of the *doc* directory of the GETFOL
+distribution package. This directory has the following contents:
+
+  MAKEDOCS  :   shell script which creates the installation, hgkm and GETFOL
+                manuals.
+                The script will run on any system supporting `csh', `latex',
+                `dvips'
+
+  README    :   this file.
+
+  hgkm      :   directory containing the LaTeX source code of the HGKM manual.
+
+  install   :   directory containing the LaTeX source code of the installation
+                manual.
+
+  user      :   directory containing the LaTeX source code of the GETFOL user
+                manual.
+
+
+                                  *IMPORTANT*
+
+To make the documentation, run the script MAKEDOCS, that is, type
+
+      $ MAKEDOCS
+
+The script will create the following three files in the directory *doc*:
+
+  instman.dvi  : installation manual for the GETFOL system);
+
+  hgkmman.dvi  : HGKM manual;
+
+  userman.ps   : GETFOL user manual.
+
+
+If you have any problem making the documentation, please send e-mail to:
+
+                getfol@frege.mrg.dist.unige.it (GETFOL manager)

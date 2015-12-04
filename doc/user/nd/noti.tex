@@ -1,0 +1,65 @@
+\gfcommand{noti}{implication introduction for negation}
+\index{noti}\index{ni}
+
+\gfsyntax{
+   noti \ALT ni \ARG{fact1} \OPT{,} \ARG{wff}; \\
+   noti \ALT ni \ARG{fact1} \OPT{,} \ARG{fact2};
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \\ \\ 
+      \imp I_{\neg}  
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      {[A]}\\
+      \vdots\\
+      \bot\\
+      \hline\\
+      \neg A
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   The wff of \ARG{fact1} must be {\tt FALSE}.
+   The command creates a fact whose wff is the negation of \ARG{wff}.
+   It depends on all the dependencies of \ARG{fact1} less all the dependencies
+   whose wff is equal to \ARG{wff} (in the first form) or \ARG{fact2}'s wff
+   (in the second form).
+}
+
+\gfrecap{
+   The wff of `fact1' must be `FALSE'.
+   The command creates a fact whose wff is the negation of `wff'.
+   It depends on all the dependencies of `fact1' less all the dependencies
+   whose wff is equal to `wff' (in the first form) or the formula of 
+   `fact2' (in the second form).
+}
+   
+\gfexample+
+   ***** declare sentconst A;
+   [...]
+
+   ***** assume A not A;
+   1  A  (1)
+   2  not A  (2)
+
+   *****  falsei 1 2;
+   3  FALSE  (1 2)
+
+   *****  noti 3 not A;
+   4  not not A  (1)
+
+   *****  impi 1 4;
+   5  A imp not not A
++
+
+\gfnotes{
+   Since $\neg A$ ai equivalent to $A \imp \bot$,
+   this rule can be seen as a special case of the implication introduction
+   rule ({\tt impi}), in which  the asserted line has \verb+not+ ($\neg$) as
+   main symbol.
+}

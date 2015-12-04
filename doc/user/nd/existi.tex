@@ -1,0 +1,106 @@
+\gfcommand{existi}{existential quantification introduction rule}
+\index{existi}\index{ei}
+
+\gfsyntax{
+  existi \ARG{fact}
+   \OPT{\OPT{,} \ARG{term1} :} \ARG{indvar1} \OPT{occ \ARG{n11} \ARG{n12} \SEQ}
+   \OPT{\OPT{,} \ARG{term2} :} \ARG{indvar2} \OPT{occ \ARG{n21} \ARG{n22} \SEQ}
+   \SEQ;
+}
+
+
+\gfdescription{
+  \renewcommand{\arraystretch}{0.5}
+  \[
+  \begin{array}{l}
+    \exists  I  
+  \end{array}
+  \ \ 
+  \begin{array}{c}
+    \fraz{A}
+    {\exists x A^{t}_{x}}
+  \end{array}
+  \]
+  \renewcommand{\arraystretch}{1}
+
+  The list following \ARG{fact} indicates which terms are to be 
+  existentialized.
+  If the optional \ARG{termI} is present, it is replaced by \ARG{indvarI}
+  at each occurrence mentioned in the sequence of natural numbers
+  \OPT{$n_{i1}$ $n_{i2}$ \SEQ} and then  existentialized.
+  If \ARG{termI} is not present, all the occurrences of \ARG{indvarI} are
+  put under the scope of the existential quantifier.
+  Notice that no use can be made of an occurrence specification
+  \OPT{$n_{i1}$ $n_{i2}$ \SEQ} if there is no \ARG{termI} present,
+  {\GF} will return an error in this case.
+  The dependencies of the conclusion are those of \ARG{fact}.
+
+  In the sorted rule, let {\tt A(t)} be the formula to be existentialized,
+  and let {\tt x} be of sort {\tt Sx}.
+  Then the result of the rule is {\tt exists x.A(x)} if {\tt t} is of sort
+  {\tt Sx}, {\tt Sx(t) imp exists x.A(x)} otherwise.
+  This schema applies also to the case where multiple terms are to be
+  existentialized.
+}
+
+\gfrecap{
+The list following `fact' indicates which terms are to be existentialized.
+If the optional `termI' is present, it is replaced by `indvarI' at each 
+occurrence mentioned in the sequence of natural numbers [nI1 nI2 ...] and then
+existentialized.
+If `termI' is not present, all the occurrences of `indvarI' are put under the 
+scope of the existential quantifier.
+Notice that no use can be made of an occurrence specification [nI1 nI2 ...] if
+there is no `termI' present, GETFOL will return an error in this case.
+The dependencies of the conclusion are those of `fact'.
+In the sorted rule, let `A(t)' be the formula to be existentialized, and let
+`x' be of sort `Sx'.
+Then the result of the rule is `exists x. A(x)' if `t' is of sort `Sx',
+`Sx(t) imp exists x. A(x)' otherwise.
+This schema applies also to the case where multiple terms are to be
+existentialized.
+}  
+
+\gfexample+
+   *****  comment ! unsorted example !
+       
+   ***** declare predconst P 2;
+   ***** declare indvar x y x0;
+   ***** declare indconst c1 c2;
+   [...]
+
+   ***** assume P(c1 c2);
+   1   P(c1,c2)     (1)
+
+   ***** existi 1 c1:x c2:y;
+   2   exists y x.P(x,y)     (1)
+
+   ***** existi 1 c1:x c1:x;
+   3   exists x x.P(x,c2)     (1)
+
+   ***** existi 1 c1:x c2:x0;
+   4   exists x x0.P(x0,x)     (1)
+
+   ***** assume P(c1 c1);
+   5   P(c1,c1)     (5)
+
+   ***** existi 5 c1:x 2;
+   6   exists x.P(c1,x)     (5)
+    
+    
+   ***** comment ! sorted example !
+    
+   ***** declare predconst P 2;
+   ***** declare indvar x [Sx];
+   ***** declare indvar y [Sy];
+   ***** declare indconst c1 c2 [S];
+   [...]
+
+   ***** moregeneral Sx < S >;
+
+   ***** assume P(c1 c2);
+   1   P(c1,c2)     (1)
+
+   ***** existi 1 c1:x c2:y;
+   2   Sy(c2) imp exists y x. P(x,y)     (1)
++

@@ -1,0 +1,160 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 1.001
+;; This file is a GETFOL source file: fapfstr.fol
+;; Date: Thu Nov 11 14:42:47 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Fausto        ;;
+;;   Giunchiglia, the AUTHOR, under certain rights and obligations.         ;;
+;;   By obtaining, using and/or copying this software, you indicate that    ;;
+;;   you have read, understood, and will comply with the following terms    ;;
+;;   and conditions:                                                        ;;
+;;                                                                          ;;
+;;   THE AUTHOR MAKES NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHOR MAKES      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHOR shall not be held liable for any direct, indirect or        ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHOR or a modified            ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHOR may not be used in advertising or publicity     ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHOR.  The AUTHOR     ;;
+;;   makes no representations about the suitability of this software for    ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHOR and LICENSEE   ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*      STRUCTURAL INFERENCE RULES : WEAKEN, CONTRACT, CUT        *  
+;*                                                                *
+;*   This file includes the routines implementing structural      *
+;*   (derived) rules for natural deduction.                       *
+;*                                                                *
+;******************************************************************
+
+
+
+;weaken
+;******************************************************************
+;*                                                                *
+;* SYNTAX: (weaken fact newfacts)                                 *
+;*                                                                *
+;* DESCRIPTION:                                                   *
+;*        weaken adds all the dependencies of all newfacts to     *
+;*        the dependencies of fact if they are not yet there,     *
+;*        creating a new fact which is therefore "weaker" than    *
+;*        the former.                                             *
+;*                                                                *
+;* STRUCTURE:                                                     *
+;*                                                                *
+;*       Gamma |- A    { Delta-1 |- B-1, ...,Delta-n |- B-n }     *
+;*   ---------------------------------------------------------    *
+;*          Gamma U {Delta-1, ... Delta-n} |- A                   *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM weaken (fact newfacts)
+ (proof-add-line
+  (fact-get-wff fact)
+  (deplist-union 
+      (fact-get-deplist fact)
+      (facts-union-dep newfacts))
+  (reason-mak 'WEAKEN (ras2-mak (fact_ra-mak fact) (facts_ra-mak newfacts)))))
+
+
+
+;contract
+;******************************************************************
+;*                                                                *
+;* SYNTAX: (contract fact assumption_list)                        *
+;*                                                                *
+;* DESCRIPTION:                                                   *
+;*      Given a fact and a list of dependencies to be kept,       *
+;*      (which must be completely included in fact's deplist)     *
+;*      eliminates all the dependencies of fact which have        *
+;*      the same wff of some assumption in the list.              *
+;*                                                                *
+;* EXAMPLE:                                                       *
+;*                                                                *
+;*   Gamma U {B-1,..,B-n} |- A                {B-i, B-j}          *
+;* -------------------------------------------------------------- *
+;*                 Gamma U {B-i,B-j}  |-   A                      *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM contract (fact assumption_list)
+ (IFN (ASSUMPTIONS assumption_list)
+  (ERRMESS "I can only contract facts which occur in the assumption list!")
+  (LET ((deplist1 (fact-get-deplist fact))
+        (deplist2 (facts-union-dep assumption_list)))
+   (IFN (SUB-DEPLIST deplist2  deplist1)
+    (ERRMESS 
+     "I cannot contract using a fact not occurring in the assumption list!")
+    (proof-add-line 
+      (fact-get-wff fact)
+      (deplist-union deplist2 
+       (deplist-del-wffs (facts-get-wffs assumption_list) deplist1))
+      (reason-mak 'CONTRACT (ras2-mak
+			     (fact_ra-mak fact)
+			     (facts_ra-mak assumption_list))))))))
+
+
+;cut
+;******************************************************************
+;*                                                                *
+;* SYNTAX: (cut fact1 fact2 assumption_list)                      *
+;*                                                                *
+;* DESCRIPTION:                                                   *
+;*         This command generates a new fact, which is obtained   *
+;*         from fact2 by eliminating every dependency whose wff   *
+;*         is equal to fact1's, except those included in          *
+;*         assumption_list.                                       * 
+;*                                                                *
+;* EXAMPLE:                                                       *
+;*                                                                *
+;*  Gamma |- A     Delta, A-1, ..., A-n |- B     {A-k1,...,A-kn}  *
+;* -------------------------------------------------------------- *
+;*           Gamma U Delta U {A-k1,...,A-kn} |- B                 *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM cut (fact1 fact2 assumption_list)
+ (IFN (ASSUMPTIONS assumption_list)
+  (ERRMESS "I can only cut facts which occur in the assumption list!")
+  (IFN (DEPENDENCIES assumption_list fact2)
+   (ERRMESS "The fact must depend on all the dependencies to keep")
+   (IFN (SAMEWFF (fact-get-wff fact1) assumption_list)
+    (ERRMESS "The assumptions to keep must have the same wff as the fact!")
+    (proof-add-line
+      (fact-get-wff fact2)
+      (deplist-union
+        (fact-get-deplist fact1)                      
+        (deplist-union
+          (deplist-del-wff                                        
+              (fact-get-wff fact1)                    
+              (fact-get-deplist fact2))               
+          (facts-union-dep  assumption_list)))        
+      (reason-mak 'CUT (ras3-mak (fact_ra-mak fact1)
+				 (fact_ra-mak fact2)
+				 (facts_ra-mak assumption_list))))))))

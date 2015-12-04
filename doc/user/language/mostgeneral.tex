@@ -1,0 +1,37 @@
+\gfcommand{mostgeneral}{new top for the sort hierarchy}
+\index{mostgeneral}
+
+\gfsyntax{
+  mostgeneral \ARG{sym};
+}
+
+\gfdescription{
+  The command declares \ARG{sym} to be a sort equivalent to the default
+  most general sort ({\tt UNIVERSAL}).
+}
+
+\gfrecap{
+Declares `sym' to be a sort equivalent to the most general sort.
+}
+
+\gfexample+
+   ***** declare predconst P1 1;
+   P1 has been declared to be a Predconst
+
+   ***** declare sort P2 ;
+   P2 has been declared to be a sort
+
+   ***** mostgeneral P1;
+   The unary predconst P1 has been declared to be a sort
+   P1 is now equivalent to UNIVERSAL
+
+   ***** mostgeneral P2;
+   P2 is a sort
+   P2 is now equivalent to UNIVERSAL
++
+
+\gfnotes{
+  \ARG{sym} has to be either an unused symbol or a sort or a unary predicate.
+  The new symbol does not substitute for the default most general sort {\tt
+  UNIVERSAL}; it is defined to be equivalent to it.
+}

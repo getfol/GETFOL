@@ -1,0 +1,570 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:09:54 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: context.fol
+;; Date: Wed Oct 20 10:43:07 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +                                                               +
+; + This file is supposed to contain all the code necessary to    +
+; + elementary management of contexts and elementary and not      +
+; + elementary management of proofs.                              +
+; + In particular it contains all the code related to the non     +
+; + elementary view of contexts, elementary and non elementary    +
+; + view of proofs.                                               +
+; + Here are all the functions which make the switch between      +
+; + elementary views and non elementary views and viceversa.      +
+; +                                                               +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+;;;  basic functions for ctext manipulations
+;
+; *******************************************************
+; *                                                     *
+; *  SYNTAX                                             *
+; *   (ectext2ctext)                                    *
+; *   (ctext2ectext CTEXT)                              *
+; *   (cur-ctext-forget)                                *
+; *                                                     *
+; *  DESCRIPTION                                        *
+; *   ctext2ectext takes a ctext as argument and makes  *
+; *    it the current ctext.                            *
+; *   ectext2ctext gets the non el. view of CTEXT       *
+; *   cur-ctext-forget forgets everything of the        *
+; *   current context                                   *
+; *                                                     *
+; *******************************************************
+;
+(DEFLAM ectext2ctext ()
+  (ctext-mak (curcname-get) (econtext2context) ) )
+
+(DEFLAM ctext2ectext (CTEXT)
+  (SEQ
+    (curcname-set   (ctext-get-cname CTEXT))
+    (context2econtext (ctext-get-context CTEXT)) ))
+
+(DEFLAM cur-ctext-forget ()
+     (SEQ
+      (curcname-del)
+      (cur-context-forget) ))
+
+;;; Functions on the current context
+;
+; *******************************************************
+; *                                                     *
+; * SYNTAX                                              *
+; *   (econtext2context)                                *
+; *   (context2econtext CONTEXT)                        *
+; *   (cur-context-forget)                              *
+; *                                                     *
+; *  DESCRIPTION                                        *
+; *   context2econtext takes a context and makes        *
+; *   the current context                               *
+; *   econtext2context returns the current context in   *
+; *   its non elementary version                        *
+; *                                                     *
+; *******************************************************
+;
+(DEFLAM econtext2context ()
+ (context-mak
+  (elex2lex)
+  (esimstruct2simstruct)
+  (efacts2facts)))
+
+(DEFLAM context2econtext (CONTEXT)
+ (SEQ
+  (lex2elex (context-get-lex CONTEXT))
+  (simstruct2esimstruct (context-get-simstruct CONTEXT))
+  (facts2efacts (context-get-facts CONTEXT))))
+
+(DEFLAM cur-context-forget ()
+ (SEQ
+  (cur-simstruct-forget)
+  (cur-facts-forget)))
+
+
+;;; Lexicon Manipulation
+;
+;;; LEX
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (elex2lex)                                               *
+; *      (lex2elex LEX)                                           *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      elex2lex transforms the elementary descriptions of       *
+; *      lexicons to the non-elementary descriptions of           *
+; *      lexicons.                                                *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM elex2lex () (lex-mak (cur-cxt-symls-get) (cur-cxt-symls-get-phis)))
+
+(DEFLAM lex2elex  (LEX)
+ (SEQ
+  (cur-cxt-symls-set (lex-get-symls LEX))
+  (cur-cxt-symls-set-phis (lex-get-symphis LEX))))
+
+
+
+;;;Simulation structures manipulation
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (esimstruct2simstruct)                                   *
+; *      (simstruct2esimstruct simstruct)                         *
+; *      (cur-simstruct-forget)                                   *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM esimstruct2simstruct ()
+ (simstruct-mak 
+  (erepsinfo2repsinfo) 
+  (eintsinfo2intsinfo)
+  (edesfunsinfo2desfunsinfo)
+  (edefrepsinfo2defrepsinfo)))
+
+(DEFLAM simstruct2esimstruct (simstruct)
+ (SEQ
+  (repsinfo2erepsinfo       (simstruct-get-repsinfo simstruct))
+  (intsinfo2eintsinfo       (simstruct-get-intsinfo simstruct)) 
+  (desfunsinfo2edesfunsinfo (simstruct-get-desfunsinfo simstruct))
+  (defrepsinfo2edefrepsinfo (simstruct-get-defrepsinfo simstruct))))
+
+(DEFLAM cur-simstruct-forget ()
+ (SEQ
+  (cur-repsinfo-forget)
+  (cur-intsinfo-forget)
+  (cur-desfunsinfo-forget)   
+  (cur-defrepsinfo-forget)))
+
+;;;Representations information manipulation
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *   (erepsinfo2repsinfo)                                        *
+; *   (repsinfo2erepsinfo repsinfo)                               *
+; *   (cur-repsinfo-forget)                                       *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *   (erepsinfo2repsinfo)                                        *
+; *   (repsinfo2erepsinfo repsinfo)                               *
+; *   (cur-repsinfo-forget)                                       *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM erepsinfo2repsinfo ()
+ (repsinfo-mak (ereps2reps) (representations-get)))
+
+(DEFLAM repsinfo2erepsinfo (repsinfo)
+ (SEQ
+  (reps2ereps      (repsinfo-get-repdesfuns        repsinfo))
+  (representations-set (repsinfo-get-representations repsinfo))))
+
+(DEFLAM cur-repsinfo-forget ()
+ (SEQ
+  (cur-reps-forget)
+  (representations-del)))
+
+
+;reps structure manipulation
+;
+; *********************************************************
+; *                                                       *
+; *  SYNTAX                                               *
+; *   (ereps2reps)                                        *
+; *   (reps2ereps reps)                                   *
+; *   (cur-reps-forget)                                   *
+; *                                                       *
+; *  DESCRIPTION                                          *
+; *   (ereps2reps)                                        *
+; *   (reps2ereps REPS)                                   *
+; *   (cur-reps-forget)                                   *
+; *                                                       *
+; *********************************************************
+;
+(DEFLAM ereps2reps ()
+  (MAPCAR 'erep2rep (representations-get)))
+
+(DEFLAM reps2ereps (reps)
+  (MAPCAR 'rep2erep reps))
+
+(DEFLAM cur-reps-forget ()
+  (MAPCAR 'cur-rep-forget (representations-get)))
+
+
+;;; one REP manipulation
+;
+; *********************************************************
+; *                                                       *
+; *  SYNTAX                                               *
+; *   (erep2rep rep)                                      *
+; *   (rep2erep rep)                                      *
+; *   (cur-rep-forget rep)                                *
+; *                                                       *
+; *  DESCRIPTION                                          *
+; *   (erep2rep rep)                                      *
+; *   (rep2erep rep)                                      *
+; *   (cur-rep-forget rep)                                *
+; *                                                       *
+; *********************************************************
+;
+(DEFLAM erep2rep (rep) (rrep-mak rep (getdesfun rep)) )
+
+(DEFLAM rep2erep  (rep)
+ (LET ((replabel (rep-get-repname rep))
+       (desfun   (rep-get-desfun rep)))
+  (SEQ
+   (rep-create replabel)
+   (setdesfun  replabel desfun))))
+
+(DEFLAM cur-rep-forget  (rep) (rep-delete rep))
+
+
+
+
+;;;Interpretations information manipulation
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *   (eintsinfo2intsinfo)                                        *
+; *   (intsinfo2eintsinfo intsinfo)                               *
+; *   (cur-intsinfo-forget)                                       *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *   (eintsinfo2intsinfo)                                        *
+; *   (intsinfo2eintsinfo intsinfo)                               *
+; *   (cur-intsinfo-forget)                                       *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM eintsinfo2intsinfo ()
+ (intsinfo-mak (eints2ints) (intsyms-get)))
+
+(DEFLAM intsinfo2eintsinfo (intsinfo)
+ (SEQ
+  (ints2eints  (intsinfo-get-ints    intsinfo))
+  (intsyms-set (intsinfo-get-intsyms intsinfo))))
+
+(DEFLAM cur-intsinfo-forget ()
+ (SEQ
+  (cur-ints-forget)
+  (intsyms-del)))
+
+
+;ints structure manipulation
+;
+; *********************************************************
+; *                                                       *
+; *  SYNTAX                                               *
+; *   (eints2ints)                                        *
+; *   (ints2eints ints)                                   *
+; *   (cur-ints-forget)                                   *
+; *                                                       *
+; *  DESCRIPTION                                          *
+; *   (eints2ints)                                        *
+; *   (ints2eints ints)                                   *
+; *   (cur-ints-forget)                                   *
+; *                                                       *
+; *********************************************************
+;
+(DEFLAM eints2ints ()
+ (MAPCAR 'eint2int (intsyms-get)))
+
+(DEFLAM ints2eints (ints)
+ (MAPCAR 'int2eint ints))
+
+(DEFLAM cur-ints-forget ()
+ (MAPCAR 'cur-int-forget (intsyms-get)))
+
+
+;;; one INT manipulation
+;
+; *********************************************************
+; *                                                       *
+; *  SYNTAX                                               *
+; *   (eint2int LABELINT)                                 *
+; *   (int2eint INT)                                      *
+; *   (cur-int-forget LABELINT)                           *
+; *                                                       *
+; *  DESCRIPTION                                          *
+; *   (eint2int LABELINT)                                 *
+; *   (int2eint INT)                                      *
+; *   (cur-int-forget LABELINT)                           *
+; *                                                       *
+; *********************************************************
+;
+(DEFLAM eint2int (LABELINT) (iint-mak LABELINT (getint LABELINT)))
+
+(DEFLAM int2eint  (INT) (setint (int-get-intname INT)(int-get-symbols INT)))
+
+(DEFLAM cur-int-forget (LABELINT) (remint LABELINT))
+
+
+
+
+
+
+;;;Desfuns information manipulation
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *   (edesfunsinfo2desfunsinfo)                                  *
+; *   (desfunsinfo2edesfunsinfo DESFUNSINFO)                      *
+; *   (cur-desfunsinfo-forget)                                    *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *   (edesfunsinfo2desfunsinfo)                                  *
+; *   (desfunsinfo2edesfunsinfo DESFUNSINFO)                      *
+; *   (cur-desfunsinfo-forget)                                    *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM edesfunsinfo2desfunsinfo () (desfuns-get))
+
+(DEFLAM desfunsinfo2edesfunsinfo (DESFUNSINFO) (desfuns-set DESFUNSINFO))
+
+(DEFLAM cur-desfunsinfo-forget () (desfuns-del))
+
+
+
+;;;Default representation of sorts information manipulation
+
+
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *   (edefrepsinfo2defrepsinfo)                                  *
+; *   (defrepsinfo2edefrepsinfo DEFREPSINFO)                      *
+; *   (cur-defrepsinfo-forget)                                    *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *   (edefrepsinfo2defrepsinfo)                                  *
+; *   (defrepsinfo2edefrepsinfo DEFREPSINFO)                      *
+; *   (cur-defrepsinfo-forget)                                    *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM edefrepsinfo2defrepsinfo ()
+ (defrepsinfo-mak (edefreps2defreps) (defrepsorts-get)))
+
+(DEFLAM defrepsinfo2edefrepsinfo (DEFREPSINFO)
+ (SEQ
+  (defreps2edefreps (defrepsinfo-get-defreps  DEFREPSINFO))
+  (defrepsorts-set  (defrepsinfo-get-sorts    DEFREPSINFO))))
+
+(DEFLAM cur-defrepsinfo-forget ()
+ (SEQ
+  (cur-defreps-forget)
+  (defrepsorts-del)))
+
+
+;defreps structure manipulation
+;
+; *********************************************************
+; *                                                       *
+; *  SYNTAX                                               *
+; *   (edefreps2defreps)                                  *
+; *   (defrep[212zs2edefreps DEFREPS)                          *
+; *   (cur-defreps-forget)                                *
+; *                                                       *
+; *  DESCRIPTION                                          *
+; *   (edefreps2defreps)                                  *
+; *   (defreps2edefreps DEFREPS)                          *
+; *   (cur-defreps-forget)                                *
+; *                                                       *
+; *********************************************************
+;
+(DEFLAM edefreps2defreps ()
+  (MAPCAR 'edefrep2defrep (defrepsorts-get)))
+
+(DEFLAM defreps2edefreps (DEFREPS)
+  (MAPCAR 'defrep2edefrep DEFREPS))
+
+(DEFLAM cur-defreps-forget ()
+  (MAPCAR 'cur-defrep-forget (defrepsorts-get)))
+
+
+;;; one DEFREP manipulation
+;
+; *********************************************************
+; *                                                       *
+; *  SYNTAX                                               *
+; *   (edefrep2defrep DEFREPSORT)                         *
+; *   (defrep2edefrep DEFREP)                             *
+; *   (cur-defrep-forget DEFREPSORT)                      *
+; *                                                       *
+; *  DESCRIPTION                                          *
+; *   (edefrep2defrep DEFREPSORT)                         *
+; *   (defrep2edefrep DEFREP)                             *
+; *   (cur-defrep-forget DEFREPSORT)                      *
+; *                                                       *
+; *********************************************************
+;
+(DEFLAM edefrep2defrep (DEFREPSORT) 
+ (defrep-mak DEFREPSORT (getdefrep DEFREPSORT)))
+
+(DEFLAM defrep2edefrep  (DEFREP)
+ (sort-defrep-create (defrep-get-sort DEFREP) (defrep-get-rep DEFREP)))
+
+(DEFLAM cur-defrep-forget  (DEFREPSORT) (sort-defrep-delete DEFREPSORT))
+
+
+
+
+
+
+
+
+
+
+;;;Facts Manipulation
+;
+;;;   FACTS
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (efacts2facts)                                           *
+; *      (facts2efacts FACTS)                                     *
+; *      (cur-facts-forget)                                       *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      (efacts2facts)                                           *
+; *      (facts2efacts FACTS)                                     *
+; *      (cur-facts-forget)                                       *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM efacts2facts  ()
+    (facts-mak (eproofs2proofs)  (axioms-get) (theories-get)
+                  (defns-get) (esimpsetsinfo2simpsetsinfo)))
+
+
+(DEFLAM facts2efacts (FACTS)
+  (SEQ
+    (proofs2eproofs     (facts-get-proofs   FACTS))
+    (axioms-set         (facts-get-axioms   FACTS))
+    (theories-set       (facts-get-theories FACTS))
+    (defns-set          (facts-get-definitions FACTS))
+    (simpsetsinfo2esimpsetsinfo (facts-get-simpsetsinfo FACTS)) ))
+
+(DEFLAM cur-facts-forget ()
+  (SEQ
+    (cur-proofs-forget)
+    (axioms-del)
+    (theories-del)
+    (defns-del)
+    (cur-simpsetsinfo-forget) ))
+
+
+;;;;;;;;PROOFS
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *    (eproofs2proofs)                                           *
+; *    (proofs2eproofs PROOFS)                                    *
+; *    (cur-proofs-forget)                                        *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *    (eproofs2proofs)                                           *
+; *    (proofs2eproofs PROOFS)                                    *
+; *    (cur-proofs-forget)                                        *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM eproofs2proofs ()  (proofs-mak (eproof2proof) (plist-get)) )
+
+(DEFLAM proofs2eproofs (PROOFS)
+  (SEQ
+    (proof2eproof  (proofs-get-proof PROOFS))
+    (plist-set     (proofs-get-plist    PROOFS)) ) )
+
+(DEFLAM cur-proofs-forget ()
+ (SEQ
+   (cur-proof-forget)
+   (plist-del       )) )
+
+
+;; SIMPSETSINFO
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *    (esimpsetsinfo2simpsetsinfo)                               *
+; *    (simpsetsinfo2esimpsetsinfo SIMPSETSINFO)                  *
+; *    (cur-simpsetsinfo-forget)                                  *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM esimpsetsinfo2simpsetsinfo ()
+ (simpsetsinfo-mak (simpsinterface-get) (simps-get)))
+
+(DEFLAM simpsetsinfo2esimpsetsinfo (SIMPSETSINFO)
+ (SEQ
+  (simpsinterface-set (simpsetsinfo-get-simpsetsinterface SIMPSETSINFO))
+  (simps-set (simpsetsinfo-get-simpsets SIMPSETSINFO))))
+
+(DEFLAM cur-simpsetsinfo-forget () 
+ (SEQ
+  (simpsinterface-del)
+  (simps-del)))
+

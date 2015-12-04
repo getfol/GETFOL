@@ -1,0 +1,217 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: proof.fol
+;; Date: Wed Oct 20 10:47:29 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +                                                               +
+; + This file is supposed to contain all the code necessary to    +
+; + elementary and not elementary management of proofs.           +
+; + Here are all the functions which make the switch between      +
+; + elementary views and non elementary views (and viceversa)     +
+; + of the proofs defined in the context being in elementary view.+
+; +                                                               +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+;; Non elementary view of proofs
+;
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; +                                                               +
+; + code for making the proof-switching inside a context          +
+; +                                                               +
+; + NOTE: The structure for memorizing  a proof when switching    +
+; +       proof is the same used for memorizing the current proof +
+; +       when switching context.                                 +
+; +       Consequently the code for switching CURPROOF uses part  +
+; +       part of the code used for switching the proof structure +
+; +                                                               +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;
+;   PROOF
+;
+; **************************************************************
+; *                                                            *
+; *  SYNTAX                                                    *
+; *   (eproof2proof)                                           *
+; *   (proof2eproof PROOF)                                     *
+; *   (cur-proof-forget)                                       *
+; *                                                            *
+; *  DESCRIPTION                                               *
+; *   (eproof2proof)                                           *
+; *   (proof2eproof PROOF)                                     *
+; *   (cur-proof-forget)                                       *
+; *                                                            *
+; **************************************************************
+;
+(DEFLAM eproof2proof () (proof-mak (curpname-get) (eprf2prf)) )
+
+(DEFLAM proof2eproof (PROOF)
+   (SEQ
+    (curpname-set  (proof-get-pname PROOF))
+    (prf2eprf      (proof-get-prf   PROOF) )) )
+
+(DEFLAM cur-proof-forget ()
+ (SEQ
+    (curpname-del       )
+    (cur-prf-forget     )) )
+
+
+;  PRF
+;
+; **************************************************************
+; *                                                            *
+; *  SYNTAX                                                    *
+; *   (eprf2prf)                                               *
+; *   (prf2eprf PRF)                                           *
+; *   (cur-prf-forget)                                         *
+; *                                                            *
+; *  DESCRIPTION                                               *
+; *   (eprf2prf)                                               *
+; *   (prf2eprf PRF)                                           *
+; *   (cur-prf-forget)                                         *
+; *                                                            *
+; **************************************************************
+;
+(DEFLAM eprf2prf ()
+  (prf-mak (curllist-get) (curnline-get) (curelist-get)
+              (curexiste-get) (curlabels-get)) )
+
+(DEFLAM prf2eprf (PRF)
+   (SEQ				
+    (curllist-set  (prf-get-llist  PRF))
+    (curnline-set  (prf-get-nline  PRF))
+    (curelist-set  (prf-get-elist  PRF))
+    (curexiste-set (prf-get-existe PRF))
+    (curlabels-set  (prf-get-label PRF))) )
+
+(DEFLAM cur-prf-forget ()
+ (SEQ
+   (curllist-del)
+   (curnline-del)
+   (curelist-del)
+   (curexiste-del)
+   (curlabels-del) ) )
+
+; Basic functions for proof switching
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (cur-proof-switchout)                                    *
+; *      (proof-switchin  PNAME)                                  *
+; *      (proof-switch PNAME)                                     *
+; *      (cur-proof-copy PNAME)                                   *
+; *      (proof-get PROOF)                                        *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      (cur-proof-switchout) put the current proof to PLIST.    *
+; *      (proof-switchin PNAME) gets the proof of the name PNAME  *
+; *      from PLIST.                                              *
+; *      (proof-switch PNAME) put the current proof to PLIST and  *
+; *      get the proof of the name PNAME.                         *
+; *      (cur-proof-copy PNAME) copy the current proof and put    *
+; *      it in PLIST with name PNAME.                             *
+; *      (proof-get PROOF)                                        *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM cur-proof-switchout ()  (plist-set-proof (eproof2proof)) )
+
+(DEFLAM proof-switchin (PNAME) (proof2eproof (plist-get-proof PNAME)) )
+
+(DEFLAM proof-switch (PNAME)
+  (SEQ
+    (cur-proof-switchout)
+    (cur-proof-forget)
+    (proof-switchin PNAME)) )
+
+(DEFLAM cur-proof-copy (PNAME)
+  (plist-set-proof (proof-mak PNAME (eprf2prf))) )
+
+ (DEFLAM proof-get (PROOF)
+    (SEQ
+     (cur-proof-forget)
+     (proof2eproof PROOF) ))
+
+; Basic functions for proof switching with printing
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (probed-cur-proof-switchout)                             *
+; *      (probed-proof-switchin  PNAME)                           *
+; *      (probed-proof-switch PNAME)                              *
+; *      (probed-proof-get  PROOF)                                *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      (probed-cur-proof-switchout)                             *
+; *      (probed-proof-switchin  PNAME)                           *
+; *      (probed-proof-switch PNAME)                              *
+; *      (probed-proof-get  PROOF)                                *
+; *                                                               *
+; *          probed proof switching                               *
+; *                                                               *
+; *****************************************************************
+
+   (DEFLAM probed-cur-proof-switchout   ()
+     (SEQ
+      (cur-proof-switchout)
+      (PROOF-EPRINC1 "I am switching out the current proof")) )
+
+   (DEFLAM probed-proof-switch (PNAME)
+     (SEQ
+      (proof-switch PNAME)
+      (PROOF-EPRINC2 "I am switching to the proof: " PNAME)) )
+
+   (DEFLAM probed-proof-switchin (PNAME)
+    (SEQ
+     (proof-switchin  PNAME)
+     (PROOF-EPRINC2 "I am switching from the current proof to:" PNAME)) )
+
+ (DEFLAM probed-proof-get (PROOF)
+  (SEQ
+   (proof-get PROOF)
+   (PROOF-EPRINC2 "proof-get: I changed proof to: " (proof-get-pname PROOF))))

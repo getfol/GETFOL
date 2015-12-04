@@ -1,0 +1,222 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:23:19 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: fa.fol
+;; Date: Wed Oct 20 10:47:12 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; ***********************************************************************
+; *                                                                     *
+; * This file contains all the routines for the management of facts and *
+; * parts of facts (such as wffs deplists reason ....)                  *
+; *                                                                     *
+; ***********************************************************************
+;
+; ***********************************************************************
+; *                                                                     *
+; * SYNTAX                                                              *
+; *    (facts-get-freevars linenums)                                    *
+; *    (fact-get-freevars  linenum)                                     *
+; *    (facts-get-parameters linenums)                                  *
+; *    (fact-get-parameters  linenum)                                   *
+; *    (fact-union-dep fact1 fact2)                                     *
+; *    (facts-union-dep facts)                                          *
+; *    (facts-get-wffs facts)                                           *
+; *                                                                     *
+; *                                                                     *
+; *    (deplist-del-wff wff deplist)                                    *
+; *    (deplist-del-wffs wfflist deplist)                               *
+; *    (DEPENDENCIES assumptions fact)                                  *
+; *    (SAMEWFF wff facts)                                              *
+; *                                                                     *
+; *    (facts2wffs_conj-mak facts)                                      *
+; *    (facts_imp_wff-mak wff facts)                                    *
+; *                                                                     *
+; *                                                                     *
+; * NOTES                                                               *
+; *    wffs are (sort of) facts with no dependencies, no name etc etc.  *
+; *                                                                     *
+; ***********************************************************************
+;
+(DEFLAM facts-get-freevars (list_of_linenums)
+ (IF (MTL? (REST list_of_linenums))
+     (fact-get-freevars (FIRST list_of_linenums))
+     (UNION (fact-get-freevars (FIRST list_of_linenums))
+            (facts-get-freevars (REST list_of_linenums)))))
+
+(DEFLAM fact-get-freevars (LINENUM) 
+ (frees (fact-get-wff (curllist-get-line LINENUM))) )
+
+(DEFLAM facts-get-parameters (list_of_linenums)
+ (IF (MTL? list_of_linenums) MTL
+     (UNION (fact-get-parameters (FIRST list_of_linenums))
+            (facts-get-parameters (REST list_of_linenums)))))
+
+(DEFLAM fact-get-parameters (LINENUM) 
+ (parameters (fact-get-wff (curllist-get-line LINENUM))) )
+
+(DEFLAM fact-union-dep (fact1 fact2) 
+  (deplist-union (fact-get-deplist fact1) (fact-get-deplist fact2)) )
+
+(DEFLAM facts-union-dep (facts) 
+ (facts-union-dep1 Emptydeplist facts))
+
+(DEFLAM facts-union-dep1 (DEPLIST facts)
+ (IF (MTL? facts) DEPLIST 
+  (facts-union-dep1
+      (deplist-union DEPLIST (fact-get-deplist (CAR facts)))
+      (CDR facts))))
+
+(DEFLAM facts-get-wffs (factlist)
+ (IF (MTL? factlist)
+  MTL
+  (LCONS (fact-get-wff (FIRST factlist))
+         (facts-get-wffs (REST factlist)))))
+
+
+(DEFLAM deplist-del-wff (wff deplist)
+ (IF (EMPTY-DEPLIST? deplist) Emptydeplist
+ (IF (EQUALEXP wff 
+               (fact-get-wff (curllist-get-line (deplist-get-1st deplist))))
+        (deplist-del-wff wff (deplist-get-2nd deplist))
+	(deplist-mak2 
+          (deplist-get-1st deplist) 
+          (deplist-del-wff wff (deplist-get-2nd deplist))) )))
+
+(DEFLAM deplist-del-wffs (wfflist deplist)
+ (IF (OR (MTL? wfflist) (MTL? deplist))
+  deplist
+  (deplist-del-wff (FIRST wfflist)
+                   (deplist-del-wffs (REST wfflist) deplist))))
+
+
+(DEFLAM DEPENDENCIES (assumption_list fact)
+ (SUB-DEPLIST
+  (facts-union-dep assumption_list)
+  (fact-get-deplist fact)))
+
+(DEFLAM SAMEWFF (wff factlist)
+ (IF (MTL? factlist)
+  TRUE
+  (IFN (EQUAL wff (fact-get-wff (FIRST factlist)))
+   FALSE
+   (SAMEWFF wff (REST factlist)))))
+
+
+
+(DEFLAM facts2wffs_conj-mak (facts)
+ (IF (MTL? (REST facts)) (fact-get-wff (CAR facts))
+  (mkand (fact-get-wff (CAR facts))
+         (facts2wffs_conj-mak (REST facts)))))
+
+(DEFLAM facts_imp_wff-mak (wff facts)
+ (IF (MTL? facts) wff
+  (mkimp (facts2wffs_conj-mak facts) wff)))
+
+
+;assumptions
+; ********************************************************************
+; *                                                                  *
+; *  SYNTAX                                                          *
+; *   (ASSUMPTION fact)                                              *
+; *   (ASSUMPTIONS factlist)                                         *
+; *                                                                  *
+; *  NOTES                                                           *
+; *                                                                  *
+; ********************************************************************
+
+(DEFLAM ASSUMPTIONS (factlist)
+ (IF (MTL? factlist)
+  TRUE
+  (IFN (ASSUMPTION  (FIRST factlist))
+   FALSE
+   (ASSUMPTIONS (REST factlist)))))
+
+(DEFLAM  ASSUMPTION (fact)
+ (IFN (EQUAL 1 (deplist-length (fact-get-deplist fact)))
+  FALSE
+  (EQUAL (fact-get-label fact) (deplist-get-1st (fact-get-deplist fact)))))
+
+; PREMISES
+;**********************************************************************
+;*                                                                    *
+;* SYNTAX:                                                            *
+;*         (fact-get-premises   FACT)                                 *
+;*         (ras-get-facts  RAS)                                       *
+;*         (ra-get-facts RA)                                          *
+;* DESCRIPTION:                                                       *
+;*         fact-get-premises returns the list of all the facts that   *
+;*                           constitute the premises of FACT.         *
+;*         ras-get-facts selects all the facts from RAS.              *
+;*         ra-get-facts selects all the facts from RA.                *
+;*                                                                    *
+;*    WARNING: THIS CODE DEPENDES FROM THE SYSTEM BEING BUILT         *
+;*                                                                    *
+;**********************************************************************
+
+(DEFLAM fact-get-premises (FACT)
+ (ras-get-facts (reason-get-ras (fact-get-reason FACT))))
+
+(DEFLAM ras-get-facts (RAS)
+ (IF (RAS-EMPTY RAS) MTL
+  (APPEND
+   (ra-get-facts (ras-get-first RAS))
+   (ras-get-facts (ras-get-rest RAS)))))
+
+(DEFLAM ra-get-facts (RA)
+ (IF (FACT_RA RA)          (LIST (ra-get-value RA))
+ (IF (FACTS_RA RA)         (ra-get-value RA)
+ (IF (FACTAND_RA RA)       (factand-get-facts (ra-get-value RA))
+ (IF (SIMPSETLABEL_RA RA)  (simplab2facts (ra-get-value RA))
+ (IF (SIMPSETLABELS_RA RA) (simplabs2facts (ra-get-value RA))
+  MTL))))))
+
+

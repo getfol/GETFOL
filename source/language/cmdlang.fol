@@ -1,0 +1,477 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:52:26 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdlang.fol
+;; Date: Wed Oct 20 10:45:44 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                       cmdlang.fol                              *
+;*                                                                *
+;*                                                                *
+;* This  file  contains  the  routines  for the  parsing  of the  *
+;* commands for the description of the language. These commands   *
+;* are DECLARE, SETFMAP, MOREGENERAL, MOSTGENERAL, TERM, AWFF,    *
+;* WFF and EXTENSION.                                             *
+;*                                                                *
+;* The only external routines used in this file are the routines  *
+;* ending in "decl-check&mak". These routines perform additional  *
+;* checks on the symbols parsed and if everything succedes the    *
+;* language is actually updated. These routines are in lang.fol.  *
+;*                                                                *
+;******************************************************************
+
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  DECLARE                                                       *
+;*                                                                *
+;* (mknewcommand (QUOTE DECLARE) (QUOTE FOL) (QUOTE DECL#) FALSE) *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+;
+;;; The syntax of a DECLARE command.
+
+; < DECLARE COMMAND > := DECLARE < declaration body > ;
+
+; < declaration body >:= < sentential declaration >
+; < declaration body >:= < individual declaration >
+; < declaration body >:= < functional declaration >
+; < declaration body >:= < predicative declaration >
+; < declaration body >:= < sort declaration >
+
+; < sentential declaration > := < senttyp > { FOLSYM }1
+; < individual declaration > := < indtyp > { FOLSYM }1 OPT[ [ FOLSYM ] ]
+; < functional declaration > :=
+;  < funtyp > { FOLSYM }1 < arity or fmap > OPT[ [ < bpinfo > ] ]
+; < predicative declaration > :=
+;  < predtyp > { FOLSYM }1 < arity or fmapbody > OPT[ [ < bpinfo > ] ]
+; < sort declaration > := SORT { FOLSYM }1
+
+; < arity > := 1, 2, ...
+; < fmap > := < fmapbody > = FOLSYM
+; < fmapbody > := ( { FOLSYM }1 )
+
+; < bpinfo > := [ PRE | INF | PRE = <natnum> | INF = <natnum> <natnum> ]
+
+
+(DEFLAM DECL# ()
+ (LET ((TYP (SENTTYP@)))	
+  (IF (IST TYP)
+   (LET ((DECREAD (SENTDECL#)))
+    (SEQ
+     (ENDL)
+     (sentdecl-check&mak TYP DECREAD)))
+   (LET ((TYP (INDTYP@)))
+    (IF (IST TYP)
+     (LET ((DECREAD (INDDECL#)))
+      (SEQ
+       (ENDL)
+       (inddecl-check&mak TYP DECREAD)))
+     (LET ((TYP (FUNTYP@)))
+      (IF (IST TYP)
+       (LET ((DECREAD (FUNDECL#)))
+        (SEQ
+         (ENDL)
+         (fundecl-check&mak TYP DECREAD)))
+       (LET ((TYP (PREDTYP@)))
+        (IF (IST TYP)
+         (LET ((DECREAD (PREDDECL#)))
+          (SEQ
+           (ENDL)
+           (preddecl-check&mak TYP DECREAD)))
+         (LET ((TYP (TKC@ (QUOTE SORT))))
+          (IF (IST TYP)
+           (LET ((DECREAD (SORTDECL#)))
+            (SEQ
+             (ENDL)
+             (sortdecl-check&mak DECREAD)))
+           (FERRM1 "This is not a legal option for a declaration"))))))))))))
+
+
+
+; SENTDECL#
+; RETURNS:
+;	THE LIST OF ALL THE SENT-SYMBOLS READ
+;
+(DEFLAM SENTDECL# () (FOLSYMREP#))
+
+
+; INDDECL#
+; RETURNS THE CONS OF:
+;	THE LIST OF ALL THE IND-SYMBOLS READ
+;	THE PSEUDOSORT READ / MTL
+;
+(DEFLAM INDDECL# ()
+ (LET ((INDSYMLIST (FOLSYMREP#)))
+  (LET ((Y (TKC@ (QUOTE [))))
+   (IFN (IST Y)
+    (CONS INDSYMLIST MTL)
+    (LET ((PSEUDOSORT (PSEUDOSORT#)))
+     (SEQ
+      (TK# (QUOTE ]) "DECLARE" "]")
+      (CONS INDSYMLIST PSEUDOSORT)))))))
+
+
+
+; FUNDECL#
+; RETURNS THE LIST OF:
+;	THE LIST OF ALL FUN-SYMBOLS READ
+;	THE ARITY
+;	THE FMAP READ / MTL
+;	THE BINDING POWER READ / MTL
+
+; This is the conventional format used for parsed function fmaps:
+;          ( RES ARG1 ... ARGn )
+
+(DEFLAM FUNDECL# ()
+ (LET ((FUNSYMLIST (FOLSYMREP#)))
+  (LET ((ARITY (NATNUM@)))
+   (IF (IST ARITY)
+    (LET ((U (TK@ (QUOTE [))))
+     (IFN (IST U)
+      (LIST FUNSYMLIST ARITY MTL MTL)
+      (LET ((BP (PREINF#)))
+       (SEQ
+        (TK# (QUOTE ]) "DECLARE" "]")
+        (LIST FUNSYMLIST ARITY MTL BP)))))
+    (SEQ
+     (TK# LPAR "DECLARE" "an arity or Fmap information")
+     (LET ((FMAPARGS (PSEUDOSORTREP#)))
+      (SEQ
+       (TK# RPAR "DECLARE" "a right parenthesis")
+       (TK# (QUOTE =) "DECLARE" "an = here")
+       (LET ((FMAPRES (PSEUDOSORT#)))
+        (LET ((U (TK@ (QUOTE [))))
+         (IFN (IST U)
+          (LIST FUNSYMLIST (LENGTH FMAPARGS) (CONS FMAPRES FMAPARGS) MTL)
+          (LET ((BP (PREINF#)))
+           (SEQ
+            (TK# (QUOTE ]) "DECLARE" "]")
+            (LIST FUNSYMLIST (LENGTH FMAPARGS) (CONS FMAPRES FMAPARGS) BP)
+))))))))))))
+
+
+
+; PREDDECL#
+; RETURNS THE LIST OF:
+;	THE LIST OF ALL FUN-SYMBOLS READ
+;	THE ARITY
+;	THE BINDING POWER READ / MTL
+
+; THIS IS THE CONVENTION USED FOR PARSED PREDICATE FMAPS.
+;	( RES ARG1 ... ARGn )
+
+(DEFLAM PREDDECL# ()
+ (LET ((PREDSYMLIST (FOLSYMREP#))
+       (ARITY (NATNUM# "DECLARE")))
+  (LET ((U (TK@ (QUOTE [))))
+   (IFN (IST U)
+    (LIST PREDSYMLIST ARITY MTL)
+    (LET ((BP (PREINF#)))
+     (SEQ
+      (TK# (QUOTE ]) "DECLARE" "]")
+      (LIST PREDSYMLIST ARITY BP)))))))
+
+
+
+; SORTDECL#
+; RETURNS:
+;	THE LIST OF THE SORTS READ.
+;
+(DEFLAM SORTDECL# () (PSEUDOSORTREP#))
+
+        
+
+; PREINF# is the routine devoted to the parsing of
+; Binding Power Information (PREfix / INFix).
+;
+; This the syntax of the expected input:
+; <PREinfo> ::==  [ pre OPT{=<natnum>} ]
+; <INFinfo> ::==  [ inf OPT{=<natnum><natnum>} ]
+; 
+; Note that an applsym can not be declared to be
+; both prefix and infix. Other restrictions are
+; verified in lower level primitives.
+
+(DEFLAM PREINF# ()
+ (LET ((ISPRE (TKC@ 'PRE)))
+  (IF (IST ISPRE)
+   (LET ((Y (TK@ (QUOTE =))))
+    (IF (IST Y)
+     (LIST ISPRE (NATNUM# "DECLARE"))
+     ISPRE))
+   (LET ((ISINF (TKC@ 'INF)))
+    (IF (IST ISINF)
+     (LET ((Y (TK@ (QUOTE =))))
+      (IF (IST Y)
+       (LIST ISINF (NATNUM# "DECLARE") (NATNUM# "DECLARE"))
+       ISINF))
+     (FERRM1 "PRE or INF is required here"))))))
+     
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  SETFMAP                                                       *
+;*                                                                *
+;*(mknewcommand (QUOTE SETFMAP) (QUOTE FOL) (QUOTE SETFMAP#) FALSE)*
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+; Sintax of a SETFMAP command
+;
+; < SETFMAP command > := SETFMAP < function symbol > < fmap >;
+
+
+; This is the conventional format used for passing the parsed fmaps
+; to the called subroutines (fmapdecl-check&mak in this case):
+;
+;                   ( RES ARG1 ... ARGn )
+
+(DEFLAM SETFMAP# ()
+ (LET ((SYM (FUNSYM#)))
+  (SEQ
+   (TK# LPAR "SETFMAP" "a left parenthesis")
+   (LET ((FMAPARGS (PSEUDOSORTREP#)))
+    (SEQ
+     (TK# RPAR "SETFMAP" "a right parenthesis")
+     (TK# (QUOTE =) "SETFMAP" "an = here")
+     (fmapdecl-check&mak SYM (CONS (PSEUDOSORT#) FMAPARGS)))))))
+
+
+
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  MOSTGENERAL                                                   *
+;*                                                                *
+;* (mknewcommand 'MOSTGENERAL (QUOTE FOL) (QUOTE MOSTGEN#) FALSE) *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+;
+; Sintax of a MOSTGENERAL command
+;
+; < MOSTGENERAL command > := MOSTGENERAL < FOLSYM > ;
+
+(DEFLAM MOSTGEN# ()
+ (LET ((PSEUDOSORT (PSEUDOSORT#)))
+  (SEQ 
+   (ENDL)
+   (mostgdecl-check&mak PSEUDOSORT))))
+
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  MOREGENERAL                                                   *
+;*                                                                *
+;* (mknewcommand 'MOREGENERAL (QUOTE FOL) (QUOTE MOREGEN#) FALSE) *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+;
+; Sintax of a MOREGENERAL command
+;
+; < MOREGENERAL command > := MOREGENERAL < sort >  << { < sort > }1 >> ;
+
+
+(DEFLAM MOREGEN# ()
+ (LET ((MG (SORT#)))
+  (SEQ
+   (TK# (QUOTE <) "MOREGENERAL" "<")
+   (LET ((LGLIST (SORTREP#)))
+    (SEQ
+     (TK# (QUOTE >) "MOREGENERAL" ">")
+     (ENDL)
+     (moregdecl-check&mak MG LGLIST))))))
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  TERM AWFF WFF                                                 *
+;*                                                                *
+;* (mknewcommand 'TERM (QUOTE FOL) (QUOTE TERMCMD#) FALSE)        *
+;* (mknewcommand 'AWFF (QUOTE FOL) (QUOTE AWFFCMD#) FALSE)        *
+;* (mknewcommand 'WFF (QUOTE FOL) (QUOTE WFFCMD#) FALSE)          *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+;
+
+(DEFLAM TERMCMD# ()
+   (LET ((TRM (TERM#)))
+     (SEQ
+      (ENDL)
+      (expmes-print TRM " is a <term>."))))
+
+(DEFLAM AWFFCMD# ()
+   (LET ((AW (AWFF#)))
+     (SEQ
+       (ENDL)
+       (expmes-print AW " is an <awff>."))))
+
+(DEFLAM WFFCMD# ()
+   (LET ((W (WFF#)))
+     (SEQ
+       (ENDL)
+       (expmes-print W " is a <wff>."))))
+
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*  EXTENSION                                                     *
+;*                                                                *
+;* (mknewcommand 'EXTENSION (QUOTE FOL) (QUOTE EXTENSION#) FALSE) *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+;
+; Sintax of a EXTENSION command
+;
+; < EXTENSION command > := EXTENSION <sortsym>  BY <extension-expr>;
+
+(DEFLAM EXTENSION# ()
+ (LET ((SORT (SORT#)))
+  (SEQ
+   (TKC# (QUOTE BY) "BY")
+   (LET ((INDLIST (EXTENSIONEXPR#)))
+    (SEQ
+     (ENDL)
+     (extension-check&mak SORT INDLIST))))))
+
+
+;********************************************************************
+;*                                                                  *
+;*                                                                  *
+;* The routines for parsing an extension-expr                       *
+;*                                                                  *
+;*                                                                  *
+;********************************************************************
+; 
+; <extension-expr> :=(<extension-expr>) | <sortsym> | {<indsym>1 OPT[,]}
+;  		     | <extension-expr> UNI <extension-expr> |
+; 		       <extension-expr> INT <extension-expr> |
+; 		       <extension-expr> DIF <extension-expr> 
+
+; EXTENSIONEXPR#
+; scans set-theoretic expressions whose constituents may be only
+; sort or indconst symbols and returns a list of indconsts.
+
+; The most natural choice for the binding powers of "uni" , "int" 
+; and "dif" is that "uni" binds least strongly, "dif" has an 
+; intermediate binding power, and "int" is strongest.
+
+
+(DEFLAM EXTENSIONEXPR# () 
+ (EXTENSIONEXPR-CONTINUE! (EXTexpr_sort_or_indlist#)))
+
+(DEFLAM EXTENSIONEXPR-CONTINUE! (INDLIST)
+ (IF (TKC@ (QUOTE INT))
+  (EXTENSIONEXPR-CONTINUE! (INTERSECT INDLIST (EXTexpr_sort_or_indlist#)))
+  (IF (TKC@ (QUOTE DIF))
+   (LET ((INDLIST1 (EXTuni_or_dif!)))
+    (IF (TKC@ (QUOTE DIF))
+     (SUBTRACT INDLIST (SUBTRACT INDLIST1 (EXTENSIONEXPR#)))
+     (IF (TKC@ (QUOTE UNI))
+      (UNION (SUBTRACT INDLIST INDLIST1) (EXTENSIONEXPR#))
+      (SUBTRACT INDLIST INDLIST1))))
+   (IF (TKC@ (QUOTE UNI))
+    (UNION INDLIST (EXTENSIONEXPR#))
+    (IF (OR (EQ (CUR-TOKEN) SEMI)(EQ (CUR-TOKEN) RPAR)) INDLIST
+     (FERRM1 " closing paren, 'uni, 'dif, 'int or semicolon expected"))))))
+
+(DEFLAM EXTuni_or_dif! ()
+ (LET ((INDLIST (EXTexpr_sort_or_indlist#)))
+  (IF (TKC@ (QUOTE INT))(INTERSECT INDLIST (EXTuni_or_dif!))
+   (LET ((S (SCANSTATUS-GET)))
+    (IF (OR (TKC@ (QUOTE DIF))(TKC@ (QUOTE UNI)))
+     (SEQ (SCANSTATUS-RESTORE S) INDLIST)
+     (IF (OR (EQ (CUR-TOKEN) SEMI)(EQ (CUR-TOKEN) RPAR)) INDLIST
+      (FERRM0 " Closing paren, 'uni, 'dif, 'int or semicolon expected")))))))
+
+(DEFLAM  EXTexpr_sort_or_indlist#()
+ (LET ((INDLIST (EXTexpr@)))
+  (IF (IST INDLIST) INDLIST
+   (LET ((SORT (SORT@)))
+    (IF (IST SORT)(extension-get SORT)
+                  ;Warning! The extension of sort can be unknown   
+     (EXTindlist#))))))
+
+(DEFLAM EXTexpr@ ()
+ (IF (IST (TK@ LPAR))
+  (LET ((INDLIST (EXTENSIONEXPR#)))
+   (IF (TK@ RPAR) INDLIST 
+    (REMSG1 ")")))
+  FVAL))
+
+(DEFLAM EXTindlist#()
+ (IF (IST (TK@ CULB))
+  (LET ((INDLIST (INDCONSTREP#)))
+   (IF (IST (REPETITION-GET INDLIST))
+    (GERRM0 (REPETITION-GET INDLIST) 
+     " appairs twice in the extension expression.")
+    (IF (TK@ CURB) INDLIST 
+     (REMSG1 "}"))))
+  (FERRM1 
+   "An extension expression, a sort symbol or a indconst list expected")))

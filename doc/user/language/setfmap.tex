@@ -1,0 +1,54 @@
+\gfcommand{setfmap}{adds another fmap to a funsym}
+\index{setfmap}
+
+\gfsyntax{
+  setfmap \ARG{funsym} ( \ARG{sym1} \SEQ \ARG{symN} ) = \ARG{sym};
+}
+
+\gfdescription{
+  The command adds (\ARG{sym1} \SEQ \ARG{symN} \ARG{sym}) to the fmaps of
+  \ARG{funsym}.
+}
+
+\gfrecap{
+Adds (`sym1', ..., `symN', `sym') to the fmaps of `funsym'
+}
+
+\gfexample+
+   ***** declare predconst S4 1;
+   S4 has been declared to be a Predconst
+
+   ***** declare indvar x [S1];
+   S1 is a sort
+   x has been declared to be an Indvar
+
+   ***** declare funconst f ( S4 S5 ) = S1;
+   S1 is a sort
+   The unary predconst S4 has been declared to be a sort
+   S5 has been declared to be a sort
+   f has been declared to be a Funconst
+   
+   ***** show sym f;
+   f is declared to be a Funconst of arity 2.
+   The FMAPs for f are
+      UNIVERSAL * UNIVERSAL ==> UNIVERSAL,
+      S4        * S5        ==> S1.
+
+   ***** setfmap f ( S1 S6 ) = S5;
+   S5 is a sort
+   S1 is a sort
+   S6 has been declared to be a sort
+
+   ***** show sym f;
+   f is declared to be a Funconst of arity 2.
+   The FMAPs for f are
+      S1        * S6        ==> S5,
+      UNIVERSAL * UNIVERSAL ==> UNIVERSAL,
+      S4        * S5        ==> S1.
++
+
+\gfnotes{
+  Note that \ARG{funsym} must have been previously declared to be a {\tt
+  funsym}. 
+  Its arity must be {\em N}.
+}

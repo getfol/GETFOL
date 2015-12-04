@@ -1,0 +1,431 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:52:27 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: exp.fol
+;; Date: Wed Oct 20 10:45:52 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;****************************************************************************
+;****************************************************************************
+;*                                                                          *
+;*                            exp.fol                                       *
+;*                                                                          *
+;* Contains functions and predicates which perform the following (less      *
+;* primitive) operations and tests on expressions:                          *
+;*                                                                          *
+;*   1- Recursive tests on expression structure.                            *
+;*   2- Operations on variables.                                            *
+;*   3- Operations on parameters.                                           *
+;*   4- Operations on universally quantified wffs.                          *
+;*   5- Equality of expressions.                                            *
+;*   6- Substitution.                                                       *
+;*                                                                          *
+;****************************************************************************
+;****************************************************************************
+
+
+;****************************************************************************
+;*                                                                          *
+;* 1- Recursive Tests on Expression Structure                               *
+;*                                                                          *
+;****************************************************************************
+
+; *****************************************************************
+; *                                                               *
+; *   (TERM-REC EXP)                                              *
+; *   (AWFF-REC EXP)                                              *
+; *   (WFF-REC EXP)                                               *
+; *                                                               *
+; *****************************************************************
+
+; Recursive tests that an expression is a TERM, AWFF, WFF.
+
+
+(DEFLAM TERM-REC (EXP)
+   (IF (SIMPLE EXP) (INDSYM EXP)
+   (IF (TERMIF EXP)
+       (AND (WFF-REC (ifof EXP))
+            (TERM-REC (thenof EXP))
+            (TERM-REC (elseof EXP)))
+   (IF (FUNAPPL EXP)
+       (AND (EQUAL (arity (funappl-get-fun EXP))
+                   (LENGTH (funappl-get-args EXP)) )
+            (applTERM-REC (funappl-get-args EXP)) )
+   FALSE ))))
+
+(DEFLAM applTERM-REC (L)
+   (IF (MTL? L) TRUE
+   (AND (TERM-REC (CAR L))
+        (applTERM-REC (CDR L)) )))
+
+
+(DEFLAM AWFF-REC (EXP)
+   (IF (SIMPLE EXP) (SENTSYM EXP)
+   (IF (PREDAPPL EXP)
+       (AND (EQUAL (arity (predappl-get-pred EXP))
+                   (LENGTH (predappl-get-args EXP)) )
+            (applTERM-REC (predappl-get-args EXP)) )
+   FALSE )))
+
+
+(DEFLAM WFF-REC (EXP)
+   (IF (WFFIF EXP)
+       (AND (WFF-REC (ifof EXP))
+            (WFF-REC (thenof EXP))
+            (WFF-REC (elseof EXP)))
+   (IF (QUANTWFF EXP)
+       (AND (INDVAR (bvarof EXP)) (WFF-REC (matrix EXP)) )
+   (IF (CONNAPPL EXP)
+       (AND (EQUAL (arity (connappl-get-conn EXP))
+                   (LENGTH (connappl-get-args EXP)) )
+            (applWFF-REC (connappl-get-args EXP)) )
+   (AWFF-REC EXP) ))))
+
+(DEFLAM applWFF-REC (L)
+   (IF (MTL? L) TRUE
+   (AND (WFF-REC (CAR L))
+        (applWFF-REC (CDR L)) )))
+
+
+;****************************************************************************
+;*                                                                          *
+;* 2- Operations On Variables                                               *
+;*                                                                          *
+;****************************************************************************
+
+
+; *****************************************************************
+; *                                                               *
+; *  (bound EXP)                                                  *
+; *                                                               *
+; *****************************************************************
+
+; Returns a list of the bound variables occuring in EXP
+
+(DEFLAM bound (EXP)
+   (IF (SIMPLE EXP) MTL
+   (IF (QUANTWFF EXP)
+     (UNION (LIST (bvarof EXP)) (bound (matrix EXP)))
+   (applybound (appl-get-args EXP) MTL))))
+
+(DEFLAM applybound (EXPS ANS)
+   (IF (MTL? EXPS) ANS
+   (applybound (CDR EXPS) (UNION ANS (bound (CAR EXPS))) ) ))
+
+
+; *****************************************************************
+; *                                                               *
+; *  (frees EXP)                                                  *
+; *  (frees1 EXP L)                                               *
+; *                                                               *
+; *****************************************************************
+
+; L is a list of variables.
+; Returns a list of the free variables in EXP not contained in L.
+
+(DEFLAM frees (EXP) (frees1 EXP MTL))
+
+(DEFLAM frees1 (EXP L)
+   (IF (SIMPLE EXP)
+     (IF (AND (OR (INDVAR EXP) (INDPAR EXP))
+              (NOT (HGKM-MEMQ EXP L)) )
+       (LIST EXP)
+     MTL )
+   (IF (QUANTWFF EXP)
+     (frees1 (matrix EXP) (UNION (LIST (bvarof EXP)) L))
+   (applyfrees1 (appl-get-args EXP) L) )))
+
+(DEFLAM applyfrees1 (EXPS L)
+   (IF (MTL? EXPS) MTL
+   (UNION (frees1 (CAR EXPS) L)
+          (applyfrees1 (CDR EXPS) L) )))
+
+
+; *****************************************************************
+; *                                                               *
+; *  (IS-FREE VAR EXP)                                            *
+; *  (IS-FREE1 VAR EXP L)                                         *
+; *                                                               *
+; *****************************************************************
+
+; L is a list of variables.
+; TRUE if VAR occurs free in EXP and is not contained in L.
+
+(DEFLAM IS-FREE (VAR EXP) (IST (HGKM-MEMQ VAR (frees EXP))))
+
+(DEFLAM IS-FREE1 (VAR EXP L) (IST (HGKM-MEMQ VAR (frees1 EXP L))))
+
+
+;****************************************************************************
+;*                                                                          *
+;* 3- Operations on parameters.                                             *
+;*                                                                          *
+;****************************************************************************
+
+; *****************************************************************
+; *                                                               *
+; *  (parameters EXP)                                             *
+; *  (parameters1 EXP L)                                          *
+; *                                                               *
+; *****************************************************************
+
+; L is a list of parameters (indpar, sentpar, predpar, funpar).
+; Returns a list of the parameters in EXP not contained in L.
+
+(DEFLAM parameters (exp) (parameters1 exp MTL))
+
+(DEFLAM parameters1 (exp l)
+ (IF (SIMPLE exp)
+  (IF (AND 
+       (OR 
+        (INDVAR exp) 
+        (INDPAR exp)
+        (SENTPAR exp)
+        (PREDPAR exp)
+        (FUNPAR exp))
+       (NOT (HGKM-MEMQ exp l)))
+   (LIST exp)
+   MTL)
+  (IF (QUANTWFF exp)
+   (parameters1 (matrix exp) (UNION (LIST (bvarof exp)) l))
+   (IF (MTL? (parameters1 (appl-get-functor exp) l))
+    (applyparameters1 (appl-get-args exp) l)
+    (UNION (parameters1 (appl-get-functor exp) l)
+     (applyparameters1 (appl-get-args exp) l))))))
+
+(DEFLAM applyparameters1 (exps l)
+ (IF (MTL? exps) MTL
+  (UNION (parameters1 (CAR exps) l)
+   (applyparameters1 (CDR exps) l))))
+
+
+;****************************************************************************
+;*                                                                          *
+;* 4- Operations on universally quantified wffs.                            *
+;*                                                                          *
+;****************************************************************************
+
+; *****************************************************************
+; *                                                               *
+; *  (wff-get-prefixuq uqv wff)                                   *
+; *                                                               *
+; *****************************************************************
+
+; wff-get-prefixuq removes all prenex universal quantifiers from wff
+; and returns the dotted pair of the list of the variables bound
+; by the universal quantifiers at the beginning of the wff and
+; the matrix of wff.
+
+(DEFLAM wff-get-prefixuq (uqv wff)
+ (IF (FORALL wff)
+  (wff-get-prefixuq 
+   (IF (IS-FREE (bvarof wff) (matrix wff))
+    (CONS (bvarof wff) uqv) uqv)
+   (matrix wff))
+  (CONS uqv wff)))
+
+(DEFLAM uniquant-remove (WFF) (CDR (wff-get-prefixuq MTL WFF)))
+
+
+;****************************************************************************
+;*                                                                          *
+;* 5- Equality of Expressions                                               *
+;*                                                                          *
+;****************************************************************************
+
+
+; *****************************************************************
+; *                                                               *
+; *  (EQUALEXP EXP1 EXP2)                                         *
+; *  (EQUEXP EXP1 EXP2 A1 A2 P)                                   *
+; *                                                               *
+; *****************************************************************
+
+; TRUE if EXP1 and EXP2 are equal modulo the renaming of bound variables.
+
+; A1 and A2 are association lists of the form:
+;    ((VAR1 . P1) ... (VARn . Pn))
+; where P1,...,Pn count the depth at which VAR1,...,VARn become bound.
+
+; P is the depth counter.
+
+(DEFLAM EQUALEXP (EXP1 EXP2) (EQUEXP EXP1 EXP2 MTL MTL 0))
+
+(DEFLAM EQUEXP (EXP1 EXP2 A1 A2 P) 
+  (IF (OR (SIMPLE EXP1) (SIMPLE EXP2)) (CORRESPOND EXP1 EXP2 A1 A2)
+  (LET ((FUNC (appl-get-functor EXP1)))
+    (IF (NOT (EQ FUNC (appl-get-functor EXP2))) FALSE
+    (IF (QUANT FUNC) 
+        (EQUEXP (matrix EXP1) (matrix EXP2)
+                (CONS (CONS (bvarof EXP1) (ADD1 P)) A1)
+                (CONS (CONS (bvarof EXP2) (ADD1 P)) A2)
+                (ADD1 P)) 
+    (applyEQUEXP (appl-get-args EXP1) (appl-get-args EXP2) A1 A2 P) )))))
+          
+(DEFLAM applyEQUEXP (ARGS1 ARGS2 A1 A2 P)
+  (IF (MTL? ARGS1) TRUE
+  (AND (EQUEXP (CAR ARGS1) (CAR ARGS2) A1 A2 P)
+       (applyEQUEXP (CDR ARGS1) (CDR ARGS2) A1 A2 P) )))
+
+
+;(CORRESPOND SIMP1 SIMP2 A1 A2)
+; TRUE if SIMP1 and SIMP2 are equal, or if they are different variables with
+; the same binding depth.
+
+; ie. TRUE if:   (1) (SIMP1 . P1) is not in A1,
+;                    (SIMP2 . P2) is not in A2 and
+;                    SIMP1 = SIMP2
+;             or (2) (SIMP1 . P1) is in A1 (so it must be a variable), 
+;                    (SIMP2 . P2) is in A2 (so it must be a variable),
+;                    P1 = P2 and
+;                    SIMP1 and SIMP2 have the same sort,
+
+(DEFLAM CORRESPOND (SIMP1 SIMP2 A1 A2)
+   (LET ((PAIR1 (HGKM-ASSOC SIMP1 A1)))
+   (LET ((PAIR2 (HGKM-ASSOC SIMP2 A2)))
+     (IF (AND (MTL? PAIR1) (MTL? PAIR2)) (EQ SIMP1 SIMP2)
+     (IF (OR  (MTL? PAIR1) (MTL? PAIR2))  FALSE
+     (AND (EQUAL (CDR PAIR1) (CDR PAIR2))
+          (EQ (sort (CAR PAIR1)) (sort (CAR PAIR2))) ) )))))
+
+;****************************************************************************
+;*                                                                          *
+;* 6- Substitution Routines                                                 *
+;*                                                                          *
+;****************************************************************************
+
+; *****************************************************************
+; *                                                               *
+; * (substexp EX1 EX2 EX)                                         *
+; * (substexp+occ EX1 EX2 EX OCCLIST)                             *
+; * (substep+bind EX1 VAR EX)                                     *
+; * (substexp+occ+bind EX1 VAR EX OCCLIST)                        *
+; *                                                               *
+; *****************************************************************
+
+; Substitutes the specified (according to OCCLIST) occurrences of EX1 in EX
+; with the replacement expression EX2 (VAR).
+
+; OCCLIST is a list of numbers or the symbol 'ALL
+
+; If OCCLIST is 'ALL then all occurrences of EX1 in EX are substituted,
+; otherwise the OCCth occrence of EX1 in EX is substituted only if
+; OCC is in OCCLIST.
+
+; The +bind option is used when the replacement expression is a variable
+; and the expression resulting from the substitution is to occur within
+; the scope of a quantifier bounding that variable. The forall and exists
+; introduction rules both use the +bind option.
+
+(DEFLAM substexp (EX1 EX2 EX)
+   (CAR (super-subst EX1 EX2 EX FVAL 'ALL 1 MTL 0)) )
+
+(DEFLAM substexp+occ (EX1 EX2 EX OCCLIST)
+   (CAR (super-subst EX1 EX2 EX FVAL OCCLIST 1 MTL 0)) )
+
+(DEFLAM substexp+bind (EX1 VAR EX)
+   (CAR (super-subst EX1 VAR EX TVAL 'ALL 1 MTL 0)) )
+
+(DEFLAM substexp+occ+bind (EX1 VAR EX OCCLIST)
+   (CAR (super-subst EX1 VAR EX TVAL OCCLIST 1 MTL 0)) )
+
+
+;(super-subst EX1 EX2 EX BINDSVAR OCCLIST OCC ALIST P)
+; The all-purpose super-substitution routine.
+
+; BINDSVAR is TRUE if the +bind option is to be used.
+; OCC is the number of the next occurence to be replaced.
+; ALIST is a bound-variable/depth association list (see EQUEXP)
+; P is the bound variable depth counter.
+
+; The function returns a pair (<exp> . <occ>) where <exp> is the returned
+; expression and <occ> is the number of occurences of EX1 passed so far.
+; The pair is a trick to avoid global variables.
+
+(DEFLAM super-subst (EX1 EX2 EX BINDSVAR OCCLIST OCC ALIST P)
+   (IF (EQUEXP EX EX1 ALIST MTL P)
+     (IF (OR (EQ OCCLIST 'ALL) (HGKM-MEMBER OCC OCCLIST))
+       (CONS EX2 (ADD1 OCC))
+     (IF (AND (IST BINDSVAR) (IS-FREE EX2 EX))
+       (ERRMESS3 "A free occurrence of " (outnam EX2) " would become bound")
+     (CONS EX (ADD1 OCC)) ))
+   (IF (SIMPLE EX)
+     (IF (AND (IST BINDSVAR) (EQUEXP EX EX2 ALIST MTL P))
+       (ERRMESS3 "A free occurrence of " (outnam EX2) " would become bound")
+     (CONS EX OCC) )
+   (IF (QUANTWFF EX)
+     (LET ((V (bvarof EX))
+           (M (matrix EX)))
+     (LET ((W (super-subst EX1 EX2 M BINDSVAR OCCLIST OCC
+                           (CONS (CONS V P) ALIST) (ADD1 P)) ))
+     (LET ((M1 (CAR W))
+           (OCC1 (CDR W)))
+       (IF (AND (IS-FREE V EX2) (NOT (EQUALEXP M1 M)))
+         (ERRMES-printexp2 EX1
+             " occurs within the scope of a quantifier binding " V)
+       (CONS (mkquant (quantof EX) V M1) OCC1) ))))
+   (LET ((WLIST (applysuper-subst EX1 EX2 (appl-get-args EX) BINDSVAR
+                                  OCCLIST OCC ALIST P)))
+   (LET ((ARGS1 (CAR WLIST))
+         (OCC1 (CDR WLIST)))
+     (CONS (appl-mak (appl-get-functor EX) ARGS1) OCC1) ))))))
+
+(DEFLAM applysuper-subst (EX1 EX2 ARGS BINDSVAR OCCLIST OCC ALIST P)
+   (IF (MTL? ARGS) (CONS MTL OCC)
+   (LET ((W (super-subst EX1 EX2 (CAR ARGS) BINDSVAR OCCLIST OCC ALIST P)))
+   (LET ((ARG1 (CAR W))
+         (OCC1 (CDR W)))
+   (LET ((WLIST (applysuper-subst EX1 EX2 (CDR ARGS) BINDSVAR
+                                  OCCLIST OCC1 ALIST P)))
+   (LET ((ARGS1 (CAR WLIST))
+         (OCC2  (CDR WLIST)))
+     (CONS (CONS ARG1 ARGS1) OCC2) ))))))
+

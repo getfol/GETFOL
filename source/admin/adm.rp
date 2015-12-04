@@ -1,0 +1,202 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: showsys.rp
+;; Date: Wed Oct 20 10:48:21 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Show  routines for the SYSTEM part of the system.
+;
+(DEFLAM SHOWOPT# ()
+ (SEQ
+  (ENDL)
+  (HGKM-PRINC "The showing options are the following:")
+  (CRLF)
+  (separe&print-opt (show_alist-get))))
+
+(DEFLAM SHOWCMND# ()
+ (SEQ
+  (ENDL)
+  (HGKM-PRINC "The list of commands is the following:")
+  (CRLF)
+  (separe&print-cmd (key_alist-get))))
+
+(DEFLAM separe&print-opt (show-list-opt)
+ (IF (MTL? show-list-opt) (NOP)
+  (SEQ
+   (print-opt (CAR show-list-opt))
+   (separe&print-opt (CDR show-list-opt)))))
+
+(DEFLAM  print-opt (opt-list)
+ (IF (MTL? opt-list)(NOP)
+  (SEQ
+   (CRLF)
+   (HGKM-PRINC (CAR opt-list)) 
+   (HGKM-PRINC " : ")
+   (PRINTLIST (CDR opt-list))
+   (CRLF))))
+  
+(DEFLAM separe&print-cmd (key-list)
+ (IF (MTL? key-list) (NOP)
+  (SEQ 
+   (print-cmd (CAR key-list))
+   (separe&print-cmd (CDR key-list)))))
+
+(DEFLAM  print-cmd (key-list)
+ (IF (MTL? key-list) (NOP)
+  (SEQ
+   (CRLF)
+   (HGKM-PRINC (CAR key-list))
+   (HGKM-PRINC " : ")
+   (PRINTLIST (CDR key-list))
+   (CRLF))))
+
+
+
+;****************************************************************
+;*                                                              *
+;*                                                              *
+;* The routines for parsing HGKM s-expressions.                 *
+;*                                                              *
+;*                                                              *
+;****************************************************************
+
+
+;****************************************************************
+;*                                                              *
+;* SYNTAX                                                       *
+;*     (sexpr#)				  		                            *
+;*                                                              *
+;* DESCRIPTION                                                  *
+;*     This function scans 					                    *
+;*          ALT[ <atom> | ( <sexprlist> OPT[<dotend>] ) ]		*
+;*                                                              *
+;****************************************************************
+
+(DEFLAM sexpr# () (CAR (sexpr1!)))
+
+;
+;Scan an atom or a list.  Returns (LIST OBJ) if successful; returns MTL or
+;signals an error if unsuccessful.
+(DEFLAM sexpr1! ()
+ (LET ((X (atom@)))
+  (IFN (MTL? X) X
+   (IF (TK@ LPAR)
+    (LET ((X (sexprlist@)))
+     (LET ((S (SCANSTATUS-GET)))
+      (LET ((Y (dotend@)))
+       (SEQ 
+        (TK# RPAR "A <sexpr>" "a right parenthesis")
+        (IF (ISF X)
+         (IF (IST Y)
+          (SEQ 
+           (SCANSTATUS-RESTORE S)
+           (REMSG2 "A <sexpr>" "a right parenthesis"))
+          (LIST MTL))
+         (LIST (ADOT (CAR X) (CAR Y))))))))
+    MTL))))
+
+(DEFLAM ADOT (A B)
+ (IF (MTL? B) A
+  (IF (MTL? A) MTL
+   (IF (MTL? (CDR A)) (CONS (CAR A) B)
+    (CONS (CAR A) (ADOT (CDR A) B))))))
+
+
+;*****************************************************************
+;*                                                               *
+;* SYNTAX                                                        *
+;*      (sexprlist@)                                             *
+;*                                                               *
+;* DESCRIPTION                                                   * 
+;*      This function scans                                      *
+;*                                                               *
+;*      REP1[ <sexpr> ]                                          *
+;*                                                               *
+;*****************************************************************
+
+(DEFLAM sexprlist@ ()
+ (LET ((X (sexpr1!)))
+  (IF (MTL? X) MTL
+   (LIST (CONS (CAR X) (CAR (sexprlist@)))))))
+
+;*****************************************************************
+;*                                                               *
+;* SYNTAX                                                        *
+;*      (dotend#)                                                *
+;*                                                               *
+;* DESCRIPTION                                                   *
+;*      This function scans                                      *
+;*                                                               *
+;*      . <sexpr>                                                *
+;*                                                               *
+;*****************************************************************
+
+(DEFLAM dotend@ ()
+ (IF (IST (TK@ DOT))
+  (LET ((X (sexpr1!)))
+   (IFN (MTL? X) X (REMSG2 "A <dotted-sexpr>" "a <sexpr>")))
+  MTL))
+
+;*****************************************************************
+;*                                                               *
+;* SYNTAX                                                        *
+;*      (atom@)                                                  *
+;*                                                               *
+;* DESCRIPTION                                                   *
+;*      This function scans                                      *
+;*                                                               *
+;*      ALT[<identifier> | <natnum>]                             *
+;*                                                               *
+;*      Returns (LIST ATOM) if ATOM is the atom scanned, or MTL  *
+;*      if no atom could be scanned.                             *
+;*                                                               *
+;*****************************************************************
+
+(DEFLAM atom@ ()
+ (LET ((X (NATNUM@)))
+  (IF (IST X) (LIST X)
+   (IF (MTL? (CUR-TOKEN)) (LIST (NEXT-TOKEN MTL))
+    (LET ((X (FOLSYM@)))
+     (IF (IST X) (LIST X) MTL))))))
+

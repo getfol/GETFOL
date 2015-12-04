@@ -1,0 +1,264 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Mon Nov 29 18:29:28 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: custom.fol
+;; Date: Wed Oct 20 10:47:55 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*****************************************************************
+;*                                                               *
+;* This file contains the code for the installation of new       *
+;* commands (mknewcommand), for the installation of new parsing  *
+;* modes (mknewmode), for getting the parsing functions          *
+;* associated to the FOL commands (GETCMND).                     *
+;*                                                               *
+;*****************************************************************
+;;;
+;*****************************************************************************
+;*                                                                           *
+;*  FUNCTION                                                                 *
+;*     (mknewmode MKEY MSCAN MDO MFUN)                                       *
+;*                                                                           *
+;*     MKEY   is the name of the new mode to be installed                    *
+;*     MSCAN  is the name of the scanning mode to be installed               *
+;*     MDO    is the name of the doing mode to be installed                  *
+;*     MFUN   ???                                                            *
+;*                                                                           *
+;*    DESCRIPTION                                                            *
+;*     In GETFOL it is possible to define different parsing modes.           *
+;*                                                                           *
+;*     With parsing modes it is possible to restrict the use of certain      *
+;*     commands only to a particular parsing mode.                           *
+;*     Conversely, it is possible to change the behaviour of a command       *
+;*     accordingly to the mode currently installed.                          *
+;*                                                                           *
+;* The creation of a new mode thus allows:                                   *
+;*                                                                           *
+;*  - to create a new logic: switching the mode it is possible               *
+;*    to switch from a set of commands to another one.                       *
+;*    For istance it is possible introduce a RESOLUTION mode, where          *
+;*    wffs are given in clausal mode (with some possible syntactic           *
+;*    shortcuts) and the only inference rule is given by a resolution        *
+;*    procedure.                                                             *
+;*    In this mode it should not be possible to execute the ND               *
+;*    inference rules that are in FOL mode.                                  *
+;*  - to set up an interactive parsing mode, possibly with windows.          *
+;*                                                                           *
+;*  NOTES                                                                    *
+;*    In order to install a new parsing mode, first call the function        *
+;*                                                                           *
+;*          (mknewmode ...)                                                  *
+;*                                                                           *
+;*    and then add commands to the new parsing mode by calling               *
+;*                                                                           *
+;*          (mknewcommand ...)                                               *
+;*                                                                           *
+;*        => The initial mode (GETFOL) is installed in "iparser.fol" <=      *
+;*        => ALLMODES is ok for all modes                            <=      *
+;*                                                                           *
+;*****************************************************************************
+;
+; (mknewmode ...)
+;   creates a new mode allowing the possibility to define a new
+;   scanning mode (MODE&SCAN) and a new doing mode (MODE&DO);
+;   that is, after the execution of this command it is possible to attach
+;   (using the mknewcommand function) new parsing and semantic functions
+;   to KEYs-command symbols.
+
+(DEFLAM mknewmode (MKEY MSCAN MDO MFUN)
+ (SEQ
+  (SETPROP MKEY MSCAN (QUOTE MODE&SCAN))
+  (SETPROP MKEY MDO   (QUOTE MODE&DO))
+  (SETPROP MKEY MFUN  (QUOTE ALLMODES))))
+
+; gets the name of the SCAN property associated to the mode specified
+; by MODE. It returns ALL&SCAN if it doesn't exist.
+;
+(DEFLAM mode-get-scan_prop (MODE)
+ (IF (EQ MODE (QUOTE ALLMODES))
+  (QUOTE ALL&SCAN) 
+  (GETPROP MODE (QUOTE MODE&SCAN))))
+
+; gets the name of the DO property associated to the mode specified
+; by MODE. It returns ALL&DO if it doesn't exist.
+;
+(DEFLAM mode-get-do_prop (MODE)
+ (IF (EQ MODE (QUOTE ALLMODES))
+  (QUOTE ALL&DO) 
+  (GETPROP MODE (QUOTE MODE&DO))))
+
+; the following two functions define the abstract data type current_mode
+; which is used to store the value of the MODE currently installed
+
+(DEFSUB current_mode-get ()      %CUR-MODE%)
+(DEFSUB current_mode-set (MODE)  (SETQ %CUR-MODE% MODE))
+
+
+;;;  How to introduce a new command into GETFOL
+;*****************************************************************************
+;*                                                                           *
+;*    FUNCTION                                                               *
+;*             (mknewcommand KEY MODE MODULE SYNFUN SEMFUN)                  *
+;*                                                                           *
+;*    KEY     is the token expected after the GETFOL prompt                  *
+;*    MODE    is the mode that this KEY is to work in                        *
+;*            (ALLMODES is acceptable here)                                  *
+;*    MODULE  the module to which KEY belongs                                *
+;*    SYNFUN  names the routine that scans the input line; this parsing      *
+;*            routine is supposed to call a semantic function.               *
+;*                                                                           *
+;*    SEMFUN  names the routine that executes the semantics.                 *
+;*            This function is applied when the command needs no             *
+;*            parsing actions, i.e. to execute the action requested          *
+;*            by a command without arguments.                                *
+;*                                                                           *
+;*    DESCRIPTION                                                            *
+;*      mknewcommand performs several actions:                               *
+;*        a) set the the synctatic function and the semantic function to     *
+;*           be called for the mode specified by MODE.                       *
+;*        b) update the variable %KEY-LIST%, which is used by the HELP       *
+;*           command and by the SHOW COMMAND command                         *
+;*                                                                           *
+;*    NOTES                                                                  *
+;*      There are several conventions to be observed:                        *
+;*                                                                           *
+;*      SYNFUN                                                               *
+;*        1.  Commands start with a KEY word.                                *
+;*        2.  Commands end with a semi-colon.  This is scanned by calling    *
+;*            (ENDL), which fixes up end of lines.                           *
+;*        3.  You report errors to the user and then return                  *
+;*            the pair ($$ERROR$$ . LINE)                                    *
+;*        4.  If exists SYNFUN calls SEMFUN                                  *
+;*                                                                           *
+;*      SEMFUN                                                               *
+;*        1.  If it is EMPTY, it means that the command has no arguments     *
+;*            so it has to be called to perform the associated semantic      *
+;*            action.                                                        *
+;*                                                                           *
+;*    IMPORTANT: actually this feature is not implemented !!!!               *
+;*               So the SEMFUNs are never defined.                           *
+;*                                                                           *
+;*****************************************************************************
+;
+; (mknewcommand ...)
+;    defines new parsing (SYNFUN) and semantic (SEMFUN) functions for
+;    the mode specified by MODE for the command having KEY as key.
+;
+
+(DEFLAM mknewcommand (KEY MODE MODULE SYNFUN SEMFUN)
+ (SEQ     
+  (cmnd_fun-set  KEY SYNFUN MODE)
+  (do_fun-set    KEY SEMFUN MODE)
+  (key_alist-add KEY MODULE)))
+
+(DEFLAM cmnd_fun-set (KEY SYNFUN MODE)
+ (IF (MTL? SYNFUN)
+  (NOP)
+  (SETPROP KEY SYNFUN (mode-get-scan_prop MODE))))
+  
+(DEFLAM do_fun-set (KEY SEMFUN MODE)
+ (IF (MTL? SEMFUN)
+  (NOP)
+  (SETPROP KEY SEMFUN (mode-get-do_prop MODE))))
+
+
+; The following functions define the abstract data type key_alist, which
+; contains the list of all KEYs (commands) defined in the system, grouped
+; by module.
+; The test (HGKM-MEMBER KEY (CDR group-cmd-list)) in key_alist-add is done to 
+; avoid duplicates in the list.
+
+(DEFLAM key_alist-ini  () (SETQ %KEY-LIST% MTL))
+(DEFLAM key_alist-get  () %KEY-LIST%)
+(DEFLAM key_alist-add (KEY CMD-GROUP) 
+ (LET ((group-cmd-list (HGKM-ASSOC CMD-GROUP (key_alist-get))))
+  (IF (MTL? group-cmd-list)
+   (SETQ %KEY-LIST% (LCONS (CONS CMD-GROUP (LCONS KEY MTL)) %KEY-LIST%))
+   (IF (HGKM-MEMBER KEY (CDR group-cmd-list))
+    (NOP)
+    (LET ((list (CDR group-cmd-list)))
+     (LET ((first (FIRST list)))
+      (SEQ
+       (SETFIRST list KEY)
+       (SETREST list (CONS first (REST list))))))))))
+
+
+;;;  GETCMND : get functions for parsing commands
+;*****************************************************************************
+;*                                                                           *
+;*   SYNTAX                                                                  *
+;*        (GETCMND sym)                                                      *
+;*                                                                           *
+;*   DESCRIPTION                                                             *
+;*     This function looks up the key for scanning in the current mode (see  *
+;*     %CUR-MODE%) and then looks to see if it has a scanning function for   *
+;*     that mode otherwise it looks at the scanning function to use in the   *
+;*     default ALLMODE case and returns the function to be applied.          *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM GETCMND (KEY)
+ (IF (NATNUM KEY)
+  (FERRM1 "No command begins with this token.")
+  (LET ((cmnd_fun (currmode-get-cmnd_fun KEY)))
+   (IF (IST cmnd_fun)
+    (NEXT-TOKEN cmnd_fun)
+    (LET ((cmnd_fun (allmode-get-cmnd_fun KEY)))
+     (IF (IST cmnd_fun)
+      (NEXT-TOKEN cmnd_fun)
+      (FERRM1 "No command begins with this token.")))))))
+
+(DEFLAM currmode-get-cmnd_fun (KEY)
+ (GETPROP KEY (mode-get-scan_prop (current_mode-get))))
+
+(DEFLAM allmode-get-cmnd_fun (KEY)
+ (GETPROP KEY 'ALL&SCAN))
+
+

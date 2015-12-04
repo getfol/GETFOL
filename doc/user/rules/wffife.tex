@@ -1,0 +1,38 @@
+\gfcommand{wffife}{wff conditional elimination}
+\index{wffife}
+
+\gfsyntax{
+	wffife \ARG{fact1} \ARG{fact2};
+}
+
+\gfdescription{
+\renewcommand{\arraystretch}{0.5}
+\[
+\mbox{{\em wif}} \  E \ \
+\fraz{A \ \ \ \ \ \mbox{{\em wffif}} \ A \ \mbox{{\em then}} \ B \ \mbox{{\em else}} \ C }
+{B}
+\]
+\renewcommand{\arraystretch}{1}
+
+If \ARG{fact1}'s wff is {\tt wffif A then B else C} and \ARG{fact2}'s wff is
+{\tt A}, then the derived wff is {\tt B} and its dependencies are the union of
+those of \ARG{fact1} and \ARG{fact2}.
+}
+
+\gfrecap{
+If the wff of `fact1' is `wffif A then B else C' and the wff of `fact2' is
+`A', then the derived wff is `B' and its dependencies are the union of those of
+`fact1' and `fact2'.
+}
+
+\gfexample+
+   ***** declare sentconst A B C;
+   ***** assume A;
+   1   A     (1)
+   ***** assume wffif A then B else C;
+   2   wffif A then B else C     (2)
+   ***** wffife 2 1;
+   3   B     (1 2)
++
+
+\gfnotes{}

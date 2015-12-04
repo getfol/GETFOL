@@ -1,0 +1,316 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:44:41 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: cmdio.fol
+;; Date: Wed Oct 20 10:47:53 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;*****************************************************************************
+;*                                                                           *
+;*   This file contains the command for the management of GETFOL I/O         *
+;*   redirection, that is, FETCHing and BACKUPping of GETFOL sessions.       *
+;*                                                                           *
+;*   The command DONE is also defined in this file                           *
+;*                                                                           *
+;*   NOTE:                                                                   *
+;*    The parsing commands defined in this file are tightly bound to the     *
+;*    TOP# function; that is, re-implementations of TOP# constrain to        *
+;*    re-implementations of these commands (and viceversa).                  *
+;*                                                                           *
+;*****************************************************************************
+
+;*****************************************************************************
+;*                                                                           *
+;*   SYNTAX                                                                  *
+;*      FETCH <fname> [FROM <fol-sym>] [TO <fol-sym>];                       *
+;*                                                                           *
+;*   COMMANDS                                                                *
+;*      FETCH#      -- fetch a file (redirect input from a file)             *
+;*      FLUSHTO     -- skip content of a file until a mark is encountered    *
+;*                                                                           *
+;*   DESCRIPTION                                                             *
+;*    These command returns control back to the host system.                 *
+;*    The host system fetches a file from a FROM mark to a TO mark.          *
+;*    Y and Z contain the FROM and TO labels (if exist), or *FROM* and *TO*  *
+;*    symbols.                                                               *
+;*    If the pushio is done successfully the flushing routine skips          *
+;*    everything  until a FROM label or EOF is found.                        *
+;*    Finally Z is pushed in to the stack of TO labels (see %MARK-STCK%)     *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM FETCH# ()
+ (LET ((FILNAM (FILNAM#)))
+  (LET ((MARK-FROM (IF (IST (TKC@ 'FROM)) (FOLSYM# "A mark") '%FROM%)))
+   (LET ((MARK-TO   (IF (IST (TKC@ 'TO  )) (FOLSYM# "A mark") '%TO%)))
+    (SEQ
+     (ENDL)
+     (fetch FILNAM MARK-FROM MARK-TO))))))
+
+(DEFLAM fetch (FILNAM MARK-FROM MARK-TO)
+ (SEQ 
+  (PUSH-INCCHANNEL FILNAM) 
+  (IO-EPRINC2 "I am starting to fetch " (CHANNEL-GET-FNAME (inpchanstack-first)))
+  (LET ((X (TRAP (IFN (EQ MARK-FROM '%FROM%) (FLUSHTO MARK-FROM) (NOP)))))
+   (IF (ERROR-OCCURRED? X) 
+    (IF (EQ X $HGKM-EOF$) 
+     (ERRMESS4 "The mark " MARK-FROM " was not found in " FILNAM)
+     (FERRM0 "While fetching You tickled a strange bug!"))
+    (markstack-push MARK-TO)))))
+        
+
+; FLUSHTO stops parsing if the parsing routine finds the following sequence
+;    MARK <searched mark> <eoln semicolumn>
+; or an unexpected eof. In this case the control is sent to a TRAP function.
+; When the local variable NUM equals 10 the flushing of parsing 
+; buffers is forced.
+
+(DEFLAM FLUSHTO (MARK)
+  (PGM (NUM)
+     (SETQ NUM 1)
+   L (SETQ NUM (+ 1 NUM))
+     (IF (EQ NUM 10) 
+         (SEQ (FLUSH) (SETQ NUM 0) (GOTO L)) 
+         (NOP))
+     (TK-GET&NTK-PARSE)
+     (IF (AND
+          (EQ (CAPITALIZE (CUR-TOKEN)) (QUOTE MARK))
+          (EQ (PEEKV 1) MARK)
+          (EQ (PEEKV 2) SEMI))
+            (SEQ (NEXT-TOKEN (TK-GET&NTK-PARSE)) (RETURN 'NO&ERROR))
+         (GOTO L)) ))
+
+;;;  setting a mark      MARK# 
+;*****************************************************************
+;*                                                               *
+;*  This command returns control back to the host system.        *
+;*                                                               *
+;*****************************************************************
+;
+;  MARK# is a function that handles TO labels for fetching; these labels
+;  are recorded LIFO in %MARK-STACK. When the "right" MARK label is found
+;  MARK# produces a EOF abort which is read by the parsing loop.
+
+(DEFLAM MARK# ()
+ (LET ((X (TK-GET&NTK-PARSE)))
+  (SEQ
+   (ENDL)
+   (IFN (MARKSTACK-EMPTY?)
+    (IF (EQ X (markstack-first))
+     (HGKM-ABORT $HGKM-EOF$)
+     (NOP))
+    (NOP)))))
+
+
+;;;  backuping commands into a file     
+;*****************************************************************
+;*                                                               *
+;* BACKUP filename ALT[OPEN CLOSE];                              *
+;*                                                               *
+;* All the sintactically correct commands between the command    *
+;* "BACKUP filename OPEN;" and the command                       *
+;* "BACKUP filename CLOSE;" are stored into "filename".          *
+;* Many backup files may be open simultaneously.                 *
+;*                                                               *
+;*****************************************************************
+
+(DEFLAM BACKUP# ()
+ (LET ((FILNAM (FILNAM#)))
+  (LET ((ALT (IF (IST (TKC@ 'OPEN))
+              '%OPEN%
+              (IF (IST (TKC# 'CLOSE "OPEN or CLOSE")) '%CLOSE% (NOP)))))
+   (SEQ
+    (ENDL)
+    (backup FILNAM ALT)))))
+
+(DEFLAM backup (FILNAM ALT)
+ (IF (EQ ALT '%OPEN%)
+  (IF (BACKUP-CONTAINS? FILNAM)
+   (ERRMESS2 FILNAM " has been already opened.")
+   (SEQ
+    (backup-add (CONS FILNAM (HGKM-OSOPEN FILNAM)))
+    (IO-EPRINC2 "I am starting to backup onto " FILNAM)))
+  (IF (EQ ALT '%CLOSE%)
+   (LET ((PAIR (backup-get-fnam FILNAM)))
+    (IF (MTL? PAIR)
+     (ERRMESS2 FILNAM " has not been previously opened.")
+     (SEQ
+       (HGKM-CLOSE (CDR PAIR))
+       (backup-delete PAIR))))
+	(ERRMESS "System error: BACKUP# function"))))
+
+(DEFLAM BACKUPLINE-PRINC () (BACKUPLINE-PRINC1 (backup-get)))
+
+(DEFLAM BACKUPLINE-PRINC1 (CHALIST)
+ (IF (MTL? CHALIST)
+  (NOP)
+  (SEQ
+   (BACKUPLINE-PRINC2 (IGNORE-CRLF 1) (CDR (FIRST CHALIST)))
+   (BACKUPLINE-PRINC1 (REST CHALIST)))))
+
+(DEFLAM BACKUPLINE-PRINC2 (N CHAN)
+ (IF (GT N (SCANBUF-GET-TOP_POS))
+  (SEQ (CHAN-CRLF CHAN)
+       (CHAN-CRLF CHAN))
+  (SEQ (CHAN-PRINC (ASCII (GETTUP %SCANBUFFER% N)) CHAN)
+       (BACKUPLINE-PRINC2 (ADD1 N) CHAN))))
+
+
+; DONE
+;*****************************************************************
+;*                                                               *
+;*  DONE;                                                        *
+;*                                                               *
+;*  This command returns control back to the host system.        *
+;*                                                               *
+;*****************************************************************
+
+(DEFLAM DONE# ()
+ (SEQ
+  (ENDL)
+  (PRINTMES (QUOTE "Returning to host"))
+  (HGKM-ABORT (QUOTE DONE))))
+
+
+;;; Probing activities
+;*****************************************************************************
+;*                                                                           *
+;*    COMMAND                                                                *
+;*      probe   OPT[ REP [ ALT[ all | FOLSYM ] ] ];                          *
+;*      unprobe ALT[ all | REP[ FOLSYM]];                                    *
+;*                                                                           *
+;*    DESCRIPTION                                                            *
+;*      Probing and unprobing of GETFOL activities; probe                    *
+;*      without arguments lists the activities currently probed.             *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM PROBE# ()
+ (LET ( (PROBENAME (CAPITALIZE (FOLSYM@))) )
+  (IFN (IST PROBENAME)
+   (SEQ
+     (ENDL)
+     (PROBES-EPRINC (probes-get)))
+   (IF (EQ PROBENAME 'ALL)
+    (SEQ
+     (ENDL)
+     (probes-set-all TRUE))
+    (PROB# (LIST PROBENAME))))))
+
+(DEFLAM PROB# (PROBELIST)
+ (LET ((PROBENAME (CAPITALIZE (FOLSYM@))))
+  (IFN (IST PROBENAME)
+   (SEQ
+    (ENDL)
+    (probes-set-names PROBELIST TRUE))
+   (PROB# (APPEND PROBELIST (LIST PROBENAME))))))
+
+(DEFLAM UNPROBE# ()
+ (LET ((PROBENAME (CAPITALIZE (FOLSYM@))))
+  (IFN (IST PROBENAME)
+   (SEQ
+    (ENDL)
+    (ERRMESS "I need activities to probe!!"))
+   (IF (EQ PROBENAME 'ALL)
+    (SEQ
+     (ENDL)
+     (probes-set-all FALSE))
+    (UNPROB# (LIST PROBENAME))))))
+
+(DEFLAM UNPROB# (PROBELIST)
+ (LET ((PROBENAME (CAPITALIZE (FOLSYM@))))
+  (IFN (IST PROBENAME)
+   (SEQ
+    (ENDL)
+    (probes-set-names PROBELIST FALSE))
+   (UNPROB# (APPEND PROBELIST (LIST PROBENAME))))))
+
+
+;;; higher level routines for probing
+;*****************************************************************************
+;*                                                                           *
+;*   SYNTAX                                                                  *
+;*    probes-set-all    TRUTHVALUE                                           *
+;*    probes-set-probes NAMELIST TRUTHVALUE                                  *
+;*                                                                           *
+;*  DESCRIPTION                                                              *
+;*    probes-set-all    set all the VALUEs in %PROBES% to TRUTHVALUE         *
+;*    probes-set-names  set the VALUE of all NAMEs in NAMELIST to TRUTHVALUE *
+;*                                                                           *
+;*  NOTE                                                                     *
+;*    the differences between these functions are the following:             *
+;*                                                                           *
+;*    1) probes-set-all    acts on all elements of %PROBES%                  *
+;*    2) probes-set-names  acts on the pairs specified by NAMELIST           *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM probes-set-all (TRUTHVALUE)
+ (probes-set-all1 (probes-get) TRUTHVALUE))
+
+(DEFLAM probes-set-all1 (PROBELIST TRUTHVALUE)
+ (IF (MTL? PROBELIST)
+  (NOP)
+  (LET ((PROBE (alist-get-first PROBELIST) ))
+  (SEQ
+    (probes-add-probe (CAR PROBE) TRUTHVALUE)
+    (probes-set-all1  (alist-get-rest PROBELIST) TRUTHVALUE) )) ) )
+
+(DEFLAM probes-set-names (NAMELIST TRUTHVALUE)
+ (IF (MTL? NAMELIST)
+  (NOP)
+  (LET ((PROBENAME (FIRST NAMELIST)))
+   (LET ((PROB (probes-get-probe PROBENAME) ))
+    (IF (MTL? PROB)
+     (PRINTMES2 "I cannot probe: " PROBENAME) 
+     (SEQ
+      (probes-add-probe  PROBENAME TRUTHVALUE)
+      (probes-set-names (REST NAMELIST) TRUTHVALUE)))))))
+

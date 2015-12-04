@@ -1,0 +1,177 @@
+\section{Syntactic simplification}
+\label{sec-rew}
+
+The subsections \ref{sec-rew-intro} and \ref{sec-rew-simpset} 
+of this section have been taken from \cite{rww3}.
+
+
+\subsection{Introduction}
+\label{sec-rew-intro}
+
+The basic idea  of syntactic simplification is repeated substitution of 
+selected equalities and equivalences into a given expression.
+More precisely, let $E$ be a set of universally quantified equations and 
+equivalences ("rewrite rules"), so members of $E$ look like:
+\begin{itemize}
+\item $\forall\ {\vec x}.(t_1=t_2)$
+\item $\forall\ {\vec y}.(F_1\ \liff \ F_2)$
+\end{itemize}
+where ${\vec x}$ and ${\vec y}$ are the {\indvar} sequences $x_1$...$x_n$
+and $y_1$..,$y_m$, $t_1$ and $t_2$ are {\term}s, and $F_1$, $F_2$ are {\wff}s.
+
+A match, or an immediate simplification, of a {{\GF}} expression $exp$ consists
+ of replacing an occurrence of $t_1[x \leftarrow u]$($F_1[y \leftarrow v]$) 
+in $exp$ by $t_2[x \leftarrow u]$($F_2[y \leftarrow v]$), where $u$($v$) is a 
+sequence of terms and where $\leftarrow$ indicates substitution.
+
+There are two problems to solve:
+\begin{enumerate}
+\item There may be more than one equation (or equivalence) whose left half 
+      matches a given expression, so one has to establish a precedence 
+      hierarchy for matching.
+
+\item The order used by the algorithm to consider the subexpressions of a 
+      given expression.
+\end{enumerate}
+
+{{\GF}}'s solution to the first problem is the following ordering expression:
+each simplification expression (i.e., left half of a rewrite rule) is 
+regarded as a linear string of atoms.
+Each atom is either:
+
+\begin{itemize}
+\item a {\bf constant} (which is not bound by the universal quantifier in the
+                       prefix);
+
+\item an {\bf old variable} (which is bound by the universal quantifier in 
+                            the prefix and which has occurred before in the 
+                            linear string);
+
+\item a {\bf new variable} (which is bound by the universal quantifiers in the
+                           prefix and which has not occurred before in the 
+                           linear string);
+\end{itemize}
+
+If we think of concatenating different atoms to a given initial string, then 
+the atoms have this precedence ordering:
+\begin{center}
+constants $<$ old variables $<$ new variables
+\end{center}
+and expressions are ordered lexicographically in accordance with this 
+ordering on atoms.
+
+Let's consider, for example, the precedence relations among the simplification
+ expressions :
+$f(a,b,b)$, $f(a,b,c)$, $f(a,a,x)$, $f(a,x,x)$, $f(a,x,y)$, $f(x,x,x)$,
+$f(x,x,y)$, 
+where $f$, $a$, $b$, $c$ are constants and $x$, $y$ are variables.
+
+The last four expressions are linearly ordered:
+$$
+f(a,x,x)<f(a,x,y)<f(x,x,x)f<(x,x,y)
+$$
+and each of the first three expressions is less than $f(a,x,x)$ and 
+incomparable to the other two of the first three expressions:
+$$
+f(a,b,b)<f(a,x,x)
+$$
+$$
+f(a,b,c)<f(a,x,x)
+$$
+$$
+f(a,a,x)<f(a,x,x)
+$$
+Together with transitivity, these inequalities completely define the 
+precedence relation.
+
+As far as regard the second problem, {{\GF}}'s syntactic simplification code 
+basically considers subexpressions of $exp$ in the usual left-to-right order.
+The exceptions occur after a subexpression $exp'$ has been matched (and 
+substituted for).
+The algorithm then begins again at the subexpression one level above $exp'$.
+
+The syntactic simplification algorithm has the usual problems of rewrite rules.
+A typical difficulty is the infinitely recurring substitutions: 
+for example if one uses $\forall\ x.x+y=y+x$ as simplification equation, 
+the algorithm will attempt to make this substitution without end.
+
+\subsection{Simplification sets}
+\label{sec-rew-simpset}
+
+Syntactic simplification in {\GF} is performed by using 
+{\bf syntactic simplification sets} (called {\bf simpsets} from now on).
+Simpsets contain a label ({\em simplabel}) to identify the
+rewrite rules used to rewrite expressions.
+{\GF} has built-in simpsets, but the user can define his own ones: he can specify a 
+set of formulae or facts as rewrite rules in a {\bf basic simspset}
+or he can compose already defined simpsets in {\bf compound simpsets}.
+
+The {{\GF}} builtin simpsets (see figure \ref{fig-simpset}) are
+{\bf \tt LPROPTREE}, {\bf \tt LQUANTREE}, {\bf \tt LARGIFTREE} and 
+{\tt LOGICTREE}.
+{\tt LPROPTREE} contains a set of rewrite rules 
+corresponding to basic logical equivalences (e.g. $P\con\neg P\liff \bot$). 
+{\tt LQUANTREE} contains a set of rewrite rules 
+corresponding to logic equivalences for quantified formulas.
+{\tt LARGIFTREE} contains a set of rewrite rules corresponding to logic
+equalities and equivalences for conditional terms and formulas.
+{\tt LOGICTREE} is the union of all the previous builtin simpsets.
+
+\newpage
+
+\begin{figure}[htbp]
+\begin{center}
+\fbox{
+\parbox{16cm}{
+$$
+\begin{array}{ll}
+\neg \neg P \liff P    & \ \ \                         \\
+\neg {\tt TRUE} \liff \bot   & \ \ \  \neg \bot \liff {\tt TRUE}    \\
+P \con \bot \liff \bot & \ \ \  \bot \con P\liff \bot   \\
+P \con {\tt TRUE}  \liff  P  & \ \ \  {\tt TRUE}  \con P\liff P     \\
+\neg P\con P\liff\bot  & \ \ \  P \con \neg P\liff \bot \\
+P\con P\liff P         & \ \ \                         \\
+P     \dis \bot \liff P  & \ \ \  \bot \dis P \liff P       \\
+P \dis {\tt TRUE} \liff {\tt TRUE}   & \ \ \  {\tt TRUE}  \dis P \liff {\tt TRUE}   \\
+\neg P \dis P\liff {\tt TRUE}  & \ \ \  P \dis \neg P \liff {\tt TRUE}  \\
+P     \dis P     \liff P & \ \ \                         \\
+P \imp \bot\liff\neg P & \ \ \  \bot \imp P\liff {\tt TRUE}   \\
+P\imp {\tt TRUE}\liff {\tt TRUE}   & \ \ \  {\tt TRUE}  \imp P     \liff P\\
+\neg P \imp P \liff P  & \ \ \  P \imp \neg P\liff\neg p\\
+P \imp P\liff {\tt TRUE}     & \ \ \                         \\
+P\liff \bot\liff\neg P  & \ \ \  \bot \liff P\liff\neg P  \\
+P\liff {\tt TRUE}\liff P      & \ \ \  {\tt TRUE}  \liff P\liff P     \\
+\neg P \liff P\liff\bot & \ \ \  P\liff\neg P\liff\neg\bot\\
+P\liff P\liff {\tt TRUE}      & \ \ \                         \\
+\end{array}
+$$
+}}
+\fbox{
+\parbox{16cm}{
+$$
+\begin{array}{ll}
+\forall x.{\tt TRUE}  \liff {\tt TRUE} & \ \ \  \forall x.\bot \liff \bot    \\
+\exists x.{\tt TRUE}  \liff {\tt TRUE} & \ \ \  \exists x.\bot \liff \bot    \\
+\end{array}
+$$
+}}
+\vspace{0.3cm} 
+\fbox{
+\parbox{16cm}{
+$$
+\begin{array}{ll}
+\forall x y.{\em trmif}\ \bot{\em then}\ x\ {\em else}\ y = y    & \ \ \ 
+\forall x y.{\em trmif}\ {\tt TRUE}\ {\em then}\ x\ {\em else}\ y\ = x \\
+\forall x.  {\em trmif}\ P\ {\em then}\ x\ {\em else}\ x = x & \ \ \  \\
+{\em wffif}\ \bot\ {\em then}\ P1\ {\em else}\ P2\ \liff P2 & \ \ \ 
+{\em wffif}\ {\tt TRUE}\ {\em then}\ P1\ {\em else}\ P2\ \liff\ P1 \\
+{\em wffif}\ P\ {\em then}\ P1\ {\em else}\ P1\ \liff\ P1 & \ \ \  \\
+\end{array}
+\\
+$$
+}}
+\caption{The rewrite rules of {\tt LPROPTREE}, {\tt LQUANTREE}
+\label{fig-simpset}
+and {\tt LARGIFTREE}.}
+\end{center}
+\end{figure}

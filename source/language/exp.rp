@@ -1,0 +1,591 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:52:28 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: exp.rp
+;; Date: Wed Oct 20 10:45:56 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;****************************************************************************
+;****************************************************************************
+;*                                                                          *
+;*                            exp.rp                                        *
+;*                                                                          *
+;* The routines for reading and printing expressions.                       *
+;*                                                                          *
+;* 1- The reading of expressions.                                           *
+;* 2- The printing of expressions.                                          *
+;*                                                                          *
+;****************************************************************************
+;****************************************************************************
+
+; The Grammar of Written Expressions
+; ----------------------------------
+
+; The grammar of the written expressions is defined formally below.
+; The unexplained categories are all parsed by "symbols.rp".
+
+
+;  <wff>      ::=  (<wff>) | <connappl> | <quantwff> | <wffif> | <awff>
+
+;  <connappl> ::=  <sentconn> <wff>                     {<sentconn> prefix} |
+;                  <wff> <sentconn> <wff>               {<sentconn> infix}
+
+;  <quantwff> ::=  <quant> <indvar> [REP <indvar>]. <wff>
+
+;  <wffif>    ::=  wffif <wff> then <wff> else <wff>
+
+;  <awff>     ::=  <sentsym> | <predappl>
+
+;  <predappl> ::=  <predsym> <term>                     {<predsym> prefix}  |
+;                  <term> <predsym> <term>              {<predsym> infix}   |
+;                  <predsym>(<term1>[,] ... [,]<termn>) {arity <predsym> = n}
+
+;  <term>     ::=  (<term>) | <funappl> | <termif> | <indsym>
+
+;  <termif>   ::=  trmif <wff> then <term> else <term>
+
+;  <funappl>  ::=  <funsym> <term>                      {<funsym> prefix}   |
+;                  <term> <funsym> <term>               {<funsym> infix}    |
+;                  <funsym>(<term1>[,] ... [,]<termn>)  {arity <funsym> = n}
+
+
+
+;****************************************************************************
+;*                                                                          *
+;* 1- The  reading of expressions                                           *
+;*                                                                          *
+;****************************************************************************
+
+
+; The expression parsing routines parse a written expression and return the
+; corresponding <EXP> data structure as defined in "exp.hgk". It parsing
+; functions thus provide a translation from the external "visible" grammar
+; detailed above (syntactic categories in lower case) to the internal
+; "hidden" grammar of the representing data structures (syntactic
+; categories in upper case).
+
+; The terminology of the parser does not quite fit with that of the grammar
+; above. This is because the parser also has to disambiguate the expression
+; using the speech-act information. The parser works linearly from left
+; to right and infix applications can only be recognised as such and
+; prioritised correctly when the left-hand argument of the application is
+; already  parsed. For this reason there is no direct parsing for <connappl>
+; and <funappl> because the parsing of the non-infix applications
+; must be separated from the parsing of the infix applications. With
+; <predappl> there is no such problem because the arguments are of a
+; different category (<term>) than the resulting application (<wff>).
+
+
+; *****************************************************************
+; *                                                               *
+; *   (WFF#) (WFF@)                                               *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM WFF# () (REQ# 'WFF@ "The scanner" "a <wff>"))
+
+(DEFLAM WFF@ () (wff+pri@ 0))
+
+
+;(wff+pri# PRI) (wff+pri@ PRI)
+; Parses for a <wff> taking speech-act priorities into account.
+; The <wff> being parsed occurs as argument to a connective with binding
+; priority PRI. Parses until an infix connective with weaker binding
+; priority is encountered. A binding priority of 0 is used at the start of
+; the parsing.
+
+(DEFLAM wff+pri# (PRI)
+   (LET ((WFF (wff+pri@ PRI)))
+     (IF (IST WFF) WFF
+     (REMSG2 "The scanner" "a <wff>"))))
+
+(DEFLAM wff+pri@ (PRI)
+   (LET ((WFF (BRACKETED-WFF@)))
+   (IF (IST WFF) (wffcontinue! WFF PRI)
+   (LET ((WFF (PREFIX-CONNAPPL@)))
+   (IF (IST WFF) (wffcontinue! WFF PRI)
+   (LET ((WFF (QUANTWFF@)))
+   (IF (IST WFF) (wffcontinue! WFF PRI)
+   (LET ((WFF (WFFIF@)))
+   (IF (IST WFF) (wffcontinue! WFF PRI)
+   (LET ((WFF (AWFF@)))
+   (IF (IST WFF) (wffcontinue! WFF PRI)
+   FVAL )))))))))))
+
+;(wffcontinue! WFFSOFAR PRI)
+; The <wff> WFFSOFAR has been parsed with priority PRI.
+; (wffcontinue! WFFSOFAR PRI) checks for an infix connective that has a higher
+; binding priority and if one is found the parsing is continued accordingly.
+
+(DEFLAM wffcontinue! (WFFSOFAR PRI)
+   (LET ((S (SCANSTATUS-GET))
+         (C (SENTCONN@)))
+     (IF (IST C)
+       (IF (INFIX C)
+         (IF (GE (lbp C) PRI)
+           (LET ((WFF2 (wff+pri@ (rbp C))))
+             (IF (IST WFF2)
+               (wffcontinue! (connappl2-mak C WFFSOFAR WFF2) PRI)
+             (SEQ (SCANSTATUS-RESTORE S) WFFSOFAR)))
+         (SEQ (SCANSTATUS-RESTORE S) WFFSOFAR))
+       (SEQ (SCANSTATUS-RESTORE S) WFFSOFAR))
+     WFFSOFAR )))
+
+
+;(BRACKETED-WFF@)
+; A parenthesised <wff>.
+
+(DEFLAM BRACKETED-WFF@ ()
+   (LET ((S (SCANSTATUS-GET)))
+     (IF (IST (TK@ LPAR))
+       (LET ((BRACKETED-WFF (WFF@)))
+         (IF (AND (IST BRACKETED-WFF)
+                  (TK@ RPAR))
+           BRACKETED-WFF
+         (SEQ (SCANSTATUS-RESTORE S) FVAL) ))
+     FVAL )))
+
+
+;(PREFIX-CONNAPPL@)
+; A <connappl> with a prefix connective.
+
+(DEFLAM PREFIX-CONNAPPL@ ()
+   (LET ((S (SCANSTATUS-GET))
+         (C (SENTCONN@)))
+     (IF (IST C)
+       (IF (PREFIX C)
+         (connappl1-mak C (wff+pri# (prbp C)))
+       (SEQ (SCANSTATUS-RESTORE S) FVAL) )
+     FVAL )))
+
+; *****************************************************************
+; *                                                               *
+; *   (QUANTWFF#) (QUANTWFF@)                                     *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM QUANTWFF# () (REQ# 'QUANTWFF@ "The scanner" "a <quantwff>") )
+
+; There is a problem parsing quantifiers due to the binding precedence of
+; the quantifier over the connectives. Quantifiers don't have a speech act!
+; The problem is solved by treating "<quant> v1 ... vn." as a prefix operator
+; and giving it the default prefix binding priority.
+
+(DEFLAM QUANTWFF@ ()
+   (LET ((Q (QUANT@)))
+     (IF (IST Q)
+       (LET ((VARLIST (INDVARREP#))
+             (DUMMY1 (TK# DOT "A quantifier" "a full-stop"))
+             (MATRIX (wff+pri# DefaultPRBP)));default binding priority.
+         (APPLQUANT Q VARLIST MATRIX))
+     FVAL )))
+
+(DEFLAM APPLQUANT (Q VARLIST MATRIX)
+   (IF (MTL? VARLIST) MATRIX
+   (mkquant Q (CAR VARLIST) (APPLQUANT Q (CDR VARLIST) MATRIX)) )) 
+
+
+; *****************************************************************
+; *                                                               *
+; *   (WFFIF#) (WFFIF@)                                           *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM WFFIF# () (REQ# 'WFFIF@ "The scanner" "an <ifwff>") )
+
+(DEFLAM WFFIF@ ()
+   (IF (IST (TK@ 'wffif))
+     (LET ((X (WFF#))
+           (DUMMY1 (TK# 'then "A `wffif'" "a `then'"))
+           (Y (WFF#))
+           (DUMMY2 (TK# 'else "A `wffif'" "an `else'"))
+           (Z (WFF#)))
+       (mkwffif X Y Z) )
+   FVAL ))
+
+
+; *****************************************************************
+; *                                                               *
+; *   (AWFF#) (AWFF@)                                             *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM AWFF# () (REQ# 'AWFF@ "The scanner" "an <awff>") )
+
+(DEFLAM AWFF@ ()
+   (LET ((SENTSYM (SENTSYM@)))
+     (IF (IST SENTSYM) SENTSYM
+     (PREDAPPL@) )))
+
+; *****************************************************************
+; *                                                               *
+; *   (PREDAPPL@)                                                 *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM PREDAPPL@ ()
+   (LET ((PREDAPPL (PREFIX-PREDAPPL@)))
+   (IF (IST PREDAPPL) PREDAPPL
+   (LET ((PREDAPPL (INFIX-PREDAPPL@)))
+   (IF (IST PREDAPPL) PREDAPPL
+   (APPLY-PREDAPPL@) )))))
+
+
+;(PREFIX-PREDAPPL@)
+; A <predappl> with a prefix predicate.
+
+(DEFLAM PREFIX-PREDAPPL@ ()
+   (LET ((S (SCANSTATUS-GET))
+         (P (PREDSYM@)))
+     (IF (IST P)
+       (IF (PREFIX P)
+         (predappl1-mak P (TERM#))
+       (SEQ (SCANSTATUS-RESTORE S) FVAL) )
+     FVAL )))
+
+
+;(INFIX-PREDAPPL@)
+; A <predappl> with an infix predicate.
+
+(DEFLAM INFIX-PREDAPPL@ ()
+   (LET ((S (SCANSTATUS-GET))
+         (ARG1 (TERM@)))
+     (IF (IST ARG1)
+       (LET ((P (PREDSYM@)))
+         (IF (IST P) 
+           (IF (INFIX P)
+             (predappl2-mak P ARG1 (TERM#))
+           (SEQ (SCANSTATUS-RESTORE S) FVAL) )
+         (SEQ (SCANSTATUS-RESTORE S) FVAL) ))
+     FVAL )))
+
+
+;(APPLY-PREDAPPL@)
+; A <predappl> with a directly applied predicate.
+
+(DEFLAM APPLY-PREDAPPL@ ()
+   (LET ((P (PREDSYM@)))
+     (IF (IST P)
+      (predappl-mak P (ARGSOF# P))
+     FVAL )))
+
+; *****************************************************************
+; *                                                               *
+; *   (TERM#) (TERM@)                                             *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM TERM# () (REQ# 'TERM@ "The scanner" "a <term>"))
+
+(DEFLAM TERM@ () (term+pri@ 0))
+
+
+;(term+pri# PRI) (term+pri@ PRI)
+; Parses for a <term> taking speech-act priorities into account.
+; The <term> being parsed occurs as argument to a function with binding
+; priority PRI. Parses until an infix function with weaker binding
+; priority is encountered. A binding priority of 0 is used at the start of
+; the parsing.
+
+(DEFLAM term+pri# (PRI)
+   (LET ((TRM (term+pri@ PRI)))
+     (IF (IST TRM) TRM
+     (REMSG2 "The scanner" "a <term>"))))
+
+(DEFLAM term+pri@ (PRI)
+   (LET ((TERM (BRACKETED-TERM@)))
+   (IF (IST TERM) (termcontinue! TERM PRI)
+   (LET ((TERM (PREFIX-FUNAPPL@)))
+   (IF (IST TERM) (termcontinue! TERM PRI)
+   (LET ((TERM (APPLY-FUNAPPL@)))
+   (IF (IST TERM) (termcontinue! TERM PRI)
+   (LET ((TERM (TERMIF@)))
+   (IF (IST TERM) (termcontinue! TERM PRI)
+   (LET ((TERM (INDSYM@)))
+   (IF (IST TERM) (termcontinue! TERM PRI)
+   FVAL )))))))))))
+
+
+;(termcontinue! TERMSOFAR PRI)
+; The <term> TERMSOFAR has been parsed with priority PRI.
+; (termcontinue! TERMSOFAR PRI) checks for an infix function that has a higher
+; binding priority and if one is found the parsing is continued accordingly.
+
+(DEFLAM termcontinue! (TERMSOFAR PRI)
+   (LET ((S (SCANSTATUS-GET))
+         (F (FUNSYM@)))
+     (IF (IST F)
+       (IF (INFIX F)
+         (IF (GE (lbp F) PRI)
+           (LET ((TERM2 (term+pri@ (rbp F))))
+             (IF (IST TERM2)
+               (termcontinue! (funappl2-mak F TERMSOFAR TERM2) PRI)
+             (SEQ (SCANSTATUS-RESTORE S) TERMSOFAR)))
+         (SEQ (SCANSTATUS-RESTORE S) TERMSOFAR))
+       (SEQ (SCANSTATUS-RESTORE S) TERMSOFAR))
+     TERMSOFAR )))
+
+;(BRACKETED-TERM@)
+; A parenthesised <term>.
+
+(DEFLAM BRACKETED-TERM@ ()
+   (LET ((S (SCANSTATUS-GET)))
+     (IF (IST (TK@ LPAR))
+       (LET ((BRACKETED-TERM (TERM@)))
+         (IF (AND (IST BRACKETED-TERM)
+                  (TK@ RPAR))
+           BRACKETED-TERM
+         (SEQ (SCANSTATUS-RESTORE S) FVAL) ))
+     FVAL )))
+
+
+;(PREFIX-FUNAPPL@)
+; A <funappl> with an infix function.
+
+(DEFLAM PREFIX-FUNAPPL@ ()
+   (LET ((S (SCANSTATUS-GET))
+         (F (FUNSYM@)))
+     (IF (IST F)
+       (IF (PREFIX F)
+         (funappl1-mak F (term+pri# (prbp F)))
+       (SEQ (SCANSTATUS-RESTORE S) FVAL) )
+     FVAL )))
+
+
+;(APPLY-FUNAPPL@)
+; A <funappl> with a directly applied function.
+
+(DEFLAM APPLY-FUNAPPL@ ()
+   (LET ((F (FUNSYM@)))
+     (IF (IST F)
+       (funappl-mak F (ARGSOF# F))
+     FVAL )))
+
+
+; *****************************************************************
+; *                                                               *
+; *   (TERMIF#) (TERMIF@)                                         *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM TERMIF# () (REQ# 'TERMIF@ "The scanner" "an <ifterm>") )
+
+(DEFLAM TERMIF@ ()
+   (IF (IST (TK@ 'trmif))
+     (LET ((X (WFF#))
+           (DUMMY1 (TK# 'then "A `trmif'" "a `then'"))
+           (Y (TERM#))
+           (DUMMY2 (TK# 'else "A `trmif'" "an `else'"))
+           (Z (TERM#)))
+       (mktrmif X Y Z) )
+   FVAL ))
+
+;(ARGSOF# APPLSYM)
+; Parses (<term1>[,] ... [,]<termn>) where n is the arity of APPLSYM,
+; returns a list of the terms. Is used for direct predicate and function
+; applications.
+
+(DEFLAM ARGSOF# (APPLSYM)
+   (LET ((DUMMY1 (TK# LPAR "An application" "a left parenthesis"))
+         (ARGLIST (TERMREP#))
+         (DUMMY2 (TK# RPAR "An application" "a right parenthesis")))
+     (IF (EQ (arity APPLSYM) (LENGTH ARGLIST))
+       ARGLIST
+     (ERRMESS4 APPLSYM " expects " (arity APPLSYM) " arguments") )))
+
+
+; *****************************************************************
+; *                                                               *
+; *   (WFFREP#) (WFFREP@)                                         *
+; *                                                               *
+; *   (TERMREP#)                                                  *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM WFFREP# () (LISTSCAN# 'WFF# 'WFF@ "A <wff>" "<wff>"))
+
+(DEFLAM WFFREP@ () (LISTSCAN! 'WFF@ "<wff>"))
+
+(DEFLAM TERMREP# () (LISTSCAN# 'TERM# 'TERM@ "A <term>" "<term>"))
+
+
+;****************************************************************************
+;*                                                                          *
+;* 2- The printing of expressions                                           *
+;*                                                                          *
+;****************************************************************************
+
+
+; *****************************************************************
+; *                                                               *
+; *   (printexp EXP)                                              *
+; *                                                               *
+; *****************************************************************
+
+; Translates EXP from its internal <EXP> representation to its external
+; readable form (the translation can be reversed by the expression
+; parsing routines). The readable form is printed as it is translated.
+
+; The translation is not unique because of the optional use of parentheses.
+; For the sake of readability "printexp" places parentheses around all
+; except the most external infix applications and conditionals.
+
+(DEFLAM printexp (EXP) (printexp+parenth EXP FVAL))
+
+
+;(printexp+parenth EXP PARENTH)
+; PARENTH is a flag. If TVAL then infix applications and <ifexp>s are
+; parenthisised.
+
+(DEFLAM printexp+parenth (EXP PARENTH)
+  (IF (SIMPLE EXP) (printname EXP)
+  (IF (QUANTWFF EXP) (printquant EXP)
+  (IF (IFEXP EXP) (printif EXP PARENTH)
+  (LET ((FUNC (appl-get-functor EXP)))
+    (IF (PREFIX FUNC) (printprefix EXP PARENTH)
+    (IF (INFIX FUNC) (printinfix EXP PARENTH)
+    (printappl EXP) )))))))
+
+(DEFLAM printname (EXP) 
+  (HGKM-PRINC (outnam EXP)) )
+
+(DEFLAM printnames (EXPLIST) 
+ (IF (MTL? EXPLIST) (NOP)
+  (SEQ
+   (printname (FIRST EXPLIST))
+   (HGKM-PRINC "  ")
+   (printnames (REST EXPLIST)))))
+
+(DEFLAM printquant (QUANTWFF)
+  (SEQ
+    (printname (quantof QUANTWFF))
+    (HGKM-PRINC " ")
+    (printname (bvarof QUANTWFF))
+    (printquantcontinue (quantof QUANTWFF) (matrix QUANTWFF)) ))
+
+(DEFLAM printquantcontinue (QUANT BODY)
+  (IF (NOT (AND (QUANTWFF BODY) (EQ (quantof BODY) QUANT) ))
+    (SEQ (HGKM-PRINC ". ")
+         (printexp+parenth BODY TVAL))
+  (SEQ 
+    (HGKM-PRINC " ") 
+    (printname (bvarof BODY))
+    (printquantcontinue QUANT (matrix BODY)) )))
+
+(DEFLAM printif (IFEXP PARENTH)
+  (SEQ
+    (IF (IST PARENTH) (HGKM-PRINC "(") (NOP))
+    (HGKM-PRINC (condof IFEXP))
+    (HGKM-PRINC " ")
+    (printexp+parenth (ifof IFEXP) TVAL)
+    (HGKM-PRINC " then ")
+    (printexp+parenth (thenof IFEXP) TVAL)
+    (HGKM-PRINC " else ")
+    (printexp+parenth (elseof IFEXP) TVAL)
+    (IF (IST PARENTH) (HGKM-PRINC ")") (NOP)) ))
+
+(DEFLAM printprefix (APPL1 PARENTH)
+  (SEQ
+    (IF (IST PARENTH) (HGKM-PRINC "(") (NOP))
+    (printname (appl-get-functor APPL1))
+    (HGKM-PRINC " ")
+    (printexp+parenth (appl1-get-arg APPL1) TVAL)
+    (IF (IST PARENTH) (HGKM-PRINC ")") (NOP)) ))
+
+
+(DEFLAM printinfix (APPL2 PARENTH)
+  (SEQ
+    (IF (IST PARENTH) (HGKM-PRINC "(") (NOP))
+    (printexp+parenth (appl2-get-lf APPL2) TVAL)
+    (HGKM-PRINC " ")
+    (printname (appl-get-functor APPL2))
+    (HGKM-PRINC " ")
+    (printexp+parenth (appl2-get-rt APPL2) TVAL)
+    (IF (IST PARENTH) (HGKM-PRINC ")") (NOP)) ))
+
+(DEFLAM printappl (APPL)
+  (SEQ
+    (printname (appl-get-functor APPL))
+    (HGKM-PRINC "(")
+    (printargs (appl-get-args APPL))
+    (HGKM-PRINC ")") ))
+
+(DEFLAM printargs (ARGLIST)
+   (SEQ (printexp (CAR ARGLIST))
+        (IFN (MTL? (CDR ARGLIST))
+          (SEQ (HGKM-PRINC ", ")
+               (printargs (CDR ARGLIST)))
+        (NOP) )))
+
+
+;;; TO BE PUT SOMEWHERE ELSE?
+
+;; All these message routines abort. They cause the fetch to stop.
+
+(DEFLAM ERRMES-printexp (EXP MSG)
+  (SEQ (printexp EXP) (HGKM-PRINC MSG) (CRLF) (ENDM) ) )
+
+(DEFLAM ERRMES-printexp2 (EXP1 MSG EXP2)
+  (SEQ (printexp EXP1) (HGKM-PRINC MSG) (printexp EXP2) (CRLF) (ENDM) ) )
+
+(DEFLAM ERRMES2-printexp (MSG1 EXP MSG2)
+  (SEQ (HGKM-PRINC MSG1) (printexp EXP) (HGKM-PRINC MSG2) (CRLF) (ENDM) ) )
+
+; These routines print the message without abort, that is
+; without ending the fetch.
+;
+(DEFLAM expmes-print (EXP MSG)
+  (SEQ (printexp EXP) (HGKM-PRINC MSG) (CRLF)))
+
+(DEFLAM expmesexp-print (EXP1 MSG EXP2)
+  (SEQ (printexp EXP1) (HGKM-PRINC MSG) (printexp EXP2) (CRLF)))
+
+(DEFLAM mesexpmes-print (MSG1 EXP MSG2)
+  (SEQ (HGKM-PRINC MSG1) (printexp EXP) (CRLF) (HGKM-PRINC MSG2) (CRLF)))

@@ -1,0 +1,87 @@
+                        ******************************
+
+ THIS FILE IS A LIST OF THE MOST COMMON PROBLEMS THAT CAN BE ENCOUNTERED DURING
+ THE INSTALLATION OF FOL/GETFOL.
+
+ A QUICK REFERENCE TO THE INSTALLATION PROCEDURE CAN BE FOUND IN THE FILES
+ <getfol-dir>/README and <getfol-dir>/make/README.
+
+ A COMPREHENSIVE GUIDE TO THE INSTALLATION PROCEDURE CAN BE FOUND IN THE DIR
+ <getfol-dir>/doc/install.
+
+                        ******************************
+
+
+                   CUSTOMIZING GETFOL FOR YOUR ENVIRONMENT
+                   ---------------------------------------
+
+1) Did you change the value of the variable %HOME-DIR% in the file
+   <getfol-dir>/make/host.lsp to the absolute pathname of the getfol directory
+   in your system?
+
+2) If you are trying to build the system on non-unix systems: did you change
+   the value of the variable %PATHNAME-SEPARATOR% to the symbol used by your
+   operating system to build pathnames?
+
+3) If you changed the modules to be installed: did you respect the dependency
+   graph of the modules?
+   [NOTE: the <getfol-dir>/tst/TEST file is written for the whole system. If
+   you dropped some of the modules, you must change it accordingly]
+
+4) If you changed the names of files and/or directories: did you changed the
+   corresponding entries in the configuration file?
+
+
+                               TROUBLE SHOOTING
+                               ----------------
+
+1) Did you extract the files with the original write dates -- the build 
+   procedure depends heavily on this?
+
+2) For IBCL -- did you use -O on a compiler which puts out bad code?  Any
+   time you change the settings or use a new c compiler this is a tricky
+   point.
+
+3) A sample transcript from a correct make is included under
+   <fol-dir>/doc/sample-make. 
+   If yours compiles less often or does things differently, something is
+   wrong, probably with dates or the clock on the server or something.
+
+4) If you can't save an image, try doing so on the file server rather than on
+   a client. 
+
+5) Doing the make on a client with the main files on a server, has sometimes
+   caused random breakage.  The large temp files used by the C compiler seem
+   to sometimes get transferred incorrectly.  Solution: use the server for the
+   compile.
+
+6) If you have problems loading the object files -- did you set the variable
+   %OBJFILE-SUFFIX% (file host.lsp) to the correct value? The variable
+   %OBJFILE-SUFFIX% is the extension given by the system to the object files.
+   If the extension is different from the one the lisp expects, you can't load
+   the object files.
+
+
+                           TYPICAL GETFOL PROBLEMS
+                           -----------------------
+
+1) the size of intermediate files for compilation can depend on the parameters
+   of the compilation; 
+
+2) it may also depend on the %DEBUG-MODE% and %INFORMATION-MODE% parameters of
+   the HGKM constructors. 
+
+3) in some lisps, the compilation can "leave some trace" in the lisp
+   environment that the garbage collector can not get rid of.
+   Therefore the size of the saved image can be considerably smaller if the
+   system is saved after loading up-to-date object files rather than right
+   after the compilation.
+
+4) the default position of output files is the directory <fol-dir>/o. 
+   This may be a problem if you don't have enough disk space on the same file
+   system. There are two ways in which you can change the position of the .o
+   files.
+   The simplest is to make the <fol-dir>/o a symbolic link to the place where
+   you want the o files rather than a directory. 
+   The other way is to change the o directory associated with every module in
+   the system.

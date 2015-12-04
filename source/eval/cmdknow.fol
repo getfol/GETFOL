@@ -1,0 +1,57 @@
+; KNOW command
+;*****************************************************************************
+;*                                                                           *
+;*   The syntax of a KNOW command.                                           *
+;*                                                                           *
+;*     <KNOW COMMAND> := KNOW <KNOW BODY>;                                   *
+;*     <NATNUMS BODY> := NATNUMS OPT[ <NATNUMREP> ];                         *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFLAM KNOW# ()
+ (LET ((OPT (TKC@ 'NATNUMS)))
+  (IF (IST OPT)
+   (KNOWNATNUMS#)
+   (FERRM1 "This is not a legal option for a know command"))))
+
+(DEFLAM KNOWNATNUMS# ()
+ (IFN (NATNUM (CUR-TOKEN))
+  (SEQ
+   (ENDL)
+   (knownatnums_check&mak MTL))
+  (LET ((natnums (NATNUMREP#)))
+   (SEQ
+    (ENDL)
+    (knownatnums_check&mak natnums)))))
+
+(DEFLAM knownatnums_check&mak (natnums)
+ (IF (IST (REPETITION-GET natnums))
+   (GERRM0 (REPETITION-GET natnums)
+     " appears twice in the extension expression.")
+  (IF (KNOWNATNUMS) 
+   (SEQ
+    (PRINTMES "Warning! You already know natnums.")
+    (knownatnums natnums))
+   (knownatnums natnums))))
+
+(DEFLAM knownatnums (natnums)
+ (SEQ
+  (sort-declare (natnumsort-get-label))
+  (rep-declare  (natnumrep-get))
+  (IF (MTL? natnums) (NOP) ; We know all natnums
+   (LET ((extension (MAPCAR 'numeral-mak natnums)))
+    (extension-declare (natnumsort-get) extension)))))
+
+(DEFLAM KNOWNATNUMS () 
+ (IST (ls-get-obj (natnumsort-get-label) (predconst-ls))))
+
+;KNOWNATNUM tests if X is a known natnum 
+(DEFLAM KNOWNATNUM (X)
+ (IFN (NATNUM X) FALSE
+  (IFN (EXTENSION-HAS (natnumsort-get)) TRUE
+   (IF (IST (HGKM-MEMQ (numeral-mak X)(extension-get (natnumsort-get)))) TRUE
+    FALSE))))
+
+(DEFLAM natnumsort-get-label () (QUOTE NATNUMSORT))
+(DEFLAM natnumsort-get () (ls-get-obj (natnumsort-get-label) (predconst-ls)))
+(DEFLAM natnumrep-get() (QUOTE NATNUMREP))

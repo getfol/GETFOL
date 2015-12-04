@@ -1,0 +1,118 @@
+\gfcommand{rewrite}{syntactic simplifier command}
+\index{rewrite}
+
+\gfsyntax{
+  rewrite \ARG{wff} \ALT \ARG{fact} \ALT \ARG{term} \OPT{by \ARG{simpexpr}};
+}
+
+\gfdescription{
+  It rewrites the given expression by using the union of the rewrite rules 
+  indicated by the \ARG{simpexpr}.
+  If \ARG{simpexpr} is not specified, {\tt LOGICTREE} is used.
+  If \ARG{term} is provided as an argument, two steps are performed:
+  %
+  \begin{itemize}
+  \item \ARG{term} is rewritten by using the set of rewrite rules 
+    indicated by \ARG{simpexpr}.
+  \item the equality of \ARG{term} with its rewritten form is asserted as the next 
+    line of the proof. The dependencies depend on the simpsets actually used
+    during the syntactic simplification.
+  \end{itemize}
+  %
+  If \ARG{wff} is provided as argument, also two steps are performed:
+  %
+  \begin{itemize}
+  \item \ARG{wff} is rewritten by the set of rewrite rules of the
+    \ARG{simpexpr} result.
+  \item if \ARG{wff} is rewritten to {\tt TRUE}, \ARG{wff} is asserted as the
+    next line in the proof, if \ARG{wff} is rewritten to {\tt FALSE},
+    $\neg$ \ARG{wff} is asserted, otherwise the equivalence of \ARG{wff} with 
+    its rewritten form is asserted.
+    The dependencies depend on the simpsets used during the syntactic
+    simplification.
+  \end{itemize}
+  %
+  When \ARG{fact} is provided as an argument, the rewrite command works on the wff
+  of the \ARG{fact}.
+}
+
+\gfrecap{
+It rewrites the given expression by using the union of the rewrite rules 
+indicated by the `simpexpr'.
+If `simpexpr' is not specified, LOGICTREE is used.
+}
+
+\gfexample+
+   ***** declare indconst A,B;
+   ***** declare indvar X,Y;
+   ***** declare funconst F 2;
+   ***** declare funconst G 1;
+   ***** declare sentconst P;
+   ***** assume forall X . F(X,A) = A;
+   1   forall X. (F(X,A) = A)     (1)
+   ***** assume forall X . F(X,X) = G(X);
+   2   forall X. (F(X,X) = G(X))     (2)
+   ***** assume forall X Y . F(X,Y) =Y;
+   3   forall X Y. (F(X,Y) = Y)     (3)
+   ***** axiom F1:forall X . F(X,A) = A;
+   F1 : forall X. (F(X,A) = A)
+   ***** axiom F2:forall X . F(X,X) = G(X);
+   F2 : forall X. (F(X,X) = G(X))
+   ***** axiom F3:forall X Y. F(X,Y) = Y;
+   F3 : forall X Y. (F(X,Y) = Y)
+   ***** setbasicsimp S1 at facts {1};
+   ***** setbasicsimp S2 at facts {2};
+   ***** setbasicsimp S3 at facts {3};
+   ***** setbasicsimp S4 at facts {F1};
+   ***** setbasicsimp S5 at facts {F2};
+   ***** setbasicsimp S6 at facts {F3};
+   ***** setbasicsimp SIMPEQ at wffs {forall X.(X=X iff TRUE)};
+   ***** setcompsimp S7 at S1 uni S2 uni S3;
+   ***** rewrite F(A,A) by S6;
+   4   F(A,A) = A     
+   ***** rewrite F(A,A) by S5;
+   5   F(A,A) = G(A)     
+   ***** rewrite F(A,A) by S4;
+   6   F(A,A) = A     
+   ***** rewrite F(A,A) by S1;
+   7   F(A,A) = A     (1)
+   ***** rewrite F(A,A) by S2;
+   8   F(A,A) = G(A)     (2)
+   ***** rewrite F(A,A) by S3;
+   9   F(A,A) = A     (3)
+   ***** rewrite F(A,A) by S7;
+   10   F(A,A) = A     (1)
+   ***** rewrite F(B,B) by S1 uni S3;
+   11   F(B,B) = B     (3)
+   ***** rewrite F(B,B) by S1;
+   F(B,B): No simplification is possible
+   ***** rewrite not TRUE by S1;
+   not TRUE: No simplification is possible
+   ***** rewrite not TRUE;
+   12   not (not TRUE)     
+   ***** rewrite TRUE imp (P imp X=X);
+   13   (TRUE imp (P imp (X = X))) iff (P imp (X = X)) 
+   ***** rewrite TRUE imp (P imp X=X) by SIMPEQ uni LOGICTREE;
+   14   TRUE imp (P imp (X = X))
+   ***** rewrite F(A,A) by S7;
+   15   F(A,A) = A     (1)
+   ***** rewrite F(A,A)=A by S7;
+   16   F(A,A) = A  iff (A = A)   (1)
+   ***** rewrite F(A,A)=A by S7 uni SIMPEQ;
+   17   F(A,A) = A     (1)
+   ***** rewrite F(A,A)=G(A) by S7;
+   18   (F(A,A) = G(A)) iff (A = G(A))     (1)
+   ***** rewrite F(B,B) by S7;
+   19   F(B,B) = G(B)     (2)
+   ***** rewrite F(B,B)=G(B) by S7 uni SIMPEQ;
+   20   F(B,B) = G(B)     (2)
+   ***** rewrite F(B,B)=G(B) and F(A,A)=A by S7 uni SIMPEQ uni LOGICTREE;
+   21   (F(B,B) = G(B)) and (F(A,A) = A)     (1 2)
+   ***** rewrite F(A,A) by S7 dif S1 ;
+   22   F(A,A) = G(A)     (2)
+   ***** rewrite F(A,A) by S7 dif (S1 uni S2);
+   23   F(A,A) = A     (3)
+   ***** rewrite F(A,A)=A by S3 dif (S1 uni S2) uni SIMPEQ;
+   24   F(A,A) = A     (3)
++
+   

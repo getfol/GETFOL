@@ -1,0 +1,132 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: faax.hgk
+;; Date: Wed Oct 20 10:47:18 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ********************************************************************
+; *                                                                  *
+; * This file contains all the constructors and data manipulation    *
+; * for axioms and related stuff (that is for special kinds of facts *
+; *                                                                  *
+; ********************************************************************
+;
+; axioms
+;*****************************************************************************
+;*                                                                           *
+;*     DATA STRUCTURE                                                        *
+;*       <axiom>      ::= <label> <wff>                                      *
+;*       <axioms>     ::= REP[ <axiom> ]0                                    *
+;*                                                                           *
+;*     DESCRIPTION                                                           *
+;*       An axiom is implemented as a pair (<label> . <wff>), where          *
+;*       <wff> is the formula representing the axiom and <label> is          *
+;*       an identifier.                                                      *
+;*                                                                           *
+;*       The axioms in the current context are stored in GETFOL as           *
+;*       an associative list of <axiom> indexed by <label>.                  *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFSUB axiom-mak       (LABEL wff) (CONS LABEL (CONS wff MTL)) )
+(DEFSUB axiom-get-label (AXIOM)     (CAR AXIOM))
+(DEFSUB axiom-get-wff   (AXIOM)     (CADR AXIOM))
+(DEFLAM AXLABEL? (AXLABEL) 
+ (OR (IST (HGKM-ASSOC AXLABEL %CURALIST%))
+     (IST (HGKM-ASSOC AXLABEL %CURTHEORYLIST%)) ) )
+
+(DEFSUB axioms-get       ()        %CURALIST%)
+(DEFSUB axioms-set       (AXIOMS)  (SETQ %CURALIST% AXIOMS))
+(DEFSUB axioms-del       ()        (SETQ %CURALIST% MTL))
+(DEFSUB axioms-ini       ()        (SETQ %CURALIST% MTL))
+(DEFSUB axioms-add       (AXIOM)   (SETQ %CURALIST% (CONS AXIOM %CURALIST%)) )
+(DEFSUB axioms-get-axiom (AXLABEL) (HGKM-ASSOC AXLABEL %CURALIST%))
+
+
+; theories
+; ********************************************************************
+; *                                                                  *
+; *  SYNTAX                                                          *
+; *   (theory-mak THLABEL AXIOMNAMES)                                *
+; *   (theory-get-thlabel THEORY)                                    *
+; *   (theory-get-axlabels THEORY)                                   *
+; *                                                                  *
+; *   (theories-get)                                                 *
+; *   (theories-set AXIOMS)                                          *
+; *   (theories-del)                                                 *
+; *   (theories-ini)                                                 *
+; *   (theories-add theory)                                          *
+; *   (theories-get-theory THLABEL)                                  *
+; *   (THLABEL THLABEL)                                              *
+; *                                                                  *
+; *   Theorems are AXIOMS whose label begins with THM                *
+; *                                                                  *
+; ********************************************************************
+;
+(DEFSUB theory-mak (THLABEL AXLABELS) (CONS THLABEL AXLABELS))
+(DEFSUB theory-get-thlabel (THEORY) (CAR THEORY))
+(DEFSUB theory-get-axlabels (THEORY) (CDR THEORY))
+
+(DEFSUB theories-get ()         %CURTHEORYLIST%)
+(DEFSUB theories-set (THEORIES) (SETQ %CURTHEORYLIST% THEORIES))
+(DEFSUB theories-del ()         (SETQ %CURTHEORYLIST% MTL))
+(DEFSUB theories-ini ()         (SETQ %CURTHEORYLIST% MTL))
+(DEFSUB theories-add (theory)   
+        (SETQ %CURTHEORYLIST% (CONS theory %CURTHEORYLIST%)))
+(DEFSUB theories-get-theory (THLABEL) (HGKM-ASSOC THLABEL %CURTHEORYLIST%))
+(DEFSUB THLABEL (THLABEL) (IST (HGKM-ASSOC THLABEL %CURTHEORYLIST%)))
+
+;
+; ********************************************************************
+; *                                                                  *
+; *   data structures for input/output axioms and theories           *
+; *                                                                  *
+; ********************************************************************
+;
+(DEFSUB wtparsub-mak (WTPAR VARS WFFTRM) (CONS WTPAR (CONS VARS WFFTRM)) )
+(DEFSUB wtparsub-get-wtpar (WTPARSUB) (CAR WTPARSUB))
+(DEFSUB wtparsub-get-vars (WTPARSUB) (CADR WTPARSUB))
+(DEFSUB wtparsub-get-wfftrm (WTPARSUB) (CDDR WTPARSUB))
+(DEFSUB wtparsublist-add (WTPARSUB WTPARSUBLIST) (CONS WTPARSUB WTPARSUBLIST))
+

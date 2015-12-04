@@ -1,0 +1,114 @@
+;*****************************************************************************
+;*                                                                           *
+;*   DATA TYPE                                                               *
+;*       markstack-ini          -- initialize markstack                      *
+;*       markstack-push mark    -- push a mark in the markstack              *
+;*       markstack-pop          -- pop a mark from the stack                 *
+;*       markstack-first        -- returns first element of the stack        *
+;*       MARKSTACK-EMPTY?       -- self explaining!                          *
+;*                                                                           *
+;*   DESCRIPTION                                                             *
+;*       markstack is a stack of symbols used by fetch to keep track of      *
+;*       marks.                                                              *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFSUB markstack-ini    ()     (SETQ  %MARK-STK% MTL))
+(DEFSUB markstack-push   (mark) (SETQ  %MARK-STK% (LCONS mark %MARK-STK%)))
+(DEFSUB markstack-pop    ()     (SETQ  %MARK-STK% (REST %MARK-STK%)))
+(DEFSUB markstack-first  ()     (FIRST %MARK-STK%))
+
+(DEFSUB MARKSTACK-EMPTY? ()     (MTL?  %MARK-STK%))
+
+;*****************************************************************************
+;*                                                                           *
+;*   DATA TYPE                                                               *
+;*       inpchanstack-ini       -- initialize inpchanstack                   *
+;*       inpchanstack-push inc  -- push a channel in the inpchanstack        *
+;*       inpchanstack-pop       -- pop a channel from the stack              *
+;*       inpchanstack-first     -- returns first element of the stack        *
+;*       INPCHANSTACK-EMPTY?    -- self explaining!                          *
+;*                                                                           *
+;*   DESCRIPTION                                                             *
+;*       inpchanstack is a stack of channels used by GETFOL to keep track of *
+;*       channels.                                                           *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFSUB inpchanstack-ini    ()     (SETQ   %INPUTCHAN-STK% MTL))
+(DEFSUB inpchanstack-push   (inputchannel)
+  (SETQ %INPUTCHAN-STK% (LCONS inputchannel %INPUTCHAN-STK%)))
+(DEFSUB inpchanstack-pop    () (SETQ  %INPUTCHAN-STK% (REST %INPUTCHAN-STK%)))
+(DEFSUB inpchanstack-first  () (FIRST %INPUTCHAN-STK%))
+
+(DEFSUB INPUTCHANSTK-EMPTY? () (MTL?  %INPUTCHAN-STK%))
+
+
+;*****************************************************************************
+;*                                                                           *
+;*  DATA TYPE                                                                *
+;*    backup-ini                  -- initialize backup associative list      *
+;*    backup-get                  -- return associative list                 *
+;*    backup-add FCPAIR           -- add a pair to the backup ass. list      *
+;*    backup-get-fnam FILNAM      -- get pair starting with FILNAM           *
+;*    backup-delete FCPAIR        -- delete FCPAIR from the backup ass. list *
+;*    BACKUP-CONTAINS? FILNAM     -- check whether FILNAM is in list         *
+;*    BACKUP-EMPTY?               -- check whether the a-list is empty       *
+;*                                                                           *
+;*  DESCRIPTION                                                              *
+;*    %BACKUP-CHANALIST% is an associative list used to keep track of the    *
+;*    channels currently opened by the BACKUP command.                       *
+;*    Each entry of the list is a pair                                       *
+;*                                                                           *
+;*                    (FILNAM . CHANNEL)                                     *
+;*                                                                           *
+;*    where FILNAM is a file name and CHANNEL is the channel associated      *
+;*    to FILNAM                                                              *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFSUB backup-ini       ()       (SETQ %BACKUP-CHANALIST% MTL))
+(DEFSUB backup-get       ()       %BACKUP-CHANALIST%)
+(DEFSUB BACKUP-CONTAINS? (FILNAM) (HGKM-ASSOC FILNAM %BACKUP-CHANALIST%))
+(DEFSUB BACKUP-EMPTY?    ()       (MTL? %BACKUP-CHANALIST%))
+(DEFSUB backup-get-fnam  (FILNAM) (HGKM-ASSOC FILNAM %BACKUP-CHANALIST%))
+(DEFSUB backup-delete    (FCPAIR) (DELETE! FCPAIR %BACKUP-CHANALIST%))     
+(DEFSUB backup-add (FCPAIR)
+  (SETQ %BACKUP-CHANALIST% (LCONS FCPAIR %BACKUP-CHANALIST%)))
+
+
+;;; lower level routines for probing
+;*****************************************************************************
+;*                                                                           *
+;*  DATA TYPE                                                                *
+;*    probes-ini                    -- initialize probing a-list             *
+;*    probes-get                    -- return the probing a-list             *
+;*    probes-get-first              -- get first element of the a-list       *
+;*    probes-get-rest               -- get rest of the a-list                *
+;*    probes-add-probe NAME VALUE   -- add the pair (NAME.VALUE) to the list *
+;*    probes-get-probe NAME         -- get the pair (NAME.VALUE)             *
+;*    PROBED? NAME                  -- is the VALUE of NAME true?            *
+;*    PROBES-EMPTY?                 -- is the probing a-list empty?          *
+;*                                                                           *
+;*  DESCRIPTION                                                              *
+;*    GETFOL allows probing of certain activities; when the probing is set   *
+;*    messages about the result of commands are shown to the output.         *
+;*                                                                           *
+;*    Activities that can be probed are stored in the associative list       *
+;*    %PROBES%; each entry is a pair (NAME . VALUE), where NAME is the       *
+;*    name of the activity that can be probed and VALUE is a boolean         *
+;*    value that indicates whether NAME is currently probed or not.          *
+;*                                                                           *
+;*****************************************************************************
+
+(DEFSUB probes-ini       ()          (SETQ %PROBES% Alist-empty))
+(DEFSUB probes-get       ()          %PROBES%)
+(DEFSUB probes-get-first ()          (alist-get-first %PROBES%))
+(DEFSUB probes-get-rest  ()          (alist-get-rest  %PROBES%))
+(DEFSUB probes-get-probe (PROBENAME) (HGKM-ASSOC PROBENAME %PROBES%))
+(DEFSUB PROBED?          (NAME)      (CDR (probes-get-probe NAME) ))
+(DEFSUB PROBES-EMPTY?    ()          (MTL? %PROBES%))
+(DEFSUB probes-add-probe (NAME VALUE) 
+        (SETQ %PROBES% (alist-add %PROBES% NAME VALUE)) )
+
+

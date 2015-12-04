@@ -1,0 +1,1604 @@
+%............................... HGKM MANUAL .................................
+%.............................................................................
+
+
+\documentstyle[11pt]{../styfiles/GFmanual}
+
+%................................. macros ....................................
+%.............................................................................
+
+\setcounter{totalnumber}{1}
+
+\def\actionzero#1{\noindent ({\tt {#1}}) \hfill action}
+\def\actionone#1#2{\noindent ({\tt {#1}} {\it [{#2}]}) \hfill action}
+\def\actiontwo#1#2#3{\noindent ({\tt {#1}} {\it [{#2}]}{\it [{#3}]}) \hfill
+action} 
+\def\actionthree#1#2#3#4{\noindent ({\tt {#1}} {\it [{#2}]}{\it [{#3}]}{\it
+[{#4}]}) \hfill action}
+
+\def\functionzero#1#2{\noindent ({\tt {#1}}) $\Longrightarrow$ {#2} \hfill
+function} 
+\def\functionone#1#2#3{\noindent ({\tt {#1}} {\it [{#2}]}) $\Longrightarrow$
+{#3} \hfill function}
+\def\functiontwo#1#2#3#4{\noindent ({\tt {#1}} {\it [{#2}]}{\it [{#3}]})
+$\Longrightarrow$ {#4} \hfill function} 
+\def\functionthree#1#2#3#4#5{\noindent ({\tt {#1}} {\it [{#2}]}{\it [{#3}]}{\it
+[{#4}]}) $\Longrightarrow$ {#5} \hfill function} 
+
+\def\predicatezero#1{\noindent ({\tt {#1}}) \hfill predicate}
+\def\predicateone#1#2{\noindent ({\tt {#1}} {\it [{#2}]}) \hfill predicate}
+\def\predicatetwo#1#2#3{\noindent ({\tt {#1}} {\it [{#2}]}{\it [{#3}]}) \hfill
+predicate}
+\def\predicatethree#1#2#3#4{\noindent ({\tt {#1}} {\it [{#2}]}{\it [{#3}]}{\it
+[{#4}]}) \hfill predicate}
+
+\def\sysconst#1{\noindent{\tt {#1}} \hfill system constant}
+
+\def\chan {{\it channel\/}}
+\def\chr {{\it chr\/}}
+\def\chrlist {{\it chr-list\/}}
+\def\debmode {\%DE\-BUG\--MO\-DE\%}
+\def\dev {{\it device\/}}
+\def\dir {{\it direction\/}}
+\def\filena {{\it filena\/}}
+\def\flconst {first level constructor}
+\def\flrec {first level recognizer}
+\def\form {{\it form\/}}
+\def\formlist {{\it form list\/}}
+\def\funcdesc {{\it function description\/}}
+\def\infmode {\%IN\-FOR\-MA\-TION-MO\-DE\%}
+\def\inte {{\it int\/}}
+\def\LIST {{\it list\/}}
+\def\LISTone {{\it list\/$_1$\/}}
+\def\LISTtwo {{\it list\/$_2$\/}}
+\def\obj {{\it obj\/}}
+\def\objn {{\it obj\/$_n$\/}}
+\def\objone {{\it obj\/$_1$\/}}
+\def\objtwo {{\it obj\/$_2$\/}}
+\def\pair {{\it pair\/}}
+\def\sbral {{\it argument list\/}}
+\def\sbrbo {{\it body\/}}
+\def\sbrna {{\it subroutine name\/}}
+\def\str {{\it str\/}}
+\def\sym {{\it sym\/}}
+\def\symone {{\it sym\/$_1$\/}}
+\def\symtwo {{\it sym\/$_2$\/}}
+\def\value {{\it value\/}}
+
+% ................................. document ..................................
+% .............................................................................
+
+% \makeindex
+\begin{document}
+
+\title{HGKM User Manual}
+\author{{\bf Fausto Giunchiglia} and {\bf Alessandro Cimatti}}
+\date{4 March 1994}
+\version{2.1}
+\abstract{
+	This manual describes the implementation of a simple programming language,
+	{\HG}. 
+	{\HG} was originally defined and developed by Richard Weyhrauch and Caroline
+	Talcott at the Department of Computer Science of Stanford University.
+	The version described here sticks as much as possible the conventions and the
+	specifications of the original version.
+	The implementation is almost totally new and some new functionalities (e.g.
+	{\tt DEFSUB}) have been added.
+	Theoretical {\HG} was defined so that its semantics could be easily
+	represented in first order logic.
+	The version of {\HG} described in this manual acts as the implementation
+	language for {\GF}.
+	This manual has been written only to facilitate the
+	implementation/modification of {\GF}.
+}
+\addresses{
+   \begin{tabular}[c]{l@{\hskip 2em}l}
+       {\bf Fausto Giunchiglia}:	    & {\bf Alessandro Cimatti}           \\
+       Mechanized Reasoning Group       & Mechanized Reasoning Group,        \\
+       IRST, Povo, 38050 Trento, Italy  & IRST, Povo, 38050 Trento, Italy    \\
+       e-mail: {\tt fausto@irst.it}     & e-mail: {\tt cx@irst.it}           \\
+       phone: +39 461 314359            & phone: +39 461 314351
+   \end{tabular}
+}
+\published{
+	\begin{tabular}{l}
+		DIST Technical Report No. 9107-05 (1991). \\
+		DIST -- University of Genoa,\\
+		Via Opera Pia 11A, 16145 Genova, Italy.
+    \end{tabular}
+}
+
+% ................................... cover ...................................
+
+\thispagestyle{empty}
+\maketitle
+
+% ............................. table of contents ...............................
+
+\newpage
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+
+\section{Introduction}
+
+This manual describes an enhanced version of {\HG}, which has been revised by
+the authors within the {\GF} project\cite{giunchiglia34,giunchiglia12,giunchiglia29}.
+In effect, the most recent version of {\GF} has been implemented on this
+version of {\HG}.
+
+{\HG} is a programming language which has been implemented on top of Common
+LISP; it is powerful and simple to use. {\HG} has been developed mainly for
+three reasons: to increase {\GF}'s portability, to improve {\GF}'s performance
+and to introduce a simple mechanism of data typing.
+
+A language we will call {\it basic} {\HG} was developed including only a small
+set of data types and a few built in primitives. This language is enough to
+provide the full expressive power of {\HG}.
+
+However, in order to facilitate the development of {\GF}, more data types and
+primitives have been defined.
+These additions form {\it extended} {\HG}.
+
+This manual is not a tutorial.
+It is a reference manual for people already familiar with LISP and
+s-expressions notation.
+
+
+\subsection{Basic concepts}
+
+A {\HG} object belongs to a data type. For each data type three classes of
+primitives are defined:
+
+\begin{description}
+    \item[predicates:]
+        test if a condition is verified or not; predicates are forms which can
+        be used as test for branching in conditional forms: that is, evaluating
+		a predicate returns a truth value.
+    \item[functions:]
+        specify a correspondence between {\HG} data and returns an {\HG} object;
+		the data type of returned object is specified too; a function produces
+		no side effects.
+    \item[actions:]
+        specify a side effect, and do not return an {\HG} object.
+\end{description}
+%
+\noindent
+Furthermore for each data type we define some
+%
+\begin{description}
+    \item[system constants:]
+        symbols to which corresponds a fixed value
+\end{description}
+
+
+\subsection{Remarks about notation}
+
+The syntax of primitives and system constants will be described using the
+following notation:
+
+\begin{description}
+	\item \sysconst{<constant name>}
+	\item \predicatethree{<predicate name>}{arg type}{arg type}{\ldots}
+	\item \functionthree{<function name>}{arg type}{arg type}{\ldots}{res type}
+	\item \actionthree{<action name>}{arg type}{arg type}{\ldots}
+\end{description}
+
+\begin{quote}\bf
+	After the syntactic description we have a section in which the semantics are
+	described.
+	This section appears narrower than the rest of the text, in this way.
+\end{quote}
+
+The name of the primitive is printed in {\tt typewriter} style.
+Its arguments are language forms which will be evaluated.
+With {\it [arg type]} we mean the data type of the {\HG} object that the
+evaluation of the argument form should return.
+If the result of the evaluation does not match the specified data type a fatal
+error is generated.
+
+For instance, \inte\ denotes a form which evaluates to an integer.
+If an operation requires more than one argument of a single type, the bracketed
+type name will have a numbered subscript.
+For example we write {\it str\/$_1$} and {\it str\/$_2$} to denote two different
+forms that have strings as values.
+In the case an operation does not care about the type of its arguments we write
+\obj\ to indicate a form which can evaluate to any object in the {\HG} world.
+
+In section 2 we present basic {\HG}; in section 3 extended {\HG}; finally, in
+appendix we describe some aspects related to the implementation.
+
+
+\newpage
+\section{Basic {\HG}}
+
+In this section we shall describe basic {\HG}: we present the structured data
+types, the way in which the language forms are evaluated by the interpreter,
+some special forms for subroutine definitions, the error handling and the
+input/output primitives.
+
+
+\subsection{Data structures}
+
+Basic {\HG} data types are:
+
+\begin{itemize}
+	\item truth values {\it [trth];}
+	\item symbols {\it [\sym];}
+	\item integers {\it [\inte];}
+	\item characters {\it [\chr];}
+	\item strings {\it [\str];}
+	\item pairs {\it [\pair];}
+	\item lists {\it [list].}
+\end{itemize}
+
+In this chapter we shall refer to each data type by the corresponding name
+enclosed in square brackets.
+
+The syntax of data types is defined by this grammar:
+
+\begin{bnf}
+	\T{obj}			\sep  \T{atomic obj} | \T{compound obj} \\
+	\T{atomic obj}	\sep  \T{trth} | \T{sym} | \T{int} | \T{chr} | \T{str} \\
+	\T{compound obj}\sep  \T{pair} | \T{list} | \T{chr-list}\\
+	\T{pair}	    \sep  ( \T{obj} . \T{obj}) \\
+	\T{list}		\sep  empty-list | ( \T{obj} . \T{list} ) \\
+	\T{chr-list}	\sep  empty-list | ( \T{chr} . \T{chr-list} )
+\end{bnf}
+
+In this grammar we refer explicitly to a data structure, the list of characters
+{\it [chr-list],} which is not a primitive data type.
+However it is very used in {\HG}, and it is interesting to define its syntax too.
+Note that a list of characters is different from a string: in basic {\HG} a
+string is an atomic object, while a list of characters has a compound structure.
+
+
+\subsubsection{Truth values and equality predicate}
+
+\sysconst {TRUE}\index{TRUE}
+\begin{quote}
+	{\tt TRUE} is a system constant which always evaluates to true.
+\end{quote}
+
+\sysconst {FALSE}\index{FALSE}
+\begin{quote}
+	{\tt FALSE} is a system constant which always evaluates to false.
+\end{quote}
+
+\predicatetwo{EQ}{\objone}{\objtwo}\index{EQ}
+\begin{quote}
+	{\tt EQ} is the equality predicate, and is defined for all data types.
+	{\tt EQ} evaluates to true if both \objone\ and \objtwo\ are the same
+	object, false otherwise.
+\end{quote}
+
+
+\subsubsection{Symbols}
+
+{\HG} symbols are like Common LISP identifiers, with the only difference that
+they are case sensitive.
+{\tt abc}, {\tt CAR}, {\tt NIL}, {\tt THISISALONGATOM} are examples of {\HG}
+symbols.
+
+\bigskip
+
+\predicateone{SYMBOL?}{\obj}\index{SYMBOL?}
+\begin{quote}
+	{\tt SYMBOL?} evaluates to true if \obj\ is a symbol, false otherwise.
+\end{quote}
+
+\actiontwo{SETVAL}{\sym}{\obj}\index{SETVAL}
+\begin{quote}
+	{\tt SETVAL} changes the value associated with the specified symbol to \obj.
+\end{quote}
+
+\functionone{GETVAL}{\sym}{\obj}\index{GETVAL}
+\begin{quote}
+	{\tt GETVAL} returns the value associated with \sym.
+\end{quote}
+
+\actionthree{SETPROP}{\symone}{\obj}{\symtwo}\index{SETPROP}
+\begin{quote}
+	{\tt SETPROP} sets the property of \symone\ with key \symtwo\ to have the
+	value \obj.
+\end{quote}
+
+\functiontwo{GETPROP}{\symone}{\symtwo}{\obj}\index{GETPROP}
+\begin{quote}
+	{\tt GETPROP} returns the value of the property \symtwo\ of \symone.
+	If there is no such property {\tt GETPROP} returns the false truth value.
+\end{quote}
+ 
+\functiontwo{REMPROP}{\symone}{\symtwo}{\obj}\index{REMPROP}
+\begin{quote}
+	{\tt REMPROP} removes from \symone\ the property with an indicator {\tt EQ}
+	to \symtwo. 
+	It returns the false truth value if there is no such indicator.
+\end{quote}
+
+
+\subsubsection{Integers}
+
+Integers are the only type of numbers allowed in {\HG}.
+\bigskip
+
+\predicateone {INTEGER?}{\obj}\index{INTEGER?}
+\begin{quote}
+	{\tt INTEGER?} evaluates to true if \obj\ is an integer, false otherwise.
+\end{quote}
+
+\predicateone {ZERO?}{\obj}\index{ZERO?}
+\begin{quote}
+	{\tt ZERO?} evaluates  to true if \obj\ is the integer $0$, false otherwise.
+\end{quote}
+
+\predicateone {POSITIVE?}{\obj}\index{POSITIVE?}
+\begin{quote}
+	{\tt POSITIVE?} evaluates to true if \obj\ is a positive integer, false
+	otherwise.
+\end{quote}
+
+\predicateone {NEGATIVE?}{\obj}\index{NEGATIVE?}
+\begin{quote}
+	{\tt NEGATIVE?} evaluates to true if \obj\ is a negative integer, false
+	otherwise.
+\end{quote}
+
+\functionone {ADD1}{\inte}{\inte}\index{ADD1}
+\begin{quote}
+	{\tt ADD1} adds one to an integer.
+\end{quote}
+
+\functionone {SUB1}{\inte}{\inte}\index{SUB1}
+\begin{quote}
+	{\tt SUB1} subtracts one from an integer.
+\end{quote}
+
+
+\subsubsection{Characters}
+
+{\HG} characters are all the characters to which is associated an ASCII code.
+An {\HG} character is represented by the integer between $0$ and $255$
+corresponding to its {\tt ASCII} code.
+
+\bigskip
+
+\predicateone {CHARACTER?}{\obj}\index{CHARACTER}
+\begin{quote}
+	{\tt CHARACTER?} evaluates  to true if \obj\ is a character, false otherwise.
+\end{quote}
+
+\functionone {CHR2SYM}{\chrlist}{\sym}\index{CHR2SYM}
+\begin{quote}
+	{\tt CHR2SYM} returns the symbol whose print name consists of the characters
+	in \chrlist.
+
+	For instance:
+	%
+	\begin{verbatim}
+		> (CHR2SYM '(65 80 80 76 69))
+		APPLE
+	\end{verbatim}
+\end{quote}
+
+\functionone {SYM2CHR}{\sym}{\chrlist}\index{SYM2CHR}
+\begin{quote}
+	{\tt SYM2CHR} is the logical inverse of {\tt CHR2SYM}: it returns the list
+	of the characters which compound the symbol.
+
+	For instance:
+	%
+	\begin{verbatim}
+		> (SYM2CHR 'APPLE)
+		(65 80 80 76 69)
+	\end{verbatim}
+\end{quote}
+
+\functionone {CHR2INT}{\chrlist}{\inte}\index{CHR2INT}
+\begin{quote}
+	{\tt CHR2INT} takes a list of characters which represent digits and returns
+	the corresponding integer.
+	If the list begins with a minus sign ``-'' then {\tt CHR2INT} returns the
+	appropriate negative number.
+
+	For instance:
+	%
+	\begin{verbatim}
+		> (CHR2INT '(49 51 55)
+		137
+		> (CHR2INT '(45 49 51 55))
+		-137
+	\end{verbatim}
+\end{quote}
+
+\functionone {\tt INT2CHR}{\inte}{\chrlist}\index{INT2CHR}
+\begin{quote}
+	{\tt INT2CHR} is the logical inverse of {\tt CHR2INT}.
+	{\tt INT2CHR} returns the list of characters corresponding to the digits of
+	the integer.
+	If the integer is negative then the first element of the list will contain
+	the number $45$, which is the {\tt ASCII} code for the minus sign ``-''.
+
+	Example:
+	%
+	\begin{verbatim}
+		> (INT2CHR 137)
+		(49 51 55)}
+		> (INT2CHR -137)
+		(45 49 51 55)
+	\end{verbatim}
+\end{quote}
+
+
+\subsubsection{Strings}
+
+A string is an arbitrary sequence of {\it n\/} characters, indexed from $1$ to
+{\it n\/}.
+A string is delimited by a pair of double quotes ({\tt "}) which do not belong
+to it. {\HG} strings are case sensitive.
+{\tt "Symbol"}, {\tt "number"}, {\tt "ThisIsAString"} are examples of {\HG}
+strings.
+
+\bigskip
+
+\predicateone {STRING?}{\obj}\index{STRING?}
+\begin{quote}
+	{\tt STRING?} evaluates to true if \obj\ is a string, false otherwise.
+\end{quote}
+
+\functionone {LENSTR}{\str}{\inte}\index{LENSTR}
+\begin{quote}
+	{\tt LENSTR} returns an integer \inte\ equal to the number of characters in
+	\str.
+\end{quote}
+
+\actionthree {SETSTR}{\str}{\inte}{\chr}\index{SETSTR}
+\begin{quote}
+	{\tt SETSTR} sets to \chr\ the \inte-th position of \str.
+\end{quote}
+
+\functiontwo {GETSTR}{\str}{\inte}{\chr}\index{GETSTR}
+\begin{quote}
+	{\tt GETSTR} returns the \inte-th character of \str.
+\end{quote}
+
+\functionone {\tt STR2CHR}{\str}{\chrlist}\index{STR2CHR}
+\begin{quote}
+	{\tt STR2CHR} returns a list of characters which appear in the string.
+\end{quote}
+
+\functionone {CHR2STR}{\chrlist}{\str}\index{CHR2STR}
+\begin{quote}
+	{\tt CHR2STR} returns a string of the length of \chrlist\ that contains the
+	characters that appear in \chrlist.
+
+	Example:
+	%
+	\begin{verbatim}
+		> (STR2CHR "APPLE")
+		(65 80 80 76 69)
+		> (CHR2STR '(104 111 109 101)
+		"home"
+	\end{verbatim}
+\end{quote}
+
+
+\subsubsection{Pairs}
+
+An {\HG} pair is the ordered collection of two {\HG} objects.
+
+\bigskip
+
+
+\predicateone{PAIR?}{\obj}\index{PAIR?}
+\begin{quote}
+	{\tt PAIR?} evaluates to true if \obj\ is a pair, false otherwise.
+\end{quote}
+
+\predicateone{ATOMIC?}{\obj}\index{ATOMIC?}
+\begin{quote}
+	{\tt ATOMIC?} evaluates to true if \obj\ is an atomic object, namely
+	a symbol, an integer or a string, false otherwise.
+\end{quote}
+
+\functiontwo {CONS}{\objone}{\objtwo}{\pair}\index{CONS}
+\begin{quote}
+	{\tt CONS} returns a pair consisting of \objone\ and \objtwo.
+\end{quote}
+
+\functionone {CAR}{\pair}{\obj}\index{CAR}
+\begin{quote}
+	{\tt CAR} returns the first element of \pair.
+\end{quote}
+
+\functionone {CDR}{\pair}{\obj}\index{CDR}
+\begin{quote}
+	{\tt CDR} returns the second element of \pair.
+\end{quote}
+
+\actiontwo {SETCAR}{\pair}{\obj}\index{SETCAR}
+\begin{quote}
+	{\tt SETCAR} changes the first element of \pair\ to \obj.
+\end{quote}
+
+\actiontwo {SETCDR}{\pair}{\obj}\index{SETCDR}
+\begin{quote}
+	{\tt SETCDR} changes the second element of \pair\ to \obj.
+\end{quote}
+
+
+\subsubsection{Lists}
+
+A list is either the empty list or a pair whose second element is a list.
+
+\bigskip
+
+\sysconst {MTL}\index{MTL}
+\begin{quote}
+	{\tt MTL} evaluates to the empty list.
+\end{quote}
+
+\predicateone {MTL?}{\obj}\index{MTL?}
+\begin{quote}
+	{\tt MTL?} evaluates to true if \obj\ is the empty list, false otherwise.
+\end{quote}
+
+\predicateone {LIST?}{\obj}\index{LIST?}
+\begin{quote}
+	{\tt LIST?} evaluates to true if \obj\ is a list, false otherwise.
+\end{quote}
+
+\functiontwo {LCONS}{\obj}{\LIST}{\LIST}\index{LCONS}
+\begin{quote}
+	{\tt LCONS} returns a list with \obj\ in the front of \LIST.
+\end{quote}
+
+\functionone {FIRST}{\LIST}{\obj}\index{FIRST}
+\begin{quote}
+	{\tt FIRST} returns the first element of \LIST.
+\end{quote}
+
+\functionone {REST}{\LIST}{\LIST}\index{REST}
+\begin{quote}
+	{\tt REST} returns the rest of \LIST.
+\end{quote}
+
+\actiontwo {SETFIRST}{\LIST}{\obj}\index{SETFIRST}
+\begin{quote}
+	{\tt SETFIRST} changes the first element of \LIST\ to \obj.
+\end{quote}
+
+\actiontwo {SETREST}{\LISTone}{\LISTtwo}\index{SETREST}
+\begin{quote}
+	{\tt SETREST} changes the rest of \LISTone\ to \LISTtwo.
+\end{quote}
+
+
+\subsection{Evaluation of forms}
+
+This section describes how a form is evaluated by {\HG} interpreter.
+The different types of forms are:
+
+\begin{itemize}
+	\item null operation {\tt <nop>}
+	\item constant {\tt <const>}
+	\item variable {\tt <var>}
+	\item quotation {\tt <quote>}
+	\item subroutine application {\tt <appl>}
+	\item conditional evaluation {\tt <if>}
+	\item operation sequence {\tt <seq>}
+	\item local environment definition {\tt <let>}
+	\item environment modification {\tt <setq>}
+	\item program {\tt <pgm>}
+\end{itemize}
+%
+In the rest of the chapter we shall refer to the different types of forms to be
+evaluated by the corresponding names which are enclosed between angle brackets.
+The syntax of the language forms is defined by the following grammar.
+
+\begin{bnf}
+	\T{form}           \sep \T{atomic form} | \T{compound form} \\
+	\T{atomic form}	   \sep \T{nop} | \T{const} | \T{var} \\
+	\T{compound form}  \sep \T{quote} | \T{appl} | \T{if} | \T{let} | \T{setq} |
+							\T{seq} | \T{pgm} \\
+	\T{nop}			   \sep ( NOP) \\
+	\T{quote}		   \sep ( QUOTE \T{form}) \\
+	\T{appl}		   \sep (\T{subroutine name} \{ \T{form} \})\\
+	\T{if}			   \sep ( IF | IFN \T{predform} \T{form1} \T{form2}) \\
+	\T{let}			   \sep ( LET ( \{ ( \T{var} \T{form} ) \} ) \{ \T{form} \})
+							\\ 
+	\T{seq}			   \sep ( SEQ \{ \T{form} \} )\\
+	\T{pgm}			   \sep ( PGM ( \{ \T{var} \} ) \{ \T{pgm-stm} \} )\\
+	\T{pgm-stm}		   \sep \T{form} | \T{rtn} | \T{jump} | \T{label}\\
+	\T{rtn}			   \sep ( RETURN \T{form} ) \\
+	\T{jump}		   \sep ( BRT | BRF \T{label} \T{predform} ) | ( GOTO
+							\T{label} )\\
+	\T{label}		   \sep \T{symbol}
+\end{bnf}
+%
+Some explanation must be supplied: by constant ({\tt <const>}) we mean either
+a truth value, an integer, a character or a string; by predicative form
+({\tt <predform>}) we mean a particular form that evaluates to a truth value;
+by program statements ({\tt <pgm-stm>}) we mean the special constructs that
+compose a {\tt <pgm>} form statement list.
+In the rest of this section we shall describe the semantics of each form,
+referring to the grammar which has been presented.
+
+\bigskip
+
+{\bf Null operation}\index{NOP}
+\begin{quote}
+	The evaluation of the {\tt <nop>} form does nothing and does not return a
+	value.
+\end{quote}
+
+{\bf Constant}
+\begin{quote}
+	The evaluation of a constant form (truth value, integer, character or
+	string) returns the constant itself. Hence {\HG} constants are invariant
+	with respect to the evaluation.
+\end{quote}
+
+{\bf Variable}
+\begin{quote}
+	A {\tt <var>} form is a symbol. This symbol must be the name of an
+	initialized variable.
+	In this case the result of the evaluation of the form is the value of the
+	variable in the current environment; otherwise a fatal error occurs.
+\end{quote}
+
+{\bf Quotation}\index{QUOTE}
+\begin{quote}
+	The evaluation of a {\tt <quote>} form returns the argument form without
+	evaluating it.
+\end{quote}
+
+{\bf Subroutine application}
+\begin{quote}
+	{\tt <subroutine name>} must be a symbol which is the name of an {\HG}
+	function or predicate.
+	It can be the name of a built-in primitive or a user-defined function.
+	The argument {\tt <form>}s are evaluated and bound to the corresponding
+	formal parameters of the function or predicate (call-by-value).
+	The result of the application is the value obtained applying the specified
+	subroutine to the arguments.
+	The type of the values deriving from arguments must match properly the data
+	type of the formal parameters, otherwise a fatal error occurs.
+
+	Examples of subroutine applications are:
+	%
+	\begin{verbatim}
+		> (CONS 1 13)
+		(1 . 13)
+		> (MTL? MTL)
+		T
+	\end{verbatim}
+\end{quote}
+
+{\bf Conditional expressions}\index{IF}\index{IFN}
+\begin{quote}
+	If the {\tt <predform>} evaluates to true, then the {\tt IF} conditional
+	expression returns the evaluation of the first {\tt <form>}, otherwise of
+	the second one.
+	{\tt IFN} stands for {\tt IF NOT}; its semantics are trivial.
+
+	For instance:
+	%
+	\begin{verbatim}
+		> (IF (MTL? X) FALSE TRUE)
+	\end{verbatim}
+	%
+	evaluates to false if {\tt X} evaluates to the empty list, true otherwise.
+\end{quote}
+
+{\bf Sequences of forms: \verb+<seq>+}\index{SEQ}
+\begin{quote}
+	The value of a {\tt SEQ} form is the value of its last form in the
+	environment defined by the evaluation of previous forms.
+\end{quote}
+
+{\bf Local environment definition}\index{LET}
+\begin{quote}
+	{\tt LET} is used to create and initialize local variables.
+	The result of evaluating a {\tt LET} is given by the evaluation of the last
+	{\tt <form>} in a new environment in which each {\tt <var>} is associated
+	with the value of the respective {\tt <form>}.
+	If one of the initializing {\tt <form>}s contains any reference to any of
+	the {\tt <var>}s, its value is taken from the lexically exterior
+	environment.
+	Hence the semantics of a {\tt <let>} form is the same as:
+	%
+	\begin{verbatim}
+		(SEQ
+		  (SETQ TEMP-1 <form-1>)
+		  ...
+		  (SETQ TEMP-n <form-n>)
+		  (SETQ var-1 TEMP-1)
+		  ...
+		  (SETQ var-n TEMP-n)
+		  <form>)
+	\end{verbatim}
+	%
+	where {\tt TEMP-1} through {\tt TEMP-n} are symbols which do not appear in
+	any {\tt <form-i>} or in the last {\tt <form>}.
+\end{quote}
+
+{\bf Environment modification}\index{SETQ}
+\begin{quote}
+	The evaluation of a {\tt <setq>} form produces a side effect on
+	environments, and does not return a value.
+	The evaluation of a {\tt <setq>} form sets the value associated with the
+	variable {\tt <var>} to the evaluation of {\tt <form>}.
+	If {\tt <var>} is a global variable the form {\tt (SETQ <var> <form>)} is
+	equivalent to the form {\tt (SETVAL (QUOTE <var>) <form>)}.
+
+	For instance:
+	%
+	\begin{verbatim}
+		> (SETVAL (QUOTE X) 1)
+		1
+		> (LET ((X 5)) (SEQ (SETQ X 3) X)))
+		3
+	\end{verbatim}
+	%
+	evaluates to $3$ and leaves the value of {\tt X} to be $1$.
+	%
+	\begin{verbatim}
+		(SEQ
+		  (SETVAL (QUOTE X) 1)
+		  (LET ((X 5)) (SEQ (SETVAL (QUOTE X) 3) X)))
+	\end{verbatim}
+	%
+	evaluates to $5$ and leaves the value of {\tt X} to be $3$.	
+\end{quote}
+
+{\bf Program}\index{PGM}
+\begin{quote}
+	The {\tt <pgm>} form provides a facility for executing sequential programs,
+	something like {\tt PROG}s in Common Lisp.
+	The default order of executing {\tt <pgm-stm>}s is the sequential order.
+	This can be modified by the use of {\tt <jump>} or of {\tt <rtn>}
+	instructions.
+	The {\tt <var>}s are local to the {\tt <pgm>} form and they have no initial
+	value. 
+\end{quote}
+
+{\bf Jumps}\index{BRT}\index{BRF}\index{GOTO}
+\begin{quote}
+	The {\tt <jump>} statements can be either conditional ({\tt BRT} and
+	{\tt BRF}) or unconditional ({\tt GOTO}).
+	{\tt BRT} branches to the {\tt <label>} if the {\tt <predform>} evaluates to
+	true.
+	{\tt BRF} branches to the {\tt <label>} if the {\tt <predform>} evaluates to
+	false.
+	{\tt GOTO} branches to {\tt <label>}.
+\end{quote}
+
+{\bf Labels}
+\begin{quote}
+	{\tt <label>}s are statements which are simply symbols.
+	They are not evaluated but provide markers for the {\tt <jump>} statements.
+\end{quote}
+
+{\bf Return}\index{RETURN}
+\begin{quote}
+	At the evaluation of a {\tt <rtn>} the {\tt <pgm>} statements evaluation is
+	halted and the value of {\tt <form>} is returned.
+	As shown by the grammar, a {\tt <rtn>} statement can only be used as
+	statement into a {\tt <pgm>} form.
+\end{quote}
+
+
+\subsubsection{Eval and apply}
+
+In this section we describe two special form for evaluating forms and applying
+functions to forms.
+
+\bigskip
+
+\functionone {HGKM-EVAL}{\form}{\obj}\index{HGKM-EVAL}
+\begin{quote}
+	{\tt HGKM-EVAL} evaluates \form\ in the current environment and returns the
+	resulting \obj.
+\end{quote}
+
+\functiontwo {HGKM-APPLY}{\funcdesc}{\formlist}{\value}\index{HGKM-APPLY}
+\begin{quote}
+	{\tt HGKM-APPLY} binds each element of the form list (without evaluating it)
+	to the corresponding element of the bound variables list of the function
+	description, and returns the value of evaluating the body of the function
+	description in this new environment.
+
+	Example:
+	%
+	\begin{verbatim}
+		> (HGKM-APPLY (GET-FUN 'APPEND) '((A B) (C D)))
+		(A B C D)
+		> (HGKM-APPLY (GET-FUN 'APPEND) '(LIST '(B) '(C D)))
+		(B C D)
+	\end{verbatim}
+\end{quote}
+
+
+\subsection{Special forms}
+
+In {\HG} special forms to define functions and macros are provided.
+We call this special forms \flconst s, to distinguish them from Common LISP
+constructors (level zero constructors) which have been used to define built-in
+forms. 
+In this section we also present {\HG} special forms to inspect and describe
+built-in and user-defined subroutines: we shall refer to these special forms
+using the term "\flrec s".
+
+
+\subsubsection{First level constructors}
+
+The \flconst s are
+
+\begin{itemize}
+	\item {\tt DEFLAM}
+	\item {\tt DEFMAC}
+	\item {\tt DEFSYS}
+	\item {\tt DEFMACSYS}
+	\item {\tt DEFSUB}
+	\item {\tt SET-FUN}
+\end{itemize}
+
+A \flconst\ call has the usual form:
+
+\begin{quote}\tt
+	(<constructor name> {\it [\sbrna] [\sbral] [\sbrbo]})
+\end{quote}
+
+The result of a such call is the definition of a subroutine named {\it \sbrna},
+in which {\it \sbral\/} is the list of formal parameters and {\it \sbrbo\/} is
+the statement list.
+The syntax of user defined {\HG} subroutines is the same as Common LISP
+subroutines: hence are allowed all CL options, namely {\tt \&REST, \&OPTIONS,}
+etc.
+
+The way in which a subroutine is implemented depends on which is the \flconst
+used in defining it, and on the value of two installation variables at the
+moment of definition.
+Anyway the implementation is almost transparent to the user, and so here we give
+only a brief description of implementation features.
+
+We shall explain now the meaning of an installation variable, which is named
+{\tt \infmode}: the main idea is that when this variable evaluates to true some
+system information is set up at the moment of installation, while when it
+evaluates to false no information is available.
+The following are special forms which {\it do not} evaluate their arguments.
+
+\bigskip
+
+\actionthree {DEFLAM}{\sbrna}{\sbral}{\sbrbo}\index{DEFLAM}
+\begin{quote}
+	{\tt DEFLAM} is a function constructor; which always allows the redefinition
+	of previously defined functions.
+	If {\tt\infmode} evaluates to false, then {\tt DEFLAM} just defines the
+	function.
+	If {\tt\infmode} evaluates to true, {\tt DEFLAM} also sets a property
+	telling that {\it \sbrna\/} is a first level defined function and, in case
+	of redefinition, prints a warning message.
+\end{quote}
+
+\actionthree {DEFMAC}{\sbrna}{\sbral}{\sbrbo}\index{DEFMAC}
+\begin{quote}
+	{\tt DEFMAC} is a macro definer: hence {\it \sbrbo\/} must be a macro
+	statement list, that is must be ``expansible'' like Common LISP macros.
+	{\tt DEFMAC} always allows to redefine already defined macros.
+	If {\tt\infmode} evaluates to false then {\tt DEFMAC} just defines the
+	macro; else {\tt DEFMAC} also sets a property telling that {\it \sbrna} is a
+	first level defined macro and, in case of redefinition, prints a warning
+	message. 
+\end{quote}
+
+\actionthree {\tt DEFSYS}{\sbrna}{\sbral}{\sbrbo}\index{DEFSYS}
+\begin{quote}
+	{\tt DEFSYS} is a function definer which allows to redefine already defined
+	functions only when {\tt\infmode} evaluates to false; when {\tt\infmode} is
+	true and {\it \sbrna} has already been defined, {\tt DEFSYS} will signal
+	that it can not execute the redefinition.
+	With respect to functions which have not been defined yet {\tt DEFSYS} is
+	just like {\tt DEFLAM}.
+\end{quote}
+
+\actionthree {DEFMACSYS}{\sbrna}{\sbral}{\sbrbo}\index{DEFMACSYS}
+\begin{quote}
+	{\tt DEFMACSYS} is a macro definer which allows to redefine already defined
+	macros only when {\tt\infmode} evaluates to false; when {\tt\infmode} is
+	true and {\it \sbrna} has already been defined, {\tt DEFMACSYS} will signal
+	that it can not execute the redefinition.
+	With respect to macros which have not been defined yet {\tt DEFMACSYS} is
+	just like {\tt DEFMAC}. 
+\end{quote}
+
+\actionthree {\tt SET-FUN}{\sbrna}{\sbral}{\sbrbo}\index{SET-FUN}
+\begin{quote}
+	{\tt SET-FUN} differs from {\tt DEFLAM} just because it evaluates its
+	arguments,while {\tt DEFLAM} does not.
+\end{quote}
+
+\actionthree {DEFSUB}{\sbrna}{\sbral}{\sbrbo}\index{DEFSUB}
+\begin{quote}
+	{\tt DEFSUB} can work as {\tt DEFLAM} or as {\tt DEFMAC}.
+	This subroutine constructor is included for efficiency reasons rather than
+	theoretical reasons; hence its description is delayed to appendix A.
+\end{quote}
+
+
+\subsubsection{First level recognizers}
+
+\predicateone {FUNCTION?}{\obj}\index{FUNCTION?}
+\begin{quote}
+	{\tt FUNCTION?} is a function recognizer, which evaluates to true if \obj\
+	is the name of an {\HG} function, false otherwise. 
+	{\tt FUNCTION?} can not tell a built-in function from a \flconst\ defined
+	function, or a compiled function from an interpreted one.
+	{\tt FUNCTION?} returns the correct information only if {\tt\infmode} is
+	true; else it prints a warning message to signal that an un-allowable
+	information has been required and executes an {\tt HGKM-ABORT} instruction: hence
+	every {\tt FUNCTION?} call must be ``surrounded'' by a {\tt TRAP}
+	call\footnote{Further information about {\tt TRAP} and {\tt HGKM-ABORT} can be
+	found in ``Error handling'' section}.
+\end{quote}
+
+\predicateone {MACRO?}{\obj}\index{MACRO?}
+\begin{quote}
+	{\tt MACRO?} is a macro recognizer, which evaluates to true if \obj\ is the
+	name of an {\HG} macro, false otherwise.
+	Note that {\tt MACRO?} can not tell a system macro from a user defined
+	macro.
+	Furthermore, {\tt MACRO?} has the same behavior as {\tt FUNCTION?} with
+	respect to {\tt\infmode}.
+	Finally we want to mention a small problem: both {\tt MACRO?} and
+	{\tt FUNCTION?} evaluate to true in case of built-in subroutines, because
+	there is no information telling if a such subroutine has been defined as
+	macro or as function.
+\end{quote}
+
+\functionone {GET-FUN}{\obj}{\funcdesc}\index{GET-FUN}
+\begin{quote}
+	{\tt GET-FUN} returns a function description, in one of the following forms:
+	%
+	\begin{itemize}
+		\item
+			{\tt (HGKM <function name> COMPILED)} if the \newline function is
+			compiled; 
+		\item
+			{\tt (HOST <function name> <bound variables list> <body>)} if the
+			\newline function is an un-compiled system function;
+		\item
+			{\tt (HGKM <function name> <bound variables list> <body>)} if the
+			\newline function is an uncompiled \flconst\ defined function.
+	\end{itemize}
+\end{quote}
+
+
+\subsection{Error handling}
+
+\functionone {TRAP}{\form}{\value}\index{TRAP}
+\begin{quote}
+	{\tt TRAP} evaluates \form\ and if no error occurs during its evaluation
+	{\tt TRAP} returns the same value as the form ({\tt LIST} \form).
+	If a system error occurs during an evaluation then {\tt TRAP} returns an
+	atomic object that can be tested for determining what the error was.
+	If the function {\tt HGKM-ABORT} is called during evaluation of \form\ then {\tt
+	TRAP} will return the value of the argument of {\tt HGKM-ABORT}.
+\end{quote}
+
+\actionone {HGKM-ABORT}{\form}\index{HGKM-ABORT}
+\begin{quote}
+	{\tt HGKM-ABORT} returns the value of \form\ to the most recent {\tt TRAP}; every
+	{\tt HGKM-ABORT} call must be lexically surrounded at least by a {\tt TRAP}
+	function call.
+\end{quote}
+
+\predicateone{ERROR-OCCURRED?}{\value}\index{ERROR-OCCURRED?}
+\begin{quote}
+	{\tt ERROR-OCCURRED?} checks whether a {\tt TRAP}ped \form\ {\tt HGKM-ABORT}ed.
+\end{quote}
+
+\functionone{TRAP-GET-RESULT}{\value}{\obj}\index{TRAP-GET-RESULT}
+\begin{quote}
+	{\tt TRAP-GET-RESULT} selects from \value\ the result of the evaluation of
+	\form.
+\end{quote}
+
+
+\subsection{Input-output}
+
+In this section {\HG} input-output handling primitives are presented.
+{\HG} uses unidirectional channels implemented on Common LISP streams.
+A channel is an object representing in {\HG} environment an external object,
+i.e.\ a file or the keyboard.
+A channel needs to be open to become active.
+The system keeps track of open channels, storing information about each active
+channel in a global data structure, the channel list.
+Every channel list entry contains
+%
+\begin{itemize}
+	\item
+		the channel itself
+	\item
+		the data flow direction ({\tt IN} or {\tt OUT})
+	\item
+		the type of objects that can be communicated through the channel, namely
+		s-expressions ({\tt SEXP}) or characters ({\tt CHAR}).
+	\item
+		the information on the object bound to the channel (the device on which
+		is stored the physical file in case of file I/O, the keyboard in case of
+		console I/O, etc).
+\end{itemize}
+
+
+\subsubsection{Opening and closing channels}
+
+\functionone {HGKM-ISOPEN}{\filena}{\chan}\index{HGKM-ISOPEN}
+\begin{quote}
+	\filena\ is a form which evaluates to a string.
+	{\tt HGKM-ISOPEN} creates and returns a channel for s-expressions
+	corresponding to the file \filena, input direction.
+	When trying to open a channel corresponding to a non existing file, {\tt
+	HGKM-OPEN} executes an {\tt HGKM-ABORT} instruction, to signal that an illegal
+	operation has been required: hence {\tt HGKM-OPEN} must be {\tt TRAP}-ped.
+\end{quote}
+
+\functionone {HGKM-ICOPEN}{\filena}{\chan}\index{HGKM-ICOPEN}
+\begin{quote}
+	\filena\ is a form which evaluates to a string.
+	{\tt HGKM-ICOPEN} creates and returns a channel for characters corresponding
+	to the file \filena, input direction.
+	When trying to open a channel corresponding to a non existing file, {\tt
+	HGKM-OPEN} executes an {\tt HGKM-ABORT} instruction, to signal that an illegal
+	operation has been required: hence {\tt HGKM-OPEN} must be {\tt TRAP}-ped.
+\end{quote}
+
+\functionzero {TTY-IOPEN}{\chan}\index{TTY-IOPEN}
+\begin{quote}
+	{\tt TTY-IOPEN} returns a channel for console input.
+\end{quote}
+
+\functionone {HGKM-OSOPEN}{\filena}{\chan}\index{HGKM-OSOPEN}
+\begin{quote}
+	\filena\ is a form which evaluates to a string.
+	{\tt HGKM-OSOPEN} creates and returns a channel for s-expressions
+	corresponding to the file \filena, output direction.
+\end{quote}
+
+\functionone {HGKM-OCOPEN}{\filena}{\chan}\index{HGKM-OCOPEN}
+\begin{quote}
+	\filena\ is a form which evaluates to a string.
+	{\tt HGKM-OCOPEN} creates and returns a channel for characters corresponding
+	to the file \filena, output direction.
+\end{quote}
+
+\functionzero {TTY-OOPEN}{\chan}\index{TTY-OOPEN}
+\begin{quote}
+	{\tt TTY-OOPEN} returns a channel for console output.
+\end{quote}
+
+\actionone {HGKM-CLOSE}{\chan}\index{HGKM-CLOSE}
+\begin{quote}
+	{\tt HGKM-CLOSE} closes \chan\ and updates the channel list taking off the
+	information about \chan.
+	{\tt HGKM-CLOSE} must be trapped because, when \chan\ does not exist, an
+	{\tt HGKM-ABORT} occurs to signal that an illegal operation has been required.
+\end{quote}
+
+
+\subsubsection{Input output specifying channels}
+
+\functionone {CHAN-READ}{\chan}{\obj}\index{CHAN-READ}
+\begin{quote}
+	{\tt CHAN-READ} reads an s-expression from \chan\ and returns it; to handle
+	the case in which the object read is an {\tt EOF} a {\tt TRAP} function call
+	is required. 
+	\chan\ must have been created by {\tt TTY-IOPEN} or by {\tt HGKM-ISOPEN}.
+\end{quote}
+
+\functionone {CHAN-CHI}{\chan}{\chr}\index{CHAN-CHI}
+\begin{quote}
+	{\tt CHAN-CHI} reads a character from \chan\ and returns it; to handle the
+	case in which the character read is an {\tt EOF} a {\tt TRAP} function call
+	is required. 
+	\chan\ must have been created by {\tt TTY-IOPEN} or by {\tt HGKM-ICOPEN}.
+\end{quote}
+
+\actiontwo {CHAN-PRINC}{\obj}{\chan}\index{CHAN-PRINC}
+\begin{quote}
+	{\tt CHAN-PRINC} writes \obj\ on \chan.
+	\chan\ must have been created by {\tt TTY-OOPEN} or by {\tt HGKM-OSOPEN}.
+\end{quote}
+
+\actionone {CHAN-CRLF}{\chan}\index{CHAN-CRLF}
+\begin{quote}
+	{\tt CHAN-CRLF} writes a carriage return on \chan.
+	\chan\ must have been created by {\tt TTY-OOPEN} or by {\tt HGKM-OSOPEN}.
+\end{quote}
+
+\actiontwo {CHAN-CHO}{\chr}{\chan}\index{CHAN-CHO}
+\begin{quote}
+	{\tt CHAN-CHO} writes \chr\ on \chan.
+	\chan\ must have been created by {\tt TTY-OOPEN} or by {\tt HGKM-OCOPEN}.
+\end{quote}
+
+\functionone{CHANNEL-GET-FNAME}{\chan}{\filena}\index{CHANNEL-GET-FNAME}
+\begin{quote}
+	{\tt CHANNEL-GET-FNAME} returns the name of the file corresponding to the
+	channel \chan.
+\end{quote}
+
+
+\subsubsection{Input output with implicit channels}
+
+\actionone {SELECT}{\chan}\index{SELECT}
+\begin{quote}
+	{\tt SELECT} is the primitive to set the values of default channels.
+	If into the channel list the direction associated with \chan\ is {\tt IN},
+	then \chan\ will be selected as default input channel, else as default
+	output channel.
+\end{quote}
+
+\functionzero {HGKM-READ}{\obj}\index{HGKM-READ}
+\begin{quote}
+	{\tt HGKM-CHI} reads an s-expression from the selected input and returns it.
+	to handle the case in which the object read is an {\tt EOF} a {\tt TRAP}
+	function call is required.
+	The selected input must have been created by {\tt TTY-IOPEN} or by {\tt
+	HGKM-ISOPEN}. 
+\end{quote}
+
+\functionzero {HGKM-CHI}{\chr}\index{HGKM-CHI}
+\begin{quote}
+	{\tt HGKM-CHI} reads a character from the selected input and returns it; to
+	handle the case in which the character read is an {\tt EOF} a {\tt TRAP}
+	function call is required.
+	The selected must have been created by {\tt TTY-IOPEN} or by
+	{\tt HGKM-ICOPEN}. 
+\end{quote}
+
+\actionone {HGKM-PRINC}{\obj}\index{HGKM-PRINC}
+\begin{quote}
+	{\tt HGKM-PRINC} writes \obj\ on the selected output.
+	The selected output must have been created by {\tt TTY-OOPEN} or by
+	{\tt HGKM-OSOPEN}.
+\end{quote}
+
+\actionone {CRLF}{\chan}\index{CRLF}
+\begin{quote}
+	{\tt CRLF} writes a carriage return on the selected output.
+	The selected output must have been created by {\tt TTY-OOPEN} or by
+	{\tt HGKM-OSOPEN}.
+\end{quote}
+
+\actionone {HGKM-CHO}{\chan}\index{HGKM-CHO}
+\begin{quote}
+	{\tt HGKM-CHO} writes \chr\ on the selected output.
+	The selected output must have been created by {\tt TTY-OOPEN} or by
+	{\tt HGKM-OCOPEN}.
+\end{quote}
+
+\actionzero {HGKM-INITIO}\index{HGKM-INITIO}
+\begin{quote}
+	{\tt HGKM-INITIO} initializes I/O by setting the following I/O-related
+	variables:  {\tt CHAN-LIST}, {\tt STANDARD-INPUT}, {\tt STANDARD-OUTPUT},
+	{\tt SELECTED-INPUT}, {\tt SELECTED-OUTPUT}.
+\end{quote}
+
+
+\pagebreak
+\section{Extended {\HG}}
+
+In this section extended {\HG} is presented.
+Extended {\HG} is a collection of primitives which operate on basic {\HG} data
+structures or on newly defined ones.
+
+Extended {\HG} is not founded on theoretical considerations like basic {\HG}.
+Its semantics can't be axiomatized in first order logic.
+Extended {\HG} has been developed mainly for sake of performance and programming
+facility, and it has grown up ``on demand'': that is, when it has been realized
+that a set of primitives was useful it has been implemented. This is why
+extended {\HG} does not look homogeneous.
+
+During this revision, an attempt has been made to keep extended {\HG} as small
+as possible: hence, several primitives which are actually part of the source
+code are not presented in this manual because they seem to be rather useless.
+Further revisions of the source codes will face the problem of removing them.
+
+
+\subsection{Truth values}
+
+\begin{itemize}
+	\item {\tt (NOT \ldots)}\index{NOT}: as in CL.
+	\item {\tt (AND \ldots)}\index{AND}: as in CL.
+	\item {\tt (OR \ldots)}\index{OR}: as in CL.
+	\item {\tt (IST {\it [sym]})}\index{IST}:
+	  {\tt IST} and its counterpart {\tt ISF} should theoretically allow GETFOL
+	  to use real truth values instead that {\tt T} and {\tt NIL}. {\tt IST}
+	  returns {\tt TVAL} when {\it sym} is not {\tt MTL}, {\tt FVAL} otherwise.
+	\item {\tt (ISF {\it [sym]})}\index{ISF}:
+	  {\tt ISF} returns {\tt FVAL} when {\it sym} is {\tt MTL}, {\tt TVAL}
+	  otherwise.
+\end{itemize}
+
+
+\subsection{Symbols}
+
+\begin{itemize}
+    \item {\tt (CAPITALIZE {\it [sym {\tt | } str]})}:\index{CAPITALIZE}
+        returns the argument with all its letters capitalized.
+    \item {\tt (CAPITALIZE-SYM {\it [sym]})}:\index{CAPITALIZE-SYM}
+        returns {\it sym} with all its letters capitalized.
+    \item {\tt (CAPITALIZE-STR {\it [str]})}:\index{CAPITALIZE-STR}
+        returns {\it str} with all its letters capitalized.
+    \item {\tt (CONCAT-SYMS {\it [sym$_1$][sym$_2$]})}:\index{CONCAT-SYMS}
+        returns the concatenation of {\it sym$_1$} and {\it sym$_2$}.
+    \item {\tt  (PAIR2CHR {\it [pair]})}:\index{PAIR2CHR}
+        makes {\it pair} into the corresponding symbol.
+    \item {\tt  (INT2SYM {\it [int]})}:\index{INT2SYM}
+        makes {\it int} into the corresponding symbol.
+    \item {\tt  (NAT2SYM {\it [int]})}:\index{NAT2SYM}
+        makes a natural {\it int} into the corresponding symbol.
+    \item {\tt  (NAT2SYM {\it [nat]})}:\index{NAT2SYM}
+        makes the natural {\it nat} into the corresponding symbol.
+    \item {\tt (NUMERAL {\it [num]})}\index{NUMERAL}
+        looks if {\it num} is a numeral.
+\end{itemize}
+
+
+\subsection{Integers}
+
+These primitives are trivial, and do not require any explanation.
+Note that {\tt INTEQ} (the integer equality predicate) must be used instead of
+{\tt EQ} (the object equality) when compiling because some CL compiler
+substitutes the variable n (where n goes from $-1024$ to $1023$), which
+evaluates to the integer $n$, with its actual value. This can create unexpected
+behavior which is very difficult to detect and fix.
+
+\begin{itemize}
+	\item {\tt (MINUS ...)}\index{MINUS}
+	\item {\tt (PLUS ...)}\index{PLUS}
+	\item {\tt (DIFFERENCE ...)}\index{DIFFERENCE}
+	\item {\tt (TIMES ...)}\index{TIMES}
+	\item {\tt (QUOTIENT ...)}\index{QUOTIENT}
+	\item {\tt (REMAINDER ...)}\index{REMAINDER}
+	\item {\tt (NATNUM ...)}\index{NATNUM}
+	\item {\tt (INTEQ ...)}\index{INTEQ}
+	\item {\tt (LT ...)}\index{LT}
+	\item {\tt (LE ...)}\index{LE}
+	\item {\tt (GT ...)}\index{GT}
+	\item {\tt (GE ...)}\index{GE}
+\end{itemize}
+
+
+\subsection{Characters}
+
+\begin{itemize}
+	\item {\tt (ASCII {\it [chr]})}:\index{ASCII}
+		  creates and returns the interned symbol corresponding to {\it chr}.
+	\item {\tt (SYM-INTERN {\it [obj]})}:\index{SYM-INTERN}
+		   creates and returns the interned symbol corresponding to {\it obj}.
+	\item {\tt (MAKE-UNINTERNED {\it [obj]})}:\index{MAKE-UNINTERNED}
+		   creates and returns an un-interned symbol corresponding to {\it obj}.
+	\item {\tt (SYM-GETCHRFIRST {\it [sym]})}:\index{SYM-GETCHRFIRST}
+		   returns the character corresponding to the first character of
+		   {\it sym}.
+\end{itemize}
+
+
+\subsection{Strings}
+
+\begin{itemize}
+	\item {\tt (SUBSTR? {\it [str$_1$][str$_2$]})}:\index{SUBSTR?}
+		   evaluates to true if {\it str$_2$} begins with {\it str$_1$}.
+	\item {\tt (CONCAT-STRS {\it [str$_1$][str$_2$]})}:\index{CONCAT-STRS}
+		  returns the concatenation of {\it str$_1$} and {\it str$_2$}.
+	\item {\tt (SUBSTR {\it [str][int]})}:\index{SUBSTR}
+		   returns the string of the first {\it int} characters of {\it str}. If
+		   {\it int} is too big an error occurs.
+	\item {\tt (INSTR? {\it [str$_1$][str$_2$]})}:\index{INSTR?}
+		   evaluates to true if {\it str$_1$} appears in {\it str$_2$}.
+\end{itemize}
+
+
+\subsection{Lists}
+
+\begin{itemize}
+   	\item {\tt (LIST ...)}:\index{LIST}
+        as in CL.
+   	\item {\tt (EQUAL ...)}:\index{EQUAL}
+        as in CL.
+   	\item {\tt (COPY {\it [obj]})}:\index{COPY}
+        returns an object {\tt EQUAL} and not  {\tt EQ} to {\it obj}.
+    \item {\tt (LENGTH {\it [list]})}:\index{LENGTH}
+        returns the length of {\it list}.
+    \item {\tt (HGKM-MEMBER {\it [obj][list]})}:\index{HGKM-MEMBER}
+        as in CL.
+		The equality test is {\tt EQUAL}.
+    \item {\tt (HGKM-MEMQ {\it [obj][list]})}:\index{HGKM-MEMQ}
+	    like {\tt HGKM-MEMBER}, but with {\tt EQ} test.
+		For instance:
+		%
+		\begin{verbatim}
+			> (HGKM-MEMQ '(C D) ((A B)(C D) E))
+			FALSE
+		\end{verbatim}
+    \item {\tt (APPEND ...)}:\index{APPEND}
+        as in CL.
+    \item {\tt (UNION ...)}:\index{UNION}
+        as in CL.
+    \item {\tt (REVERSE {\it [list]})}:\index{REVERSE}
+        returns the reverse of the top level of {\it list}.
+    \item {\tt (SUBST {\it [obj$_1$][obj$_2$][obj$_3$]})}:\index{SUBST}
+        substitutes {\it obj$_1$} to every {\tt EQUAL} occurrence of
+		{\it obj$_2$} in {\it obj$_3$}.
+    \item {\tt (CL-ASSOC ...)}:\index{CL-ASSOC}
+        as CL's {\tt ASSOC}: it tests with {\tt EQ}.
+    \item {\tt (HGKM-ASSOC ...)}:\index{HGKM-ASSOC}
+         the same as {\tt CL-ASSOC}, but it tests with {\tt EQUAL}.
+    \item {\tt (SECOND {\it [list]})}:\index{SECOND}
+         returns the second element of {\it list}.
+    \item {\tt (LAST {\it [list]})}:\index{LAST}
+         as in common lisp: it returns the last {\em cons} of {\it list}.
+    \item {\tt (HGKM-NTH {\it [int][list]})}:\index{HGKM-NTH}
+        returns the {\it int}-th element of {\it list}.
+        Note that {\it int} must be positive, otherwise an error occurs.
+    \item {\tt (NCONC ...)}:\index{NCONC}
+         as in CL.
+    \item {\tt  (POS {\it [sym][list]})}:\index{POS}
+        returns the first position of {\it sym} in {\it list}.
+        If it does not exist {\tt POS} returns {\tt 0}.
+    \item {\tt  (TAIL {\it [list][obj]})}:\index{TAIL}
+        if {\it obj} occurs in {\it list} the list of elements following
+        {\it obj} (not including {\it obj}) is returned; otherwise {\tt MTL}
+        is returned. 
+    \item {\tt  (FLATTEN {\it [list]})}:\index{FLATTEN}
+        {\it list} is flattened and returned.
+    \item {\tt  (PRELIST {\it [list][int]})}:\index{PRELIST}
+        creates a list of the first {\it int} elements of {\it list}.
+    \item {\tt  (SUFLIST {\it [list][int]})}:\index{SUFLIST}
+        creates a list by deleting the first {\it int} elements of {\it list}.
+    \item {\tt  (INLIST? {\it [list$_1$][list$_2$]})}:\index{INLIST?}
+        looks if {\it list$_1$} is in {\it list$_2$} (only at top level).
+    \item {\tt  (SUBTRACT {\it [list$_1$][list$_2$]})}:\index{SUBTRACT}
+        returns the list of the elements of {\it list$_1$} which are not in
+        {\it list$_2$}. 
+    \item {\tt  (INTERSECT {\it [list$_1$][list$_2$]})}:\index{INTERSECT}
+         returns the intersection
+    \item {\tt (SUBSET {\it [list$_1$][list$_2$]})}:\index{SUBSET}
+        looks if {\it list$_1$} is a subset of {\it list$_2$}.
+        of {\it list$_1$} and {\it list$_2$}.
+    \item {\tt  (INSERT! {\it [obj][list]})}:\index{INSERT!}
+        inserts {\it obj} in {\it list} making side effect.
+        {\tt INSERT!} assumes that {\it obj} can only occur once in {\it
+        list}. 
+    \item {\tt  (HGKM-DELETE {\it [obj][list]})}:\index{HGKM-DELETE}
+        deletes {\it obj} from {\it list} without doing side effect.
+        {\tt HGKM-DELETE} assumes that {\it obj} only occurs once in {\it
+        list}. 
+    \item {\tt  (DELETE! {\it [obj][list]})}:\index{DELETE!}
+         the same as {\tt HGKM-DELETE} but with side effect.
+    \item {\tt  (OUTOF {\it [obj][list]})}:\index{OUTOF}
+        removes all the occurrences of {\it obj} from {\it list} without
+        doing side effect.
+    \item {\tt  (OUTOF! {\it [obj][list]})}:\index{OUTOF!}
+         the same as {\tt OUTOF} but with side effect.
+    \item {\tt  (UNLIST {\it [list]})}:\index{UNLIST}
+        substitutes the last cons of {\it list} with its {\tt CAR}.
+        For instance:
+
+        {\tt (UNLIST (QUOTE (A))) $\Longrightarrow$ A}
+
+        {\tt (UNLIST (QUOTE (A B))) $\Longrightarrow$ (A . B)}
+
+        {\tt (UNLIST (QUOTE (A B C))) $\Longrightarrow$ (A B . C)}
+    \item {\tt  (REVMAP {\it [list]})}:\index{REVMAP}
+        puts the last element of {\it list} at the top of
+        {\it list} itself.
+    \item {\tt  (REPETITION-GET {\it [list]})}:\index{REPETITION-GET}
+         returns the first element occurring twice in {\it list}.
+    \item {\tt  (LIST-N {\it [obj][int]})}:\index{LIST-N}
+         returns the list of {\it int} occurrences of {\it obj}.
+    \item {\tt  (PRINTLIST {\it [list]})}:\index{PRINTLIST}
+         prints all the elements of {\it list}.
+\end{itemize}
+
+
+\subsection{Arrays}
+
+\begin{itemize}
+    \item {\tt (TUPLE {\em [sym]} {\em [len]})}:\index{TUPLE}
+        sets the value of the variable {\em sym} to be an array of length
+        {\em len}. 
+    \item {\tt (SETTUP {\em [array]} {\em [index]} {\em [data]})}:
+	\index{SETTUP}
+        sets the {\em index}-th entry in {\em array} to {\em data} destroying
+        the previous information.
+    \item {\tt (GETTUP {[\em array]} {\em [index]})}:\index{GETTUP}
+        returns the data stored in {\em array} at the position indexed by
+		{\em index}.
+\end{itemize}
+
+
+\subsection{Ordered lists of integers}
+
+\begin{itemize}
+	\item {\tt (UNIONLE {\it [list$_1$][list$_2$]})}:\index{UNIONLE}
+		given two lists of natural numbers, each in ascending order, creates the
+		ascending ordered union. 
+	\item {\tt (UNIONGE {\it [list$_1$][list$_2$]})}:\index{UNIONGE}
+		given two lists of natural numbers, each in descending order, {\tt
+		UNIONGE} creates the descending ordered union.
+	\item {\tt (ORDER {\it [list]})}:\index{ORDER}
+		returns the list of natural numbers occurring in {\it list} in
+		increasing order.
+	\item {\tt (INSERT {\it [int][list]})}:\index{INSERT}
+		inserts {\it int} in {\it list}, an ascending-ordered list of natural
+		numbers.
+	\item {\tt (hole {\it [list]})}:\index{hole}
+		being {\it list} argument a list of integers greater than or equal to
+		$-1$, {\tt hole} returns the smallest number not appearing in
+		{\it list}.
+		
+		Example:
+		%
+		\begin{verbatim}
+			> (hole (QUOTE (-1 0 1 3)))
+			2
+			> (hole (QUOTE (0 2 3)))
+			-1
+		\end{verbatim}
+\end{itemize}
+
+
+\subsection{Associative lists}
+
+Elements of associative lists are implemented as dotted pairs.
+%
+\begin{itemize}
+    \item {\tt (alistelement-get-1st {\it [alist-elem]})}:
+	\index{alistelement-get-1st}
+        returns the {\tt CAR} of the dotted pair.
+    \item {\tt (alistelement-get-2nd {\it [alist-elem]})}:
+    \index{alistelement-get-2nd}
+         returns the {\tt CDR} of the dotted pair.
+    \item {\tt (alistelement-mak {\it [obj1][obj2]})}:
+    \index{alistelement-mak}
+        returns the pair {\tt ({\it obj1} . {\it obj2})}
+\end{itemize}
+%
+Associative lists are associative addressing data structures; they are
+implemented as lists of dotted pairs.
+%
+\begin{itemize}
+    \item {\tt (alist-get-first {\it [alist]})}:\index{alist-get-first}
+         returns the first element of {\it alist}
+    \item {\tt (alist-get-rest {\it [alist]})}:\index{alist-get-rest}
+         returns the rest of {\it alist} 
+    \item {\tt (alist-cons {\it [alist][alist-elem]})}:\index{alist-cons}
+         adds {\it alist-elem} to {\it alist}
+    \item {\tt (HGKM-REPLACE {\it [obj$_1$][obj$_2$][alist]})}:
+    \index{HGKM-REPLACE}
+        if {\it obj$_1$} is the first element of an alist element, then
+		{\tt HGKM-REPLACE} replaces the second element with  {\it obj$_2$};
+        otherwise, {\tt HGKM-REPLACE} adds the {\tt CONS} of {\it obj$_1$} 
+        and obj$_2$ to {\it alist}.
+    \item {\tt Alist-empty}:\index{Alist-empty}
+        is the constant representing an empty associative list
+    \item {\tt (ALIST-EMPTY? {\it [alist]})}:\index{ALIST-EMPTY?}
+        looks if {\it alist} is empty
+    \item {\tt (alist-add {\it [alist][obj$_1$][obj$_2$]})}\index{alist-add}
+        adds the pair {\tt ({\it obj$_1$} . {\it obj$_2$})} to {\it alist}
+        if not already present
+    \item {\tt (alist-del {\it [alist][obj]})}\index{alist-del}
+        removes the pair pointed by {\it obj} from {\it alist}
+    \item {\tt (alist-union {\it [alist$_1$][alist$_2$]})}\index{alist-union}
+        adds to {\it alist$_2$} all the elements of {\it alist$_1$},
+        overwriting those elements of {\it alist$_2$} which are also in
+		{\it alist$_1$} 
+    \item {\tt (alist-cons-shared {\it [alist][alist-elem]})}:
+    \index{alist-cons-shared}
+        same as {\tt alist-cons} but with side effect on {\it alist}.
+\end{itemize}
+
+
+\subsection{Extending the evaluation syntax}
+
+\begin{itemize}
+	\item {\tt (MAPCAR ...)}:\index{MAPCAR}
+		  as in CL.
+\end{itemize}
+
+
+\subsection{Extending the input output}
+
+\begin{itemize}
+	\item {\tt (HGKM-LOAD {\it [str]})}:\index{HGKM-LOAD}
+		  loads the file named {\it str}.
+	\item {\tt (HGKM-LOAD-FROM-CHANNEL {\it [chan]})}:
+	\index{HGKM-LOAD-FROM-CHANNEL}
+		 loads s-expressions from the default channel until an {\tt EOF} is
+		 found.
+\end{itemize}
+
+
+\appendix
+\section{Some notes about implementation}
+
+While dealing with big software systems, in phase of development it may be very
+helpful to know if a subroutine is built-in or user-defined, and if it has been
+defined as function or macro.
+If {\tt \infmode}\ is true when {\HG} is created, all this information is made
+available: for each subroutine declaration, zero-level constructors set a
+property recording that the subroutine is built-in; first-level constructors
+set a property recording that the subroutine is user-defined and whether it has
+been defined as a function or as a macro; reading these properties, first level
+recognizers can tell if a subroutine is built-in or system-defined, and if it is
+a function or a macro.
+If {\tt \infmode} is false no property is set by the zero and first level
+constructors, and first level recognizers, when called, will signal that no
+answer is possible because no information is available.
+For a detailed description of each first-level constructor and recognizer, with
+respect to {\tt \infmode}, the reader is referred to basic {\HG} chapter.
+
+Of course, when {\tt \infmode} is false, a large amount of storage is saved, and
+a more compact {\HG} executable file is obtained.
+Finally we remark that, for sake of consistency, the value of {\tt \infmode}
+should not change while {\HG} is being created.
+
+A complex software system may have big performance problems, because of the
+overhead due to the great number of function calls, even if it runs compiled.
+Therefore, the only way to speed up the system is to define as many subroutines
+as possible as macros. These macros are expanded at the moment of compilation,
+obtaining in this way a code which is modular and well structured, and which
+does not have the overhead of function calls.
+There are two drawbacks to this approach: the former, and least important, is
+that the program becomes big because of the macro expansion; the latter, and
+critical, is that debugging becomes very hard, because all information related
+to functional definition is lost.
+
+In {\HG} this problem may be solved using the first-level constructor {\tt
+DEFSUB}, that allows to define subroutines either like macros or like functions,
+without changing source code.
+As explained below, {\tt DEFSUB} definitions depend on the value of a system
+constant, {\tt \debmode}.
+
+A {\tt DEFSUB} call has a syntax as defined in basic {\HG} chapter: it requires
+three arguments, that is a {\it subroutine name}, an {\it arguments list} and a
+{\it body}.
+The third argument, {\it body}, is a function body, as needed in {\tt DEFUN}
+subroutines definitions.
+If {\tt \debmode} is true, {\tt DEFSUB} works like {\tt DEFLAM}.
+If {\tt \debmode} is false, {\tt DEFSUB} executes a {\tt DEFMAC} call, modifying
+the third argument: that is, starting from {\it body}, {\tt DEFSUB} builds a
+macro body that, when macro-expanded, returns {\it body}.
+
+Hence {\tt DEFSUB} is a subroutine constructor that has a simple function
+definition syntax and behaves either like a function or macro constructor,
+depending on the value of {\tt \debmode}.
+If {\tt \debmode}\ is true debugging is possible, because {\tt DEFSUB}
+subroutines have been declared as functions; if {\tt \debmode}\ is false
+debugging is very hard, but the execution is speed up because no function call
+overhead is present.
+
+Note that {\tt DEFSUB} is subject to some restriction, as remarked in basic
+{\HG} chapter: this is due to the complexity of macro body creation.
+
+Finally note that, to reach some performance improvements, a {\tt DEFSUB}
+definition of a general subroutine {\tt SBR} must be loaded before compiling
+subroutines calling {\tt SBR} itself; else, macro expansion can not be made at
+compile time, and the {\tt SBR} is executed interpretively and expanded at run
+time.
+
+
+% ................................. bibliography ..............................
+\bibliographystyle{alpha}
+\bibliography{}
+
+% .................................... index ..................................
+\input{hgkmman.ind}
+
+\end{document}

@@ -1,0 +1,198 @@
+\gfcommand{axiom}{axiom definition}
+\index{axiom}
+
+\gfsyntax{
+  axiom \ARG{sym} : \ARG{wff};
+}
+
+\gfdescription{
+  Creates an axiom whose {\em axlabel\/} is {\em sym\/} and whose formula is
+  {\em wff}.  The command also allows you to define axiom schemas. An axiom
+  schema is an axiom containing one or more {\em sentpars}, {\em
+  funpars} or {\em predpars}.  When an axiom schema is used to assert a proof
+  line, then it may be instantiated, that is, some or all of {\it sentpar},   
+  {\it funpars} and {\it predpars} may be ``substituted'' with complex
+  wffs and terms\footnote{
+    A formal definition of the substitution of
+    parameters can be found in \cite{kleene1}.
+  }. In particular:
+  %
+  \begin{itemize}
+   \item 
+     a {\em sentpar} $S$ can be instantiated in an axiom schema $\phi$,
+     with a wff $\psi$. The result is an axiom $\phi^*$ obtained simply
+     by replacing every occurrence of $S$ in $\phi$ by $\psi$;
+   \item 
+     a {\em funpar} $f$ of arity $n$, can be instantiated in $\phi$
+     with a term $t(x_1,\ldots,x_n)$. The result of the instantiation is an
+     axiom $\phi^*$ in which every occurrence in $\phi$ of the form
+     $f(t_1,\ldots,t_n)$ is replaced with $t(t_1,\ldots,t_n)$;
+   \item 
+     a {\em predpar} $P$ of arity $n$, can be instantiated in $\phi$ with a
+     wff $\psi(x_1,\ldots,x_n)$. The result of the instantiation is an
+     axiom $\phi^*$ in which every occurrence in $\phi$ of the form
+     $P(t_1,\ldots,t_n)$ has been replaced by $\psi(t_1,\ldots,t_n)$.
+  \end{itemize} 
+  %
+  Let us notice that:
+  %
+  \begin{enumerate}
+    \item 
+      If an occurrence of $f(t_1,\ldots,t_n)$ in $\phi$ is within the scope
+      of a quantifier for a variable $x$, if $x$ is distinct form $x_1,\ldots x_n$,
+      and $x$ occurs in $t(x_1,\ldots x_n)$, then {\GF} performs a renaming
+      of the variable $x$ in $\phi$, with a new variable of the same sort of
+      $x$. {\em predpar} instantiation is treated in the analogous way.
+    \item 
+      In the {\em predpars} ($S$) and {\em sentpar} ($P$) instantiations, if a 
+      variable $x$ distinct from $x_1,\ldots,x_n$ is quantified in $\psi$ and occurs
+      in $P(t_1,\ldots,t_n)$ or $S$, then the substitution fails. In this case an
+      error message is returned.
+  \end{enumerate}
+  %
+  The syntax to instantiate an axiom schema whose {\em axlabel} is {\em sym} is:
+  %
+  \begin{quote}
+    {\em sym} {\em subst$_1$} {\em subst$_2$} $\ldots$
+  \end{quote}
+  %
+  where {\em subst} is a  pair composed of a parameter and its instantiation. The
+  syntax of {\em subst} is:
+  %
+  \begin{quote}\tt
+    \ARG{sym} sentpar : \ARG{wff} \\
+    \ARG{sym} funpar  : lambda \ARG{indvar$_1$} 
+                        [ \ARG{indvar$_2$} \SEQ] .
+                       \ARG{term} \\
+    \ARG{sym} predpar : lambda \ARG{indvar$_1$} 
+                        [ \ARG{indvar$_2$} \SEQ ] .
+                       \ARG{wff} \\
+  \end{quote}
+}
+
+\gfrecap{
+Declares an axiom in the current context labeled by `sym'.
+}
+
+\gfexample#
+   ***** declare sentconst A B;
+   ***** declare sentpar alpha beta;
+   ...
+   ***** axiom axA: A;
+   axA : A
+   ***** impi axA axA; 
+   1   A imp A     
+   ***** axiom Hil1: alpha imp (beta imp alpha);
+   Hil1 : alpha imp (beta imp alpha)
+   ***** impe 1 Hil1 alpha: A imp A, beta:B;
+   2   B imp (A imp A)     
+
+   ***** reset;   
+   ***** declare indvar x y;
+   ***** declare predconst p q 1;
+   ***** declare predpar P Q 1;
+   ...
+   ***** axiom axdistr: forall x.(P(x) and Q(x)) imp
+                        (forall x.P(x) and forall x.Q(x));
+   axdistr : forall x. (P(x) and Q(x)) imp (forall x. P(x) and forall x. Q(x))
+   ***** assume forall x. (p(x) and q(x));
+   3   forall x. (p(x) and q(x))     (3)
+   ***** impe 3 axdistr P:lambda x.p(x), Q:lambda x.q(x);
+   4   forall x. p(x) and forall x. q(x)     (3)
+   ***** axiom renaming: forall x. P(x) imp forall y. P(y);
+   renaming : forall x. P(x) imp forall y. P(y)
+   ***** ande 4 2;
+   5   forall x. q(x)     
+   ***** impe 5  renaming P:lambda y.q(y);
+   6   forall y. q(y)     (3)
+   
+   ***** reset;
+   ***** declare indvar n m;
+   ***** declare predpar P 1;
+   ***** declare indvar x;
+   ***** declare funconst s 1;
+   ***** declare funconst + 2 [INF];
+   ***** know natnums;
+   ...
+   ***** axiom add1:forall n. n+0 = n;
+   ***** axiom add2: forall m n. n+s(m) = s(n+m);
+   ***** axiom ind:  P(0) and forall n.(P(n) imp P(s(n))) imp forall n.P(n);
+   ***** eval 0+0=0+0;
+   1   (0 + 0) = (0 + 0)     
+   ***** assume x+0=0+x;
+   2   (x + 0) = (0 + x)     (2)
+   ***** alle add1 x;
+   3   (x + 0) = x     
+   ***** subst 2 3;
+   4   x = (0 + x)     (2)
+   ***** eval s(x)=s(x);
+   5   s(x) = s(x)     
+   ***** subst 5 4 occ 2;
+   6   s(x) = s(0 + x)     (2)
+   ***** alle add1 s(x);
+   7   (s(x) + 0) = s(x)     
+   ***** subst 7 6 occ 2;
+   8   (s(x) + 0) = s(0 + x)     (2)
+   ***** alle add2 x 0;
+   9   (0 + s(x)) = s(0 + x)     
+   ***** subst 8 9 right;
+   10   (s(x) + 0) = (0 + s(x))     (2)
+   ***** impi 2 10;
+   11   ((x + 0) = (0 + x)) imp ((s(x) + 0) = (0 + s(x)))     
+   ***** alli 11 x:n;
+   12   forall n. (((n + 0) = (0 + n)) imp ((s(n) + 0) = (0 + s(n))))
+   ***** andi 1 12;
+   13   ((0 + 0) = (0 + 0)) and forall n. (((n + 0) = (0 + n)) imp 
+        ((s(n) + 0) = (0 + s(n))))     
+   ***** impe 13 ind P:lambda x. x+0=0+x;
+   14   forall n. ((n + 0) = (0 + n))     
+   
+   ***** reset;
+   ***** declare sentconst A B;
+   ***** declare sentpar P Q;
+   ***** axiom piffqu: P iff Q;
+   piffqu : P iff Q
+   ***** impi TRUE piffqu P:Q Q:A;
+   1   TRUE imp (A iff A)     
+   ***** impi TRUE piffqu Q:A P:Q;
+   2   TRUE imp (Q iff A)     
+   ***** impi TRUE piffqu Q:P P:Q;   
+   3   TRUE imp (Q iff Q)     
+   
+   ***** reset;   
+   ***** declare indvar x y;
+   ***** declare funconst f 1;
+   ***** declare predpar P 1;
+   ***** declare predconst p 1;
+   ***** declare predconst q 2;
+   ***** axiom Ax1: forall x.(P(x) iff P(f(x)));
+   Ax1 : forall x. (P(x) iff P(f(x)))
+   ***** impi TRUE Ax1 P:lambda y. q(x y);
+   1   TRUE imp forall x1. (q(x,x1) iff q(x,f(x1)))     
+   ***** show sym x1;
+   x1 is declared to be an Indvar of sort UNIVERSAL.
+   
+   ***** reset;
+   ***** declare sentpar alpha;
+   ***** declare indvar x;
+   ***** declare predconst p q 1;
+   ***** declare predpar P 1;
+   ***** axiom Hil5: forall x.(alpha imp P(x)) imp (alpha imp forall x.P(x));
+   Hil5 : forall x. (alpha imp P(x)) imp (alpha imp forall x. P(x))
+   ***** assume P(x);
+   1  P(x)     (1)
+   ***** impe 1 Hil5  alpha: p(x) P:lambda x. q(x);
+   alpha occurs within the scope of a quantifier binding x
+#
+   
+\gfnotes{
+   The {\tt predpar} and {\tt funpar} can be assigned any {\em wff} and {\em term} 
+   whose number of (lambda) variables exceeds its arity.
+   If the number is lower than the arity then we have an error.
+   The extra lambda variables act as universally generalized 
+   parameters of the entire axiom. The other variables get converted by  
+   substitution.\\
+   Axioms cannot be canceled or renamed. It is impossible to 
+   define two axioms with the same {\em axlabel}. Numbers cannot be 
+   {\em axlabel}s.
+}

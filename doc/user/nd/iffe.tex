@@ -1,0 +1,50 @@
+\gfcommand{iffe}{equivalence elimination}.
+\index{iffe}\index{ie}
+
+\gfsyntax{
+   iffe \ALT ie \ARG{fact} \OPT{,} 1 \ALT 2;
+}
+
+\gfdescription{
+   \renewcommand{\arraystretch}{0.5}
+   \[
+   \begin{array}{l}
+      \liff E
+   \end{array}
+   \ \ 
+   \begin{array}{c}
+      \fraz{A \liff B}
+           {A \imp B}
+   \end{array}
+   \ \ \ 
+   \begin{array}{c}
+      \fraz{A \liff B}
+           {B \imp A}
+   \end{array}
+   \]
+   \renewcommand{\arraystretch}{1}
+
+   If \ARG{fact}'s wff is of the form {\tt A iff B} then the first alternative
+   gives {\tt A imp B}, the second {\tt B imp A}. The dependencies are those 
+   of \ARG{fact}.
+}
+
+\gfrecap{
+   If the formula of `fact' is of the form `A iff B' then the first alternative
+   gives `A imp B', the second `B imp A'.
+   The dependencies are those of `fact'.
+}
+
+\gfexample+
+   ***** declare sentconst A;
+   [...]
+
+   ***** assume A iff not not A;
+   1  A iff not not A  (1)
+
+   ***** iffe 1 1;
+   2  A imp not not A  (1)
+
+   ***** iffe 1 2;
+   2  not not A imp A  (1)
++

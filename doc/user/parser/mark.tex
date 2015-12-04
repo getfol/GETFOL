@@ -1,0 +1,40 @@
+\gfcommand{mark}{sets a mark}
+\index{mark}
+
+\gfsyntax{
+   mark \ARG{sym};
+}
+
+\gfdescription{
+   Sets a mark in between a sequence of {\GF} commands.
+   It can be used to fetch a file from/to a certain mark (see command 
+   {\tt fetch} in this section).
+}
+
+\gfrecap{
+Sets a mark in a file (see fetch).
+}
+
+\gfexample+
+   <host-prompt> more example
+   NAMECONTEXT META;
+   DECLARE SORT FACT WFF;
+   DECLARE INDVAR fc [FACT];
+   DECLARE FUNCONST wffof (FACT) = WFF;
+   DECLARE PREDCONST THEOREM 1;
+   comment | here we put the first mark m1 |
+   mark m1;
+   DECREP FACT;
+   DECREP WFF;
+   REPRESENT \{WFF\} AS WFF;
+   REPRESENT \{FACT\} AS FACT;
+   comment | here we put the second mark m2 |
+   mark m2;
+   ATTACH wffof TO [FACT = WFF] fact\-get\-wff;
+   AXIOM M2: forall fc. THEOREM(wffof(fc));
+   MAKECONTEXT OBJ;
+   SWITCHCONTEXT OBJ;
+   DECLARE SENTCONST A;
++
+
+

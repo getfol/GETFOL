@@ -1,0 +1,46 @@
+#!/bin/csh
+
+echo "*** This is MAKEDOCS, version 0.3 -- Mon Aug 29 13:41:23 1994 ***"
+echo ""
+
+# make installation manual
+echo -n "LaTeXing installation manual ... "
+cd install
+/usr/bin/cp instman.aux instman.aux.bak
+latex instman.tex > /dev/null
+/usr/bin/mv instman.aux.bak instman.aux
+/usr/bin/mv instman.dvi ..
+/usr/bin/rm instman.log
+cd ..
+echo "DONE."
+
+# make hgkm manual
+echo -n "LaTeXing hgkm manual ... "
+cd hgkm
+/usr/bin/cp hgkmman.aux hgkmman.aux.bak
+latex hgkmman.tex > /dev/null
+/usr/bin/mv hgkmman.aux.bak hgkmman.aux
+/usr/bin/mv hgkmman.dvi ..
+/usr/bin/rm hgkmman.log
+cd ..
+echo "DONE."
+
+# make user manual
+echo -n "LaTeXing user manual ... "
+cd user
+/usr/bin/cp userman.aux userman.aux.bak
+latex userman.tex > /dev/null
+/usr/bin/mv userman.aux.bak userman.aux
+dvips -f userman.dvi > userman.ps 
+/usr/bin/rm userman.dvi
+/usr/bin/mv userman.ps ..
+/usr/bin/rm userman.log
+cd ..
+echo "DONE."
+
+echo ""
+echo "The following files have been created:"
+echo "   instman.dvi -- GETFOL installation manual;"
+echo "   hgkmman.dvi -- HGKM user manual;"
+echo "   userman.ps  -- GETFOL user manual."
+echo ""

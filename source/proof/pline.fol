@@ -1,0 +1,203 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Wed Nov 10 17:23:25 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: fapf.fol
+;; Date: Wed Oct 20 10:47:21 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+; *****************************************************************
+; *                                                               *
+; * This file contains the  code which is needed in order to      *
+; * build proof-steps. For the way the exist elimination is being *
+; * done it contains also the code for the automatic elimination  *
+; * of dependencies due to exist elimination steps                *
+; *                                                               *
+; *****************************************************************
+;
+;;;  documentation for proof-add-line code
+;
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (proof-add-line wff deplist rule)                        *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *   proof-add-line does the following things (in order)         *
+; *      1) automatic elimination of the dependencies (if         * 
+; *         necessary (%CUREXISTE% not empty))                      *
+; *         (%CUREXISTE% is global)                                 *
+; *      2) builds the line of proof                              *
+; *      3) Adjust CURELIST, if any dependency arose.	          *
+; *         (argument deplist)                                    *
+; *      4) Add new line of the proof to CURLLIST.	          *
+; *         (argument LINE)                                       *
+; *      5) Increment CURNLINE by one (1).		          *
+; *         (CURNLINE is global)                                  *
+; *      6) Print the line on the terminal or the equivalent file.*
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM proof-add-line (wff deplist rule)
+  (LET ((deplist (existe_dep-del wff deplist)) ) 
+  (LET ((CURLINE (line-mak (curnline-get) wff deplist rule)) )
+    (SEQ
+      (curelist-update deplist)
+      (curllist-add-line CURLINE)
+      (curnline-add1) 
+      (line-print        CURLINE) ) )) )
+
+
+;;; elimination of proof lines
+;*****************************************************************
+;
+;  (proof-del-lines)
+;
+;  Cancels steps of the current deduction, that is deletes
+;  proof lines.
+;  "linenum-from" may be any number of line in the proof.
+;
+;*****************************************************************
+
+(DEFLAM proof-del-lines (linenum-from linenum-to)
+ (IF (OR (LT linenum-from 1) (GT linenum-from linenum-to)) (NOP)
+  (SEQ
+   (IF (AND (NOT (MTL? (curexiste-get)))
+            (GE (existelem-get-name (FIRST (curexiste-get))) linenum-from))
+    (curexiste-set (REST (curexiste-get)))
+    (NOP))
+   (IF (AND (NOT (MTL? (curlabels-get)))
+            (GE (labfact-get-factname (FIRST (curlabels-get))) linenum-from))
+    (curlabels-set (REST (curlabels-get)))
+    (NOP))
+   (curelist-del-linenum linenum-to)
+   (curllist-set (REST (curllist-get)))
+   (curnline-set (SUB1 (curnline-get)))
+   (proof-del-lines linenum-from (SUB1 linenum-to)))))
+
+;;; automatic elimination of dependencies
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (existe_dep-delwff deplist)                              *
+; *      (EELIM wff deplist)                                      *
+; *      (EXISTE wff facts deplist)                               *
+; *      (NOFREEVARS-IN-ASS? wff deplist VARLIST)                 *
+; *                                                               *
+; * DESCRIPTION                                                   * 
+; *    existe_dep-del tries to discharge the assumption which is  *
+; *    introduced by the EXISTE rule. A global variable %CUREXISTE% *
+; *    is used for UN-discharged assumptions. %CUREXISTE% is feeded *
+; *    only when there is a new EXISTS ELIMINATION.               *
+; *    The EELIM recursion must be made because there can be more *
+; *    dependencies due to existe, and eliminating one of them,   *
+; *    could help in eliminating the others. (REVERSE deplist) is *
+; *    made in order to minimize the number of recursions.        *
+; *    In EXISTE, if we want to discharge the assumption DEP1 we  *
+; *    must delete it from the list of dependencies because DEP1  *
+; *    has as free vars those on which the "existe" has worked.   *
+; *    And these are just those which must not be considered.     *
+; *    Infact "existe" works in this way:                         *
+; *                                                               *
+; *                               [ p(x) ]                        *
+; *         exists z . p(z)  C(...no x as freevar...)             *
+; *         -----------------------------------------             *
+; *                          C (...)                              *
+; *                                                               *
+; *    Moreover, for how dependencies have been built once we     *
+; *    delete the dep from the existe we must add the dependencies*
+; *    of the formula on which the existe has been applied.       *
+; *    I cannot delete the line from %CUREXISTE% since the line     *
+; *    created by existe can be used several times.               *
+; *    NOFREEVARS returns TRUE iff none of the vars passed (the   *
+; *    last parameter) is a free variable in the wffs of the      *
+; *    facts in the deplist,   in the wff of the current line     *
+; *    itself and in the axioms of the current theory. This test  *
+; *    is made for all the vars in VARLIST.                       *
+; *                                                               *
+; *****************************************************************
+;
+(DEFLAM existe_dep-del (wff deplist)
+  (IF (IST (curexiste-get)) (EELIM wff deplist) deplist)) 
+
+(DEFLAM EELIM (wff deplist)
+  (LET ((newdeplist (EXISTE wff (REVERSE deplist) deplist)))
+  (IF (EQUAL newdeplist deplist) deplist (EELIM wff newdeplist) )))
+
+(DEFLAM EXISTE (wff facts deplist)
+ (IF (MTL? facts) Emptydeplist	
+  (LET ((DEP1 (CAR facts) ))
+  (LET ((EXISTELEM (curexiste-get-elem DEP1) ))
+   (IF (AND 
+        (IST EXISTELEM)  
+        (NOFREEVARS-IN-ASS? wff (deplist-del-label DEP1 deplist) 
+                            (existelem-get-substvars EXISTELEM)) )
+          (deplist-union 
+                (line_or_axiom-get-deplist (existelem-get-orglabel EXISTELEM))
+                (EXISTE wff (CDR facts) deplist))
+          (deplist-union 
+                (deplist-mak DEP1) 
+                (EXISTE wff (CDR facts) deplist)) ) )) ) )
+
+(DEFLAM line_or_axiom-get-deplist (LABEL)
+  (IF (INTEGER? LABEL) 
+      (line-get-deplist (curllist-get-line LABEL)) 
+      Emptydeplist) )
+
+(DEFLAM NOFREEVARS-IN-ASS? (wff deplist VARLIST)
+  (IF (MTL? VARLIST) TRUE
+  (IF (NOFREEVAR-IN-ASS? wff deplist (CAR VARLIST))
+      (NOFREEVARS-IN-ASS? wff deplist (CDR VARLIST))
+      FALSE)))
+
+(DEFLAM NOFREEVAR-IN-ASS? (wff deplist VAR)
+  (IF (IS-FREE VAR wff) FVAL
+      (ISF (HGKM-MEMQ VAR (facts-get-freevars deplist))) ) )
+

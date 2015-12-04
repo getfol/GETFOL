@@ -1,0 +1,54 @@
+\section{Metareasoning}
+\label{sec-meta}
+
+\subsection{Introduction}
+
+A special context is {\meta}.
+{\GF} recognizes {\meta} as a metatheory of all the other contexts.
+The context {\meta} can be used to perform {\em metareasoning}, that is to
+describe other contexts and to reason about them. 
+Metareasoning in {\meta} is performed by employing the following novel
+features:
+%
+\begin{itemize}
+  \item
+    the metatheory is, in general, distinct from the object theories it
+    describes; 
+  \item
+    the link between the metalanguage and the object language is not performed
+    by encoding, but rather by naming \cite{giunchiglia3}.
+    Naming is implemented by using the commands which implement reasoning in
+    the computational model of a context (see section \ref{sec-comp}).
+    These features are available to the user by the commands \C{attach},
+    \C{simplify}, \C{eval} etc.  
+  \item
+    Metareasoning and object reasoning can be mixed via the reflection rule 
+    \cite{giunchiglia3}:
+
+    \begin{equation}
+      R_{down}
+      \fraz{\der{M} Theorem(``w'')}{\der{O} w}
+      \label{refl}
+    \end{equation}
+
+    where $M$ and $O$ stand for {\meta} and object theory respectively. 
+    This rule is implemented in the {\GF} command \C{reflect}.
+    The command knows that some form of metareasoning must be performed in
+    {\meta} to deduce the metastatement $Theorem(``w'')$.
+    The command can use the reflection rule (\ref{refl}) to assert a new proof
+    line in the object level context (the context in which object level 
+    reasoning is performed and where the command \C{reflect} is typed in).
+  \item
+    Any context can be the object level context, {\meta} itself.
+    The amalgamation of the object and meta level is a particular case of {\GF}
+    metareasoning. 
+\end{itemize}
+
+In {\meta}, the user is free to declare any language, any set of axioms and to 
+define any computational model. This amounts to say that {\meta} is the 
+``metatheory'' of a theory represented in a context as far as the user defines
+the appropriate attachments and axioms.
+A special unary predicate symbol which can be declared in {\meta} is
+{\tt THEOREM}: this is the predicate recognized as meaning theoremhood by the
+the reflect rule (\ref{refl}) in the command {\tt reflect}.
+

@@ -1,0 +1,251 @@
+\gfcommand{reflect}{reflection}
+\index{reflect}
+\label{sec-refl}
+
+\gfsyntax{
+  reflect \ARG{M-fact} \ARG{arg1} \ARG{arg2} \SEQ \ARG{argN};
+}
+
+\gfdescription{
+  In the   following description we  call ``object context''  the 
+  context where the {\tt reflect} command is executed.
+
+  \ARG{M-fact} is any fact of  the context {\meta} whose wff is of the
+  form $\forall x_1 x_2\ldots x_n A(x_1, x_2,\ldots,x_n)$, $(n \geq 0)$,
+  where the sorts of the variables $x_1, x_2,\ldots,x_n$ 
+  correspond to some {\GF} syntactic category ({\em term, wff, fact} ... ).
+  For any syntactic category corresponding to a sort in {\meta},
+  {\GF} provides the necessary parsing routine.
+  This parsing routine is necessary to run the reflect command.
+  The relation between sorts in {\meta} and the associated parsed syntactic
+  category is the following:
+
+  \begin{figure}
+    \begin{tabular}{|l|l|}
+   \hline
+   {\bf sort}&  {\bf syntactic category} \hspace{7cm} \\ \hline \hline
+   SENTCONST &  a {\em sentconst}; \\
+   QUANT     &  a {\em quant} (quantifier: {\tt forall} or {\tt exists}); \\
+   SORT      &  a symbol declared as a sort; \\
+   DECSYM    &  any declared symbol: {\em sym};\\
+   FACT      &  a {\em fact};\\
+   WFF       &  a {\em wff}; \\
+   WFFIF     &  a {\em wffif};\\
+   QUANTWFF  &  a {\em quantwff} (of the form  {\tt forall ... }  or 
+                {\tt exists  ... });\\
+   AWFF      &  an atomic wff (a wff of the form {\tt P( ... ))};\\
+   TERM      &  a {\em term}; \\
+   TERMIF    &  a {\em termif};\\
+   INDSYM    &  a symbol declared as an {\em indconst} or {\em indvar} or
+                {\em indpar}; \\
+   INDVAR    &  a symbol declared as an {\em indvar};\\
+   INDPAR    &  a symbol declared as an {\em indpar};\\
+   INDCONST  &  a symbol declared as an {\em indconst};\\
+   SENTSYM   &  a symbol declared as a {\em sentconst} or a {\em sentpar}; \\
+   SENTPAR   &  a symbol declared as a {\em sentpar}; \\
+   SENTCONST &  a symbol declared as a {\em sentconst}; \\
+   APPLSYM   &  a symbol declared as a {\em funconst, funpar, predconst, 
+                predpar} \\
+             &  or a boolean connective; \\ 
+   PREDSYM   &  a symbol declared as a {\em predconst} or {\em predpar}; \\
+   PREDPAR   &  a symbol declared as a {\em predpar}; \\
+   PREDCONST &  a symbol declared as a {\em predconst}; \\
+   FUNSYM    &  a symbol declared as a {\em funconst} or {\em funpar}; \\
+   FUNPAR    &  a symbol declared as a {\em funpar}; \\
+   FUNCONST  &  a symbol declared as a {\em funconst}; \\ \hline 
+   \end{tabular}
+   \caption{
+	Sorts for {\GF} syntactic categories.
+   }
+   \end{figure}
+
+   If, for example,  the sort of the variable $x_1$  is SENTCONST,  we
+   expect $x_1$ to denote any object that is declared  as  a {\em sentconst}
+   in the object  context .  Therefore \ARG{arg1}, \ARG{arg2}, \SEQ, \ARG{argN}
+   are objects in the object context, such that all \ARG{arg$_i$} are of
+   the syntactic category corresponding to the sort of the variables $x_i$
+   in \ARG{M-fact}.
+
+   In the following we give an explanation of the major steps performed during
+   the execution of the command {\tt reflect} \cite{giunchiglia3}~\footnote{
+   This description is the generalization of the example reported below
+   and copied from \cite{giunchiglia3}.}:
+
+   \begin{enumerate}
+   \item 
+     In the object context, when \C{REFLECT} is executed, {\GF}, after parsing 
+     \C{REFLECT}, knows that the next argument is the label of a fact in 
+     {\meta}. 
+     Thus, {\GF} switches context automatically and goes to {\meta}.
+   \item
+     In {\meta}, the first argument of the command (\ARG{M-fact}) is parsed 
+     and the formula of the fact whose label is \ARG{M-fact} is returned:
+     $\forall x_1 x_2\ldots x_n A(x_1, x_2,\ldots,x_n)$.
+     The variables $x_1, x_2,\ldots,x_n$ must be instantiated to constants
+     in {\meta} which will be the names of the objects in the object context
+     \ARG{arg1}, \ARG{arg2}, \SEQ, \ARG{argN}.
+     The syntactic type of these objects must correspond to the sort of the 
+     variables in {\meta}.
+     For instance, if the sort of $x_1$ is WFF, then it must be instantiated
+     to a constant denoting a {\it wff} in the object context. At this point
+     {\GF} knows that \ARG{arg1} must be a {\it wff} in the object context,
+     and so {\em arg}$_1$ can be parsed.
+     This step provides {\GF} with the information needed to parse \ARG{arg1},
+     \SEQ, \ARG{argN} in the object context.
+   \item 
+     {\GF} switches to the object context and parses  \ARG{arg1}, \ARG{arg2}, 
+     \SEQ, \ARG{argN}, using the parsing functions of the syntactic categories
+     corresponding to the variables $x_1, x_2,\ldots,x_n$ respectively.
+   \item 
+     {\GF} switches to {\meta} and automatically declares $n$ constants in 
+     {\meta}. Let them be $c_1, c_2, ... c_n$, with the sorts of $x_1, x_2, 
+     ... x_n$ respectively.
+     Any constant in $c_1, ... c_n$ is automatically ``attached'' to the objects
+     returned by parsing \ARG{arg1}, \ARG{arg2}, \SEQ, \ARG{argN} respectively.
+     The representation associated to these constants is the representation
+     declared for their sorts (see the command {\bf represent}, section
+     \ref{sec-rep-sort}).
+   \item 
+     Still in {\meta}, an universal elimination is performed on 
+     $\forall x_1 x_2\ldots x_n A(x_1, x_2,\ldots,x_n)$ obtaining
+     $A(c_1, \ldots ,c_n)$.
+   \item 
+     Still in {\meta}, the formula $A(c_1,...,c_n)$ is automatically evaluated
+     by the command {\tt eval} (see section \ref{sec-eval}).
+     In this step {\GF}, by using the command {\bf eval}, performs metalevel
+     reasoning by computation in the model.
+     This metalevel reasoning is used to compute a formula of the form 
+     $Theorem(``w'')$.
+     If the metalevel reasoning does not lead to $Theorem(``w'')$, then an error
+     message is returned. Otherwise the evaluation of the ground term ``$w$''
+     gives $w$, the formula of a fact to be asserted in the object context by
+     $R_{down}$
+   \item
+     At this point the reflection rule $R_{down}$ can be applied.
+     Thus {\GF} forgets the constants $c_1 ... c_n$ declared in {\meta} and the
+     attachments, switches back to the object context and asserts a new fact
+     whose formula is $w$ and whose dependencies are the union of the 
+     dependencies of the facts in {\em arg$_1$ ... arg$_n$} if there are any.
+   \end{enumerate}
+
+	Let us define two context {\tt OBJ} and {\tt META} as follows:
+
+	\gfsourcefile{example.tst}{
+	  NAMECONTEXT META; \\
+	  DECLARE SORT TERM WFF;\\
+	  DECLARE PREDCONST THEOREM 1;\\
+	  DECLARE FUNCONST mkequal (INDVAR, INDVAR) = WFF;\\
+	  DECLARE INDVAR x [TERM];\\
+	  AXIOM M1: forall x. THEOREM(mkequal(x,x));\\
+	  DECREP TERM;\\
+	  DECREP WFF;\\
+	  REPRESENT \{TERM\} AS TERM;\\
+	  REPRESENT \{WFF\} AS WFF;\\
+	  ATTACH mkequal TO [TERM,TERM=WFF] mkequ;\\
+	  MAKECONTEXT OBJ;\\
+	  SWITCHCONTEXT OBJ;\\
+	  DECLARE INDCONST c;\\
+	  DECLARE INDVAR   x;\\
+	  DECLARE FUNCONST f 2;
+	}
+
+	Let's now type the following lines in {\GF}:
+
+	\begin{quote}\tt
+	   ***** FETCH example.tst;
+	   ...
+
+	   ***** REFLECT M1 c;
+	   1  c = c;
+	   ***** REFLECT M1 f(x,f(c,c));
+	   2  f(x,f(c,c)) = f(x,f(c,c))
+	\end{quote}
+
+	Let us describe  step by step what happened during  the execution of
+	the two  previous command \C{REFLECT}.
+
+	\begin{enumerate}
+	\item
+    In {\tt OBJ} the word \C{REFLECT}  is parsed.
+    The next argument must be  the name of a fact  in {\meta}.  Thus {\GF}
+    automatically switches context and goes to {\meta}.
+	\item
+    In  {\meta}, {\tt M1} is parsed  and the axiom
+    {\tt forall  x.THEOREM(mkequ(x,x))} is returned.  The variable {\tt x}
+    in {\tt M1} must be instantiated  to a constant  in {\meta} which will
+    be the name of a symbol of the language  of {\tt OBJ}.   Since the
+    sort of  $x$ is {\em TERM}, then  the symbol of  the language  of {\tt
+    OBJ}  must have  syntactic  type {\em term}   (it must be  a term).
+	\item
+    {\GF} switches to the context {\tt OBJ}.
+    In  {\tt OBJ} the   term  {\tt  c} [{\tt f(x,f(c,c))} in  the second case]
+    is  parsed.  
+	\item
+    Since no more arguments are needed, {\GF} switches back to {\meta}.
+    In {\meta} a new constant, say {\tt C1} of sort {\tt TERM} is created and
+    added to the language of {\meta}.
+    {\tt   C1} is {\em attached} to the term {\tt c}  [{\tt f(x,f(c,c))}] 
+    of the language of {\tt OBJ}.  
+    The representation associated to {\tt C1} is {\tt TERM} which is associated
+    to the sort {\tt TERM} by the command {\tt REPRESENT} in example.tst.
+    In this way,  {\tt C1} is defined  as the name in  {\meta} 
+    of {\tt c} [{\tt f(x,f(c,c))}].   
+	\item
+    Still in {\meta}, an   universal elimination is performed on {\tt  M1}
+    obtaining\\
+    {\tt THEOREM(mkequ(C1,C1))}.
+	\item
+    Still in {\meta}, {\tt  THEOREM(mkequ(C1,C1))} is evaluated in {\meta}'s 
+    model.
+    {\tt THEOREM} has no interpretation, {\tt mkequ(C1,C1)} evaluates to 
+    {\tt c = c} [{\tt f(x,f(c,c)) = f(x,f(c,c))}], namely {\tt mkequ(C1,C1)}
+    turns out to be the name of {\tt c = c} [{\tt f(x,f(c,c)) = f(x,f(c,c))}].
+    So the result of this step is something that could be written as 
+    {\tt THEOREM(``c =  c'')}.
+    [{\tt THEOREM(``f(x,f(c,c)) = f(x,f(c,c))'')}],  where {\tt ``c = c''}
+    [{\tt ``f(x,f(c,c)) = f(x,f(c,c))''}]  should be read as  the  name  of
+    {\tt c = c} [{\tt (f(f(c,c),c),f(x,c)) = f(x,f(c,c))}]
+	\item
+    At  this point the  reflection rule can be applied.
+    {\GF} forgets everything in {\meta}, (in this case {\tt C1} from the
+    language and {\tt c} [{\tt f(x,f(c,c))}] from the domain of the
+   	interpretation).
+    {\GF} switches back to the context {\tt OBJ}, and assert a new fact
+    with wff  {\tt  c = c} [{\tt  f(x,f(c,c))}] and with the empty deplist.
+    \end{enumerate}
+
+    The following example shows how {\GF} computes the deplist of a fact derived 
+    by a {\tt reflect} command whose arguments contain a fact.
+}
+
+\gfrecap{
+	Reflection
+}
+
+\gfexample+
+   <host prompt> cat example.tst
+   NAMECONTEXT META;\\
+   DECLARE SORT FACT WFF;\\
+   DECLARE INDVAR fc [FACT];\\
+   DECLARE FUNCONST wffof (FACT) = WFF;\\
+   DECLARE PREDCONST THEOREM 1;\\
+   DECREP FACT;\\
+   DECREP WFF; \\
+   REPRESENT \{WFF\} AS WFF; \\
+   REPRESENT \{FACT\} AS FACT;\\
+   ATTACH wffof TO [FACT = WFF] fact\-get\-wff;\\
+   AXIOM M2: forall fc. THEOREM(wffof(fc));\\
+   MAKECONTEXT OBJ;\\
+   SWITCHCONTEXT OBJ;\\
+   DECLARE SENTCONST A;
+
+   <host prompt> GETFOL
+   ...
+
+   ***** FETCH example.tst;
+   ***** ASSUME A;
+   1   A     (1)
+   ***** REFLECT M2 1;
+   2   A     (1)
++
+

@@ -1,0 +1,42 @@
+\gfcommand{ptaut}{tautological decider}
+\index{ptaut}
+\label{sec-decproc}
+
+\gfsyntax{
+  ptaut \ARG{wff} \OPT{by \ARG{fact1} \ARG{fact2} \SEQ};
+}
+
+\gfdescription{
+It decides the quantifier-free formulas provable only by means of the
+propositional deductive machinery.
+}
+
+\gfrecap{
+It decides the quantifier-free formulas provable only by means of the
+propositional deductive machinery.
+}
+
+\gfexample+
+   ***** declare sentconst A B;
+   ***** ptaut (A imp (B imp A));
+   1   A imp (B imp A)
+   ***** assume A B;
+   2   A     (2)
+   3   B     (3)
+   ***** ptaut (A imp (B imp A)) by 2 3;
+   4   A imp (B imp A)  (2 3)
+   ***** ptaut (A and B) by 2 3;
+   5   A and B  (2 3)
+   ***** ptaut A by 3;
+   PTAUT couldn't prove that A
+   is a logical consequence of facts.
+   
+   ***** declare predconst P 1;
+   ***** declare indconst c;
+   ***** declare indvar x;
+
+   ***** ptaut (A imp (P(c) imp A));
+   6   A imp (P(c) imp A)     
+   ***** ptaut (A imp (forall x.P(x) imp A));
+   The formula passed to PTAUT is not propositional !
++   

@@ -1,0 +1,135 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; GETFOL version 2.001
+;; Date: Tue Nov  9 19:52:32 MET 1993
+;;
+;; This    FOL file was modified in GETFOL version 2.001
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: skolem.hgk
+;; Date: Wed Oct 20 10:46:07 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; *************************************************************************
+; *                                                                       *
+; *                       skolem.hgk                                      *
+; *                                                                       *
+; *************************************************************************
+; *************************************************************************
+; *                                                                       *
+; * This file contains the primitive routines for generation of new       *
+; * symbols.                                                              *
+; * The new indconsts recevie the sort value of corresponding indvars.    *
+; * In creating the new funconsts, we must build its fun-map, depending   * 
+; * by existential vars sorts list, and universal var sort.               *
+; *                                                                       *
+; * (see fmap-mak routine in sym.hgk file )                               * 
+; * The new indvars, indconsts and funconsts have the following form :    *
+; *      IV%n  for indvar                                                 *
+; *      IC%n  for indconst                                               *
+; *      IF%n  for funconst                                               *
+; * where n is a common counter reseted at beginning of the skolemizing   *
+; * process.                                                              *
+; *                                                                       *
+; * sort-list-get returns the list of sort values of xvars, arguments of  *
+; * new funconst.                                                         *
+; *************************************************************************
+  
+
+; The lowest level primitive: given a symbol SYM and a number n
+; returns the symbol SYMn.
+;
+(DEFSUB mkfolsym (SYM NUM) (CONCAT-SYMS SYM (NAT2SYM NUM)))
+
+
+; The primitives for accessing the counter for creating symbols
+; without passing the number
+;
+(DEFSUB folsym_counter-get ()
+ (SEQ
+  (SETQ GETFOLSYM_COUNTER% (ADD1 GETFOLSYM_COUNTER%))
+  GETFOLSYM_COUNTER%))
+(DEFSUB folsym_counter-reset () (SETQ GETFOLSYM_COUNTER% 0))
+
+
+; No number symbol generation
+;
+(DEFSUB sym2symn (SYM) (mkfolsym SYM (folsym_counter-get)))
+
+; Returns a label which is not used in the current label space for symbols.
+; obtained adding a number to the ned of the input label.
+;
+(DEFLAM newlabel-mak (LABEL)
+ (LET ((LABELN (sym2symn LABEL)))
+  (IFN (SYMLABEL? LABELN) LABELN
+   (newlabel-mak LABEL))))
+
+
+; No seed name generation
+;
+(DEFSUB indvar-name-get () (sym2symn 'IV%))
+
+(DEFSUB indconst-name-get () (sym2symn 'IC%))
+
+(DEFSUB funconst-name-get () (sym2symn 'FC%))
+
+(DEFLAM indconst-create (sortv)
+ (LET ((hook (indconst-name-get)))
+  (indsym-create 'Indconst hook sortv (indsym_sact-mak hook))))
+
+(DEFLAM funconst-create (xlist sortv)
+ (LET ((hook (funconst-name-get)) (arity (LENGTH xlist)))
+  (funsym-create 'Funconst
+                  hook
+                  arity
+                  (fmap-mak (sort-list-get xlist MTL) sortv) 
+                  (funsym_sact-mak hook 'PRE))))
+
+(DEFLAM sort-list-get (xlist sort-list)
+ (IF (MTL? xlist) sort-list 
+  (sort-list-get (REST xlist) (LCONS (sort (FIRST xlist)) sort-list)))) 
+
+
+

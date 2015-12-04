@@ -1,0 +1,461 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: simplify.fol
+;; Date: Wed Oct 20 10:45:18 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								         i
+; i                simplify.fol                                          i
+; i 								         i
+; i This file contains the routines to evaluate a wff or term in the     i
+; i simulation structure (that is created by ATTACH command).            i
+; i								         i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     1-SEMANTIC EVALUTATION OF A WFF				i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (wffsimplify wff)                                        *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      wffsimplify evaluates wff in the simulation structure    *
+; *      and returns TRUE,FALSE or UNDEF&                         *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM wffsimplify (wff)
+ (IF (AWFF wff)   (awffsimplify wff)
+  (IF (NEG wff)    (notsimplify wff)
+   (IF (DISJ wff)   (orsimplify wff)
+    (IF (IMP wff)    (impsimplify wff)
+     (IF (CONJ wff)   (andsimplify wff)
+      (IF (IFF wff)    (iffsimplify wff)
+       (IF (WFFIF wff)  (wffifsimplify wff)
+        (IF (FORALL wff) (forallsimplify wff)
+         (IF (EXISTS wff) (existssimplify wff)
+          (ERRMES-printexp wff 
+           "is not a WFF. Fatal error during evaluation.")))))))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     1.1-SEMANTIC EVALUTATION OF A COMPOUND WFF		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (notsimplify wff)                                        *
+; *      (orsimplify wff)                                         *
+; *      (impsimplify wff)                                        *
+; *      (andsimplify wff)                                        *
+; *      (iffsimplify wff)                                        *
+; *      (wffifsimplify wff)                                      *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; * These routines are supposed to implement Kleene's three       *
+; * valued logic.                                                 *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM notsimplify(wff)
+ (LET ((tv (wffsimplify (body wff))))
+  (IF (IS-FALSE tv) TRUE
+   (IF (IS-TRUE tv) FALSE 
+    %VALUE-UNDEF%))))
+
+(DEFLAM orsimplify (wff)
+ (LET ((tv1 (wffsimplify (lfor wff))))
+  (IF (IS-TRUE tv1) TRUE
+   (LET ((tv2 (wffsimplify (rtor wff))))
+    (IF (IS-TRUE tv2) TRUE 
+     (IF (AND (IS-FALSE tv1)(IS-FALSE tv2)) FALSE 
+      %VALUE-UNDEF%))))))
+
+(DEFLAM impsimplify (wff)
+ (LET ((tv1 (wffsimplify (hypot wff))))
+  (IF (IS-FALSE tv1) TRUE
+   (LET ((tv2 (wffsimplify (concl wff))))
+    (IF (IS-TRUE tv2) TRUE
+     (IF (AND (IS-TRUE tv1)(IS-FALSE tv2)) FALSE
+      %VALUE-UNDEF%))))))
+
+(DEFLAM andsimplify (wff)
+ (LET ((tv1 (wffsimplify (lfand wff))))
+  (IF (IS-FALSE tv1) FALSE
+   (LET ((tv2 (wffsimplify (rtand wff))))
+    (IF (IS-FALSE tv2) FALSE
+     (IF (AND (IS-TRUE tv1)(IS-TRUE tv2) ) TRUE
+      %VALUE-UNDEF%))))))
+
+(DEFLAM iffsimplify (wff)
+ (LET ((tv1 (wffsimplify (lhs wff))))
+  (LET ((tv2 (wffsimplify (rhs wff))))
+   (IF (AND (IS-TRUE tv1)(IS-TRUE tv2)) TRUE
+    (IF (AND (IS-FALSE tv1)(IS-FALSE tv2)) TRUE 
+     (IF (OR (VALUE-UNDEF? tv1)(VALUE-UNDEF? tv2))
+      %VALUE-UNDEF% 
+      FALSE))))))
+
+; if A then B else C is logically equivalent to
+; (A imp B) and (not A imp C)
+
+(DEFLAM wffifsimplify (wff)
+ (wffsimplify 
+  (mkand 
+   (mkimp (ifof wff)(thenof wff))
+   (mkimp (mknot (ifof wff))(elseof wff)))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     1.2-SEMANTIC EVALUTATION OF A QUANTIFIED WFF		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (forallsimplify wff)                                     *
+; *      (forallsimplify-noext wff)                               *
+; *      (forallsimplify-ext extension indvar matrix tv)          *
+; *      (existssimplify wff)                                     *
+; *      (existssimplify-noext wff)                               *
+; *      (existssimplify-ext extension indvar matrix tv)          *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM forallsimplify (wff)
+ (IFN (EXTENSION-HAS (sort (bvarof wff)))
+  (forallsimplify-noext wff)
+  (LET ((tv (forallsimplify-ext (extension-get (sort (bvarof wff))) 
+             (bvarof wff) (matrix wff) TRUE)))
+   (IF (IS-TRUE tv) TRUE
+    (IF (IS-FALSE tv) FALSE
+     (forallsimplify-noext wff))))))
+
+(DEFLAM forallsimplify-noext (wff)
+ (LET ((tv1 (wffsimplify (matrix wff))))
+  (IF (IS-TRUE tv1) TRUE
+   (IF (IS-FALSE tv1) FALSE
+    %VALUE-UNDEF%))))
+
+(DEFLAM forallsimplify-ext (extension indvar matrix tv)
+ (IF (MTL? extension) tv
+  (LET ((tv1 (wffsimplify (substexp indvar (FIRST extension) matrix))))
+   (IF (IS-TRUE tv1)(forallsimplify-ext (REST extension) indvar matrix tv)
+    (IF (IS-FALSE tv1) FALSE
+     (forallsimplify-ext (REST extension) indvar matrix tv1))))))
+
+(DEFLAM existssimplify (wff)
+ (IFN (EXTENSION-HAS (sort (bvarof wff)))
+  (existssimplify-noext wff)
+  (LET ((tv (existssimplify-ext (extension-get (sort (bvarof wff)))
+             (bvarof wff) (matrix wff) FALSE)))
+   (IF (IS-TRUE tv) TRUE
+    (IF (IS-FALSE tv) FALSE
+     (forallsimplify-noext wff))))))
+
+(DEFLAM existssimplify-noext (wff)
+ (LET ((tv1 (wffsimplify (matrix wff))))
+  (IF (IS-TRUE tv1) TRUE
+   (IF (IS-FALSE tv1) FALSE
+    %VALUE-UNDEF%))))
+
+(DEFLAM existssimplify-ext (extension indvar matrix tv)
+ (IF (MTL? extension) tv
+  (LET ((tv1 (wffsimplify (substexp indvar (FIRST extension) matrix))))
+   (IF (IS-TRUE tv1) TRUE 
+    (IF (IS-FALSE tv1)
+     (existssimplify-ext (REST extension) indvar matrix tv)
+     (existssimplify-ext (REST extension) indvar matrix tv1))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     1.3-SEMANTIC EVALUTATION OF A ATOMIC WFF		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+                
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (awffsimplify awff)                                      *
+; *      (sentsimplify sentconst)                                 *
+; *      (equsimplify awff)                                       *
+; *      (sortsimplify  awff)                                     *
+; *      (predsimplify awff)                                      *
+; *                                                               *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM awffsimplify (awff)
+ (IF (SENTCONST awff)                    (sentsimplify awff)
+  (IF (SENTPAR awff)                      %VALUE-UNDEF%
+   (IF (EQU awff)                           (equsimplify awff)
+    (IF (IS-SORT (predappl-get-pred awff))   (sortsimplify awff)
+     (IF (PREDCONST (predappl-get-pred awff)) (predsimplify awff)
+      %VALUE-UNDEF%))))))
+
+(DEFLAM sentsimplify (sentconst)
+ (IF (TRUTH sentconst) TRUE
+  (IF (FALSITY sentconst) FALSE
+   (sentinterpret sentconst))))
+
+(DEFLAM sortsimplify (awff)
+ (LET ((sort (predappl-get-pred awff))
+       (term (predappl1-get-arg awff)))
+  (IF (TRM_SUPERSORT sort term) TRUE
+   (LET ((int (termsimplify term)))
+    (IF (INT-UNDEF? int) %VALUE-UNDEF%
+     (sortinterpret sort
+      (CONS (int-get-repinfo int) MTL)
+      (LIST (quotit (int-get-value int)))))))))
+
+(DEFLAM equsimplify (awff)
+ (IF (EQUAL (lhs awff) (rhs awff)) TRUE
+  (LET ((int1 (termsimplify (lhs awff))) (int2 (termsimplify (rhs awff))))
+   (LET ((tv (sameint int1 int2)))
+    (IFN (VALUE-UNDEF? tv) tv
+     (samename (prefnam-get int1)(prefnam-get int2)))))))
+
+(DEFLAM predsimplify (awff)
+ (LET ((p (predappl-get-pred awff))
+       (rl (argssimplify (predappl-get-args awff))))
+  (LET ((argreps (FIRST rl)) 
+        (argvalues (SECOND rl))
+        (some-undef (HGKM-NTH 3 rl)))
+   (IF some-undef %VALUE-UNDEF%
+    (predinterpret p argreps argvalues)))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								i
+; i 								i
+; i     2-SEMANTIC EVALUTATION OF A TERM         		i
+; i								i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; *****************************************************************
+; *                                                               *
+; * SYNTAX                                                        *
+; *      (termsimplify term)                                      *
+; *      (termifsimplify term)                                    *
+; *      (funsimplify term)                                       *
+; *      (indsimplify indconst)                                   *
+; *                                                               *
+; * DESCRIPTION                                                   *
+; *      Terms can be indconst, ifterm, funterm,indvar,indpar.    *
+; *                                                               *
+; *****************************************************************
+
+(DEFLAM termsimplify (term)
+ (IF (INDCONST term)           (indsimplify term)
+  (IF (INDVAR term)             (int-undef-mak)
+   (IF (INDPAR term)             (int-undef-mak)
+    (IF (TERMIF term)              (termifsimplify term)
+     (IF (FUNCONST (funappl-get-fun term)) (funsimplify term)
+      (IF (FUNPAR (funappl-get-fun term))
+       (int-undef-mak)
+       (ERRMES-printexp term 
+        " is not a term. Fatal error during evaluation."))))))))
+
+(DEFLAM indsimplify (indconst) (indinterpret indconst))
+
+(DEFLAM termifsimplify (term)
+ (LET ((tv (wffsimplify (ifof term))))
+  (IF (IS-TRUE tv) (termsimplify (thenof term))
+   (IF (IS-FALSE tv) (termsimplify (elseof term))
+    (LET ((int1    (termsimplify (thenof term)))
+          (int2    (termsimplify (elseof term))))
+     (IF (IS-TRUE (sameint int1 int2))
+      int1 
+      (IF (IS-TRUE (samename (prefnam-get int1)(prefnam-get int2)))
+       int1 
+       (int-undef-mak))))))))
+ 
+(DEFLAM funsimplify (term)
+ (LET ((f (funappl-get-fun term))
+       (rl (argssimplify (funappl-get-args term))))
+  (LET ((argreps (FIRST rl)) 
+        (argvalues (SECOND rl))
+        (some-undef (HGKM-NTH 3 rl)))
+   (IF some-undef (int-undef-mak)
+    (funinterpret f argreps argvalues)))))
+ 
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								         i
+; i 								         i
+; i 3-SEMANTIC EVALUTATION OF THE ARGUMENTS OF A FUNCONST OR A PREDCONST i
+; i								         i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; ***************************************************************************
+; *                                                                         *
+; * SYNTAX                                                                  *
+; *      (argssimplify terms)                                               *
+; *                                                                         *
+; * DESCRIPTION                                                             *
+; *      argssimplify evaluates the arguments of a list of terms            *
+; *      The list rl built by argssimplify contains                         *
+; *      (FIRST rl) is a list containing the representation of the args     *
+; *      (SECOND rl) is a list of the values  of the args                   *
+; *      (HGKM-NTH 3 rl) is TRUE if not all the args have a value           *
+; *                                                                         *
+; ***************************************************************************
+
+(DEFLAM argssimplify (terms)
+ (IF (MTL? terms) (LIST MTL MTL FALSE)
+  (LET ((int (termsimplify (FIRST terms)))
+        (rl  (argssimplify (REST terms))))
+   (IF (INT-UNDEF? int)
+    (LIST MTL MTL TRUE)
+    (IF (IST (HGKM-NTH 3 rl))
+     (LIST MTL MTL TRUE)
+     (LIST
+      (CONS (int-get-repinfo int) (FIRST rl))
+      (CONS (quotit (int-get-value int)) (SECOND rl))
+      (HGKM-NTH 3 rl)))))))
+
+
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+; i								         i
+; i 								         i
+; i 4-GETTING INTERPRETATION IN THE SIMULATION STRUCTURE                 i
+; i								         i
+; iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+; **************************************************
+; *                                                *
+; *    SINTAX                                      *
+; *                                                *
+; *       (indinterpret indconst)                  *
+; *       (sentinterpret indconst)                 *
+; *       (funinterpret fun argreps argvalues)     *
+; *       (predinterpret pred argreps argvalues)   *
+; *       (sortinterpret value arg)                *
+; *       (sortloop sort rep val)                  *
+; *       (slgloop slgsorts rep val)               *
+; *       (smgloop smgsorts rep val)               *
+; *                                                *
+; *                                                *
+; **************************************************
+
+(DEFLAM indinterpret (indconst)
+ (IF (INT-HAS indconst)
+  (indsym-HGKM-EVAL indconst)
+  (int-undef-mak)))
+
+(DEFLAM sentinterpret (sentconst)
+ (IF (INT-HAS sentconst)
+  (int-get-value (indsym-HGKM-EVAL sentconst))
+  %VALUE-UNDEF%))
+
+(DEFLAM funinterpret (fun argreps argvalues)
+ (IFN (INT-HAS fun) (int-undef-mak)
+  (LET ((fun-int (int-chose  (fun-int-get fun) argreps)))
+   (IF (INT-UNDEF? fun-int)
+    (int-undef-mak)
+    (int-mak 
+     (repinfo-get-out (int-get-repinfo fun-int))
+     (appl-HGKM-EVAL (int-get-value fun-int) argvalues))))))
+
+(DEFLAM predinterpret (pred argreps argvalues)
+ (IFN (INT-HAS pred) %VALUE-UNDEF%
+  (LET ((pred-int (int-chose (pred-int-get pred) argreps)))
+   (IF (INT-UNDEF? pred-int) %VALUE-UNDEF%
+    (LET ((tv (appl-HGKM-EVAL (int-get-value pred-int) argvalues)))
+     (IF (IS-TRUE tv) TRUE
+      (IF (IS-FALSE tv) FALSE
+       %VALUE-UNDEF%)))))))
+
+(DEFLAM sortinterpret (sort rep val)
+ (IFN (INT-HAS sort)
+  (sortloop sort rep val)
+  (LET ((tv (predinterpret sort rep val)))
+   (IF (VALUE-UNDEF? tv) 
+    (sortloop sort rep val)
+    tv))))
+
+(DEFLAM sortloop (sort rep val)
+ (LET ((tv1 (slgloop (slg sort) rep val)))
+  (IF (IS-TRUE tv1) tv1
+; when a less general sort is true I can say true of the sort
+   (LET ((tv2 (smgloop (smg sort) rep val)))
+    (IF (IS-FALSE tv2) tv2 
+     %VALUE-UNDEF%)))))
+; when a more general sort is false I can say false of the sort
+
+(DEFLAM slgloop (slgsorts rep val)
+ (IF (MTL? slgsorts) %VALUE-UNDEF%
+  (IFN (INT-HAS (FIRST slgsorts))
+   (slgloop (REST slgsorts) rep val)
+   (LET ((tv (predinterpret (FIRST slgsorts) rep val)))
+    (IF (IS-TRUE tv) tv
+     (slgloop (REST slgsorts) rep val))))))
+
+(DEFLAM smgloop (smgsorts rep val)
+ (IF (MTL? smgsorts) %VALUE-UNDEF%
+  (IFN (INT-HAS (FIRST smgsorts))
+   (smgloop (REST smgsorts) rep val)
+   (LET ((tv (predinterpret (FIRST smgsorts) rep val)))
+    (IF (IS-FALSE tv) tv
+     (smgloop (REST smgsorts) rep val))))))

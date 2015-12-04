@@ -1,0 +1,23 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{GAC{\etalchar{+}}91}
+
+\bibitem[GAC{\etalchar{+}}91]{giunchiglia29}
+F.~Giunchiglia, A.~Armando, A.~Cimatti, E.~Giunchiglia~P. Pecchiari,
+  L.~Serafini, A.~Simpson, and P.~Traverso.
+\newblock {{\tt GETFOL} Programmer Manual - {\tt GETFOL} version 1}.
+\newblock Technical Report 91-0007, DIST - University of Genova, Genova, Italy,
+  1991.
+
+\bibitem[GT91]{giunchiglia12}
+F.~Giunchiglia and P.~Traverso.
+\newblock {{\tt GETFOL} User Manual - {\tt GETFOL} version 1}.
+\newblock Manual 9109-09, IRST, Trento, Italy, 1991.
+\newblock Also DIST Technical Report 91-0005, DIST, University of Genova.
+
+\bibitem[GW91]{giunchiglia34}
+F.~Giunchiglia and R.W. Weyhrauch.
+\newblock {\tt FOL} {U}ser {M}anual - {{\tt FOL}} version 2.
+\newblock Manual 9109-08, IRST, Trento, Italy, 1991.
+\newblock Also DIST Technical Report 91-0006, DIST, University of Genova.
+
+\end{thebibliography}

@@ -1,0 +1,26 @@
+\section{Equality rules}
+
+We describe here the rules for substitution of equality, $sub_l$ and $sub_r$.
+{\GF} does not have explicit axioms or rules for reflexivity, commutativity and
+transitivity.
+Commutativity and transitivity, however, can be derived by $sub_l$ and $sub_r$,
+and symmetry can be derived by using other {\GF} commands (for instance by
+semantic simplification (see section \ref{sec-eval}), by the tautology and
+monadic deciders (see the commands {\tt tauteq} and {\tt monadeq} commands in
+section \ref{sec-decide}).
+
+
+\[
+\begin{array}{|c|c||c|c|} \hline 
+	&&& \\
+	sub_l &
+	\fraz{A(t_1) \ \ \ \ t_1 = t_2}
+	     {A(t_2)}
+	&
+	sub_r &
+	\fraz{A(t_1) \ \ \ \ t_2 = t_1}
+	     {A(t_2)}
+	\\
+	&&& \\ \hline
+\end{array}
+\]

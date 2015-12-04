@@ -1,0 +1,282 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; FOL version 2.001
+;; This file is an FOL source file: ss.fol
+;; Date: Wed Oct 20 10:45:26 MET 1993
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;   Copyright (c) 1986-1987 by Richard Weyhrauch.  All rights reserved.    ;;
+;;   Copyright (c) 1987-1988 by Fausto Giunchiglia.  All rights reserved.   ;;
+;;                                                                          ;;
+;;   This software is being provided to you, the LICENSEE, by Richard       ;;
+;;   Weyhrauch and Fausto Giunchiglia, the AUTHORS, under certain rights    ;;
+;;   and obligations.  By obtaining, using and/or copying this software,    ;;
+;;   you indicate that you have read, understood, and will comply with      ;;
+;;   the following terms and conditions:                                    ;;
+;;                                                                          ;;
+;;   THE AUTHORS MAKE NO REPRESENTATIONS OF WARRANTIES, EXPRESS OR          ;;
+;;   IMPLIED.  By way of example, but not limitation, THE AUTHORS MAKE      ;;
+;;   NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OF FITNESS FOR     ;;
+;;   ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE        ;;
+;;   COMPONENTS OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS,             ;;
+;;   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.                                ;;
+;;                                                                          ;;
+;;   The AUTHORS shall not be held liable for any direct, indirect or       ;;
+;;   consequential damages with respect to any claim by LICENSEE or any     ;;
+;;   third party on account of or arising from this Agreement or use of     ;;
+;;   this software.  Permission to use, copy, modify and distribute this    ;;
+;;   software and its documentation for any purpose and without fee or      ;;
+;;   royalty is hereby granted, provided that the above copyright notice    ;;
+;;   and disclaimer appears in and on ALL copies of the software and        ;;
+;;   documentation, whether original to the AUTHORS or a modified           ;;
+;;   version by LICENSEE.                                                   ;;
+;;                                                                          ;;
+;;   The name of the AUTHORS may not be used in advertising or publicity    ;;
+;;   pertaining to distribution of the software without specific, written   ;;
+;;   prior permission.  Notice must be given in supporting documentation    ;;
+;;   that such distribution is by permission of the AUTHORS.  The AUTHORS   ;;
+;;   make no representations about the suitability of this software for     ;;
+;;   any purpose.  It is provided "AS IS" without express or implied        ;;
+;;   warranty.  Title to copyright to this software and to any associated   ;;
+;;   documentation shall at all times remain with the AUTHORS and LICENSEE  ;;
+;;   agrees to preserve same.  LICENSEE agrees to place the appropriate     ;;
+;;   copyright notice on any such copies.                                   ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;******************************************************************
+;*                                                                *
+;*                                                                *
+;*                       ss.fol                                   *
+;*                                                                *
+;*                                                                *
+;* This file contains the routines used in the file cmdss.fol.    *
+;* These routines perform several consistency tests on the parsed *
+;* attachment. If everything succeeds then the suitable lower     *
+;* level primitives, that is the "sym-int-declare" ones,          *
+;* "prefnam-declare" or "sort-defrep-declare", are                *
+;* called. These primitives are in declss.fol.                    *
+;*                                                                *
+;*                                                                *
+;* In this file there are also the routines that  perform         *
+;* consistency tests on the representations.                      *
+;*                                                                *
+;*                                                                *
+;* Other functions for building the suitable data structures      *
+;* are in declss.hgk.                                             *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+
+;******************************************************************
+;*                                                                *
+;*                 ATTACHMENT                                     *	
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+;******************************************************************
+;*                                                                *
+;*  ATTACHMENT OF INDCONSTS AND VICEVERSA                         *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+
+(DEFLAM ind-int&prefnam-check&mak (indconst replabel sexpr)
+ (IF (PREFNAM-HAS replabel sexpr)
+  (ERRMESS2 sexpr 
+   " has already a preferred name in this representation")
+  (IF (IS-PREFNAM indconst (getdesfun replabel))
+   (ERRMESS2 (outnam indconst)
+    " is already an preferred name in this representation")
+   (SEQ
+    (prefnam-declare indconst replabel sexpr)
+    (ind-int-declare indconst replabel (quotit sexpr))
+    (ATTACH-EPRINC3 (outnam indconst) " attached to " (quotit sexpr))
+    (ATTACH-EPRINC3 (outnam indconst) " is the preferred name of " sexpr)))))
+
+;;; The predicate to check if a interpretation has a
+;   preferred name
+
+(DEFLAM PREFNAM-HAS (replabel sexpr)
+ (IF (PREFNAM-HAS-CREATED replabel sexpr) TRUE
+   FALSE))
+
+(DEFLAM IS-PREFNAM (indconst desfun)
+ (IF (MTL? desfun) FALSE
+  (IF (EQ (desfun-entry-get-name (FIRST desfun)) indconst)
+   TRUE
+   (IS-PREFNAM indconst (REST desfun)))))
+
+;******************************************************************
+;*                                                                *
+;*        ATTACHMENT OF INDCONSTS                                 *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM ind-int-check&mak (indconst replabel sexpr)
+ (SEQ
+  (ind-int-declare indconst replabel (quotit sexpr))
+  (ATTACH-EPRINC3 (outnam indconst) " attached to " (quotit sexpr))))
+
+;******************************************************************
+;*                                                                *
+;*                 ATTACHMENT OF SENTCONSTS                       *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM sent-int-check&mak (sentconst replabel sexpr)
+ (IFN (OR
+        (EQ sexpr TRUE)
+        (EQ sexpr %VALUE-UNDEF%)
+        (EQ sexpr FALSE))
+  (REMSG2 "A sentconst" " T or NIL or UNDEF&")
+  (IF (INT-HAS sentconst)
+   (ERRMESS2 (outnam sentconst) " has already an attachment")
+   (SEQ
+    (sent-int-declare sentconst replabel (quotit sexpr))
+    (ATTACH-EPRINC3 (outnam sentconst) " attached to " (quotit sexpr))))))
+
+;;; The predicate to check if a constsym has a interpretation
+;
+(DEFLAM INT-HAS (constsym) (INT-HAS-CREATED constsym))
+							
+;******************************************************************
+;*                                                                *
+;*                ATTACHMENTS OF PREDCONSTS                       *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM pred-int-check&mak (predconst repinfo atom)
+ (IFN (EQ (LENGTH (repinfo-get-args repinfo)) (arity predconst))
+  (GERRM0 
+   "The number of replabels is not equal to arity of " predconst)
+  (SEQ
+   (IF (INT-HAS predconst)
+    (LET ((oldint (pred-int-get predconst)))
+     (IF (ARGREPS-HAS oldint (repinfo-get-args repinfo))
+      (ERRMESS2 (outnam predconst)
+      " has already an attachment with these representation informations")
+      (pred-int-create predconst repinfo atom)))
+    (pred-int-declare predconst repinfo atom))
+   (ATTACH-EPRINC3 (outnam predconst) " attached to " atom))))
+
+;******************************************************************
+;*                                                                *
+;*                ATTACHMENTS OF FUNCONSTS                        *
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM fun-int-check&mak (funconst repinfo atom)
+ (IFN (EQ (LENGTH (repinfo-get-args repinfo)) (arity funconst))
+  (ERRMESS2 
+   "The number of argument replabels is not equal to arity of " funconst)
+  (SEQ
+   (IF (INT-HAS funconst)
+    (LET ((oldint (fun-int-get funconst)))
+     (IF (ARGREPS-HAS oldint (repinfo-get-args repinfo))
+      (ERRMESS2 (outnam funconst)
+      " has already an attachment with these representation informations")
+      (fun-int-create funconst repinfo atom)))
+    (fun-int-declare funconst repinfo atom))
+   (ATTACH-EPRINC3 (outnam funconst) " attached to " atom))))
+
+
+;******************************************************************
+;*                                                                *
+;*      ATTACHMENT TO A INDCONST DONE BY HARDWARE                 *	
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM hardware-dar-check&mak (indconst replabel sexpr)
+ (IF (PREFNAM-HAS replabel sexpr)
+  (ERRMESS2 sexpr 
+   " has already a preferred name in this representation")
+  (IF (IS-PREFNAM indconst (getdesfun replabel))
+   (ERRMESS2 (outnam indconst)
+    " is already a preferred name in this representation")
+   (SEQ
+    (prefnam-declare indconst replabel sexpr)
+    (ind-int-declare indconst replabel sexpr)
+    (ATTACH-EPRINC3 (outnam indconst) " attached to " sexpr)
+    (ATTACH-EPRINC3 (outnam indconst) " is the preferred name of " sexpr)))))
+
+(DEFLAM hardware-to-check&mak (indconst replabel sexpr)
+ (SEQ
+  (ind-int-declare indconst replabel sexpr)
+  (ATTACH-EPRINC3 (outnam indconst) " attached to " sexpr)))
+
+
+;******************************************************************
+;*                                                                *
+;*      DECLARATION OF REPRESENTATIONS                            *	
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+;;; The predicate to check if a label is representation label
+
+(DEFLAM  reps-check&mak (replabels)
+ (IF (IST (REPETITION-GET replabels))
+  (GERRM0 (REPETITION-GET replabels) " appairs twice in the declaration")
+  (IF (IST (undeclarable_rep-get replabels)) 
+   (GERRM0 (undeclarable_rep-get replabels) " has already been declared")
+   (reps-declare replabels))))
+
+(DEFLAM undeclarable_rep-get (replabels)
+ (IF (MTL? replabels) replabels
+  (IF (IS-REP (FIRST replabels)) (FIRST replabels)
+   (undeclarable_rep-get (REST replabels)))))
+
+(DEFLAM IS-REP (replabel)
+ (IF (IS-REP-CREATED replabel) TRUE
+  FALSE))
+
+(DEFLAM reps-declare (replabels)
+ (IF (MTL? replabels)
+  (NOP)
+  (LET ((replabel (FIRST replabels)))
+   (SEQ
+    (rep-declare replabel)
+    (reps-declare (REST replabels))))))
+
+
+;******************************************************************
+;*                                                                *
+;*      DECLARATION OF DEFAULT REPRESENTATION OF A SORT           *	
+;*                                                                *
+;*                                                                *
+;******************************************************************
+
+(DEFLAM represent-check&mak (sortlist replabel)
+ (IF (IST (REPETITION-GET sortlist))
+  (GERRM0 (REPETITION-GET sortlist) " appairs twice in the declaration")
+  (IF (IST (undeclarable_defrep-get sortlist)) 
+   (GERRM0 (undeclarable_defrep-get sortlist) 
+     " has already a default representation")
+   (sorts-defrep-declare sortlist replabel))))
+
+(DEFLAM undeclarable_defrep-get (sortlist)
+ (IF (MTL? sortlist) sortlist
+  (IF (DEFREP-HAS (FIRST sortlist))(FIRST sortlist)
+   (undeclarable_defrep-get (REST sortlist)))))
+
+;;; The predicate to check if a sort has a default representation
+;
+(DEFLAM DEFREP-HAS (sort)
+ (IF (DEFREP-HAS-CREATED sort) TRUE
+  FALSE))
+
+(DEFLAM sorts-defrep-declare (sortlist replabel)
+ (IF (MTL? sortlist)(NOP)
+  (SEQ
+   (sort-defrep-declare (FIRST sortlist) replabel)
+   (sorts-defrep-declare (REST sortlist) replabel))))
